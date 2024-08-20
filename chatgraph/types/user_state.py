@@ -49,7 +49,7 @@ class SimpleUserState(UserState):
 
     def get_menu(self, customer_id: str) -> str:
         """
-        Retorna o menu atual para o ID de cliente fornecido. Se o cliente não tiver um menu definido, define 'START' como padrão.
+        Retorna o menu atual para o ID de cliente fornecido. Se o cliente não tiver um menu definido, define 'start' como padrão.
 
         Args:
             customer_id (str): O ID do cliente.
@@ -57,8 +57,8 @@ class SimpleUserState(UserState):
         Returns:
             str: O menu atual associado ao cliente.
         """
-        menu = self.states.get(customer_id, 'START')
-        if menu == 'START':
+        menu = self.states.get(customer_id, 'start')
+        if menu == 'start':
             self.set_menu(customer_id, menu)
         return menu
 
@@ -71,4 +71,4 @@ class SimpleUserState(UserState):
             menu (str | None): O menu a ser definido para o cliente. Se None, não faz nenhuma alteração.
         """
         if menu:
-            self.states[customer_id] = menu.upper()
+            self.states[customer_id] = menu.lower()

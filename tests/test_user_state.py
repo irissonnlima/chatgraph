@@ -9,11 +9,11 @@ def test_simple_user_state_initialization():
 def test_get_menu_returns_default():
     user_state = SimpleUserState()
     customer_id = '123'
-    assert user_state.get_menu(customer_id) == 'START'
+    assert user_state.get_menu(customer_id) == 'start'
 
 
 def test_set_and_get_menu():
     user_state = SimpleUserState()
     customer_id = '123'
-    user_state.set_menu(customer_id, 'MAIN')
-    assert user_state.get_menu(customer_id) == 'MAIN'
+    user_state.set_menu(customer_id, 'main')
+    assert user_state.get_menu(customer_id) == 'main'

@@ -29,8 +29,8 @@ class ChatbotRouter:
         Returns:
             function: O decorador que adiciona a função à rota especificada.
         """
-        if 'START' not in route_name:
-            route_name = f'START{route_name}'
+        if 'start' not in route_name:
+            route_name = f'start{route_name}'
 
         def decorator(func):
             params = dict()
@@ -46,7 +46,7 @@ class ChatbotRouter:
                 params[param_type] = name
                 debug(f'Parameter: {name}, Type: {param_type}')
 
-            self.routes[route_name.strip().upper()] = {
+            self.routes[route_name.strip().lower()] = {
                 'function': func,
                 'params': params,
                 'return': output_param,
@@ -69,16 +69,16 @@ class ChatbotRouter:
             prefix (str): O prefixo a ser adicionado às rotas do roteador.
 
         Raises:
-            ChatbotError: Se a rota 'START' não for encontrada no roteador fornecido.
+            ChatbotError: Se a rota 'start' não for encontrada no roteador fornecido.
         """
-        if 'START' not in router.routes.keys():
-            raise ChatbotError('Erro ao incluir rota, START não encontrado!')
+        if 'start' not in router.routes.keys():
+            raise ChatbotError('Erro ao incluir rota, start não encontrado!')
 
         prefixed_routes = {
             (
-                f'{prefix.upper()}'
-                if key.upper() == 'START'
-                else f'START{prefix.upper()}{key.upper().replace("START", "")}'
+                f'{prefix.lower()}'
+                if key.lower() == 'start'
+                else f'start{prefix.lower()}{key.lower().replace("start", "")}'
             ): value
             for key, value in router.routes.items()
         }

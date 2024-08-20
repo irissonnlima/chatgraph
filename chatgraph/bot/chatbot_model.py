@@ -38,16 +38,16 @@ class ChatbotApp(ABC):
             prefix (str): O prefixo a ser adicionado às rotas do roteador.
 
         Raises:
-            ChatbotError: Se a rota 'START' não for encontrada no roteador.
+            ChatbotError: Se a rota 'start' não for encontrada no roteador.
         """
-        if 'START' not in router.routes.keys():
-            raise ChatbotError('Erro ao incluir rota, START não encontrado!')
+        if 'start' not in router.routes.keys():
+            raise ChatbotError('Erro ao incluir rota, start não encontrado!')
 
         prefixed_routes = {
             (
-                f'START{prefix.upper()}'
-                if key.upper() == 'START'
-                else f'START{prefix.upper()}{key.upper().replace("START", "")}'
+                f'start{prefix.lower()}'
+                if key.lower() == 'start'
+                else f'start{prefix.lower()}{key.lower().replace("start", "")}'
             ): value
             for key, value in router.routes.items()
         }
@@ -63,10 +63,10 @@ class ChatbotApp(ABC):
         Returns:
             function: O decorador que adiciona a função à rota especificada.
         """
-        route_name = route_name.strip().upper()
+        route_name = route_name.strip().lower()
 
-        if 'START' not in route_name:
-            route_name = f'START{route_name}'
+        if 'start' not in route_name:
+            route_name = f'start{route_name}'
 
         def decorator(func):
             params = dict()
@@ -119,7 +119,7 @@ class ChatbotApp(ABC):
         customer_id = message.customer_id
 
         menu = self.__user_state.get_menu(customer_id)
-        menu = menu.upper()
+        menu = menu.lower()
         handler = self.__routes.get(menu, None)
 
         if not handler:
@@ -165,7 +165,7 @@ class ChatbotApp(ABC):
         if not route:
             return absolute_route
 
-        if 'START' not in route:
+        if 'start' not in route:
             route = absolute_route + route
 
         return route

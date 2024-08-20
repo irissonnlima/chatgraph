@@ -10,31 +10,33 @@ class Route:
         routes (list[str]): A lista de todas as rotas disponíveis no fluxo.
     """
 
-    def __init__(self, current: str, routes: list[str]):
+    def __init__(self, current: str, routes: list[str], separator:str='.'):
         """
         Inicializa a rota com a rota atual e a lista de rotas disponíveis.
 
         Args:
             current (str): A rota atual.
             routes (list[str]): A lista de todas as rotas disponíveis no fluxo.
+            separator (str): O separador de partes de rota. Padrão é '.'.
         """
         self.current = current
         self.routes = routes
+        self.separator = separator
 
     def get_previous(self) -> str:
         """
         Retorna o caminho anterior ao caminho atual.
 
         Raises:
-            RouteError: Se a rota atual for 'START', indicando que não há caminho anterior.
+            RouteError: Se a rota atual for 'start', indicando que não há caminho anterior.
 
         Returns:
             str: O caminho anterior à rota atual.
         """
-        if self.current == 'START':
-            raise RouteError('Não há caminho anterior ao START')
+        if self.current == 'start':
+            raise RouteError('Não há caminho anterior ao start')
 
-        previous_route = '/'.join(self.current.split('/')[:-1])
+        previous_route = self.separator.join(self.current.split(self.separator)[:-1])
         return previous_route
 
     def get_next(self, next_part: str) -> str:
@@ -50,8 +52,8 @@ class Route:
         Returns:
             str: O próximo caminho construído a partir da rota atual e da parte fornecida.
         """
-        next_part = next_part.strip().upper()
-        next_route = f"{self.current.rstrip('/')}{next_part}"
+        next_part = next_part.strip().lower()
+        next_route = f"{self.current.rstrip(self.separator)}{next_part}"
         if next_route not in self.routes:
             raise RouteError(f'Rota não encontrada: {next_route}')
         return next_route

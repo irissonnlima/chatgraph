@@ -91,11 +91,11 @@ from chatgraph import ChatbotApp, ChatbotRouter, SimpleUserState, RabbitMessageC
 # Definindo rotas com ChatbotRouter
 router = ChatbotRouter()
 
-@router.route("START")
+@router.route("start")
 def say_hello():
-    return ChatbotResponse(message="Hello! How can I assist you today?", route="HELP")
+    return ChatbotResponse(message="Hello! How can I assist you today?", route=".help")
 
-@router.route("/HELP")
+@router.route(".help")
 def provide_help():
     return ChatbotResponse(message="Here are some things I can help with: ...")
 
