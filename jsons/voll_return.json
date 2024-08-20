@@ -1,0 +1,9 @@
+{
+    "type": "text",
+    "text": "Olá, gostaria de saber o saldo da minha conta.",
+    "customer_id": "123456",
+    "channel": "WhatsApp",
+    "customer_phone": "+5511999999999",
+    "company_phone": "+5511888888888",
+    "status": "active"
+}
