@@ -1,4 +1,4 @@
-from chatbot.user_state import SimpleUserState
+from chatgraph.user_state import SimpleUserState
 
 
 def test_simple_user_state_initialization():

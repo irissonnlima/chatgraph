@@ -1,8 +1,8 @@
 import pytest
 
-from chatbot.auth.credentials import Credential
-from chatbot.chatbot_app import ChatbotApp
-from chatbot.user_state import SimpleUserState
+from chatgraph.auth.credentials import Credential
+from chatgraph.chatbot_app import ChatbotApp
+from chatgraph.user_state import SimpleUserState
 
 
 @pytest.fixture

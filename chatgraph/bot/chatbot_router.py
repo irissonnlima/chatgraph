@@ -3,22 +3,40 @@ from functools import wraps
 from logging import debug
 
 from ..error.chatbot_error import ChatbotError
-from ..types.message_types import Message
 
 
 class ChatbotRouter:
+    """
+    Classe responsável por gerenciar e registrar as rotas do chatbot, associando-as a funções específicas.
+    
+    Atributos:
+        routes (dict): Um dicionário que armazena as rotas do chatbot e suas funções associadas.
+    """
+
     def __init__(self):
+        """
+        Inicializa a classe ChatbotRouter com um dicionário vazio de rotas.
+        """
         self.routes = {}
 
     def route(self, route_name: str):
-        if not 'START' in route_name:
+        """
+        Decorador para adicionar uma função como uma rota no roteador do chatbot.
+
+        Args:
+            route_name (str): O nome da rota para a qual a função deve ser associada.
+
+        Returns:
+            function: O decorador que adiciona a função à rota especificada.
+        """
+        if 'START' not in route_name:
             route_name = f'START{route_name}'
-            
+
         def decorator(func):
             params = dict()
             signature = inspect.signature(func)
             output_param = signature.return_annotation
-            
+
             for name, param in signature.parameters.items():
                 param_type = (
                     param.annotation
@@ -28,7 +46,6 @@ class ChatbotRouter:
                 params[param_type] = name
                 debug(f'Parameter: {name}, Type: {param_type}')
 
-                
             self.routes[route_name.strip().upper()] = {
                 'function': func,
                 'params': params,
@@ -44,6 +61,16 @@ class ChatbotRouter:
         return decorator
 
     def include_router(self, router: 'ChatbotRouter', prefix: str):
+        """
+        Inclui outro roteador com um prefixo nas rotas do roteador atual.
+
+        Args:
+            router (ChatbotRouter): O roteador contendo as rotas a serem adicionadas.
+            prefix (str): O prefixo a ser adicionado às rotas do roteador.
+
+        Raises:
+            ChatbotError: Se a rota 'START' não for encontrada no roteador fornecido.
+        """
         if 'START' not in router.routes.keys():
             raise ChatbotError('Erro ao incluir rota, START não encontrado!')
 

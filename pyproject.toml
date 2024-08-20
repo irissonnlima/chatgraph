@@ -1,14 +1,17 @@
 [tool.poetry]
 name = "chatgraph"
 version = "0.1.0"
-description = ""
+description = "A user-friendly chatbot library"
 authors = ["Irisson N. Lima <irisson.lima@verdecard.com.br>"]
 readme = "README.md"
+homepage = "https://github.com/irissonnlima/chatgraph"
+repository = "https://github.com/irissonnlima/chatgraph"
+keywords = ["chatbot", "rabbitmq", "messaging", "routing", "chatgraph", "python"]
+license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.12"
 pika = "^1.3.2"
-
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.5.1"
@@ -33,9 +36,9 @@ preview = true
 quote-style = 'single'
 
 [tool.taskipy.tasks]
-test = 'pytest --cov=chatbot --cov-report=html'
+test = 'pytest --cov=chatgraph --cov-report=html'
 start_cov = 'start htmlcov/index.html'
-lint = 'ruff check . && check . --diff'
+lint = 'ruff check . && ruff check . --diff'
 format = 'ruff format . && ruff check . --fix'
 
 [build-system]

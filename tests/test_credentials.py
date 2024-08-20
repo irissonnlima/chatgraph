@@ -1,6 +1,6 @@
 import pytest
 
-from chatbot.auth.credentials import Credential
+from chatgraph.auth.credentials import Credential
 
 
 def test_credential_initialization():
