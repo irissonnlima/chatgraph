@@ -1,4 +1,5 @@
 from typing import Union
+import json
 
 messageTypes = Union[str, float, int, None]
 
@@ -22,6 +23,15 @@ class ChatbotResponse:
         """
         self.message = message
         self.route = route
+    
+    def json(self):
+        '''
+        Retorna o objeto em formato json.
+        '''
+        return json.dumps({
+            'type': 'message',
+            'message': self.message,
+        })
 
 
 class RedirectResponse:
@@ -40,3 +50,50 @@ class RedirectResponse:
             route (str): A rota para a qual o chatbot deve redirecionar.
         """
         self.route = route
+
+class EndChatResponse:
+    """
+    Representa uma resposta que indica o fim do chatbot.
+
+    Atributos:
+        tabulation_id (str): O ID da tabulação do chatbot.
+        observations (str): As observações finais do chatbot.
+    """
+
+    def __init__(self, tabulation_id: str, observations:str) -> None:
+        '''
+        Finzaliza e tabula as informações do chatbot.
+        '''
+        self.tabulation_id = tabulation_id
+        self.observations = observations
+        
+    def json(self):
+        '''
+        Retorna o objeto em formato json.
+        '''
+        return json.dumps({
+            'type': 'tabulate',
+            'tabulation_id': self.tabulation_id,
+            'observations': self.observations,
+        })
+        
+class TransferToHuman:
+    """
+    Representa uma transferencia para um atendente humano.
+    """
+    def __init__(self, campaign_id: str, observations:str) -> None:
+        '''
+        Finzaliza e tabula as informações do chatbot.
+        '''
+        self.campaign_id = campaign_id
+        self.observations = observations
+        
+    def json(self):
+        '''
+        Retorna o objeto em formato json.
+        '''
+        return json.dumps({
+            'type': 'transfer',
+            'campaign_id': self.campaign_id,
+            'observations': self.observations,
+        })

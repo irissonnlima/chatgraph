@@ -6,7 +6,7 @@ from logging import debug
 from ..error.chatbot_error import ChatbotError, ChatbotMessageError
 from ..messages.base_message_consumer import MessageConsumer
 from ..types.message_types import Message
-from ..types.output_state import ChatbotResponse, RedirectResponse
+from ..types.output_state import ChatbotResponse, RedirectResponse, EndChatResponse, TransferToHuman
 from ..types.route import Route
 from ..types.user_state import UserState
 from .chatbot_router import ChatbotRouter
@@ -143,11 +143,17 @@ class ChatbotApp(ABC):
         elif type(message_response) == ChatbotResponse:
             route = self.__adjust_route(message_response.route, menu)
             self.__user_state.set_menu(customer_id, route)
-            return message_response.message
+            return message_response.json()
         elif type(message_response) == RedirectResponse:
             route = self.__adjust_route(message_response.route, menu)
             self.__user_state.set_menu(customer_id, route)
             return self.process_message(message)
+        elif type(message_response) == EndChatResponse:
+            self.__user_state.delete_menu(customer_id)
+            return message_response.json()
+        elif type(message_response) == TransferToHuman:
+            self.__user_state.delete_menu(customer_id)
+            return message_response.json()
         else:
             raise ChatbotError('Tipo de retorno inválido!')
 

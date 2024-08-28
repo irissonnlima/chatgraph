@@ -31,6 +31,16 @@ class UserState(ABC):
             menu (str): O menu a ser definido para o cliente.
         """
         pass
+    
+    @abstractmethod
+    def delete_menu(self, customer_id: str) -> None:
+        """
+        Deleta o menu atual para o ID de cliente fornecido.
+
+        Args:
+            customer_id (str): O ID do cliente.
+        """
+        pass
 
 
 class SimpleUserState(UserState):
@@ -72,3 +82,13 @@ class SimpleUserState(UserState):
         """
         if menu:
             self.states[customer_id] = menu.lower()
+
+    def delete_menu(self, customer_id: str) -> None:
+        """
+        Deleta o menu atual para o ID de cliente fornecido.
+
+        Args:
+            customer_id (str): O ID do cliente.
+        """
+        if customer_id in self.states:
+            self.states.pop(customer_id)
