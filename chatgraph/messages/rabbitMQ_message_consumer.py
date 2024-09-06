@@ -4,7 +4,7 @@ import os
 import pika
 from typing import Callable
 from ..auth.credentials import Credential
-from ..types.message_types import Message
+from ..types.message_types import Message, UserState
 from .base_message_consumer import MessageConsumer
 
 
@@ -164,7 +164,12 @@ class RabbitMessageConsumer(MessageConsumer):
         return Message(
             type=message.get('type', ''),
             text=message.get('text', ''),
-            customer_id=message.get('customer_id', ''),
+            user_state=UserState(
+                customer_id=message.get('customer_id', ''),
+                menu=message.get('menu', ''),
+                lst_update=message.get('lst_update', ''),
+                obs=message.get('obs', {}),
+            ),
             channel=message.get('channel', ''),
             customer_phone=message.get('customer_phone', ''),
             company_phone=message.get('company_phone', ''),

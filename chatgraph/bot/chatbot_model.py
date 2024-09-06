@@ -8,7 +8,6 @@ from ..messages.base_message_consumer import MessageConsumer
 from ..types.message_types import Message
 from ..types.output_state import ChatbotResponse, RedirectResponse, EndChatResponse, TransferToHuman
 from ..types.route import Route
-from ..types.user_state import UserState
 from .chatbot_router import ChatbotRouter
 
 
@@ -17,16 +16,14 @@ class ChatbotApp(ABC):
     Classe principal para a aplicação do chatbot, gerencia as rotas e a lógica de processamento de mensagens.
     """
 
-    def __init__(self, user_state: UserState, message_consumer: MessageConsumer):
+    def __init__(self, message_consumer: MessageConsumer):
         """
         Inicializa a classe ChatbotApp com um estado de usuário e um consumidor de mensagens.
 
         Args:
-            user_state (UserState): O estado do usuário, que contém informações persistentes sobre as interações do usuário.
             message_consumer (MessageConsumer): O consumidor de mensagens que lida com a entrada de mensagens no sistema.
         """
         self.__message_consumer = message_consumer
-        self.__user_state = user_state
         self.__routes = {}
     
     def include_router(self, router: ChatbotRouter, prefix: str):
@@ -118,7 +115,7 @@ class ChatbotApp(ABC):
         """
         customer_id = message.customer_id
 
-        menu = self.__user_state.get_menu(customer_id)
+        menu = message.user_state.menu
         menu = menu.lower()
         handler = self.__routes.get(menu, None)
 
@@ -139,21 +136,15 @@ class ChatbotApp(ABC):
         message_response = func(**kwargs)
 
         if type(message_response) in (str, float, int):
-            return message_response
-        elif type(message_response) == ChatbotResponse:
-            route = self.__adjust_route(message_response.route, menu)
-            self.__user_state.set_menu(customer_id, route)
+            response = ChatbotResponse(message_response)
+            return response.json()
+        elif type(message_response) in (ChatbotResponse, EndChatResponse, TransferToHuman):
+            # route = self.__adjust_route(message_response.route, menu)
             return message_response.json()
         elif type(message_response) == RedirectResponse:
             route = self.__adjust_route(message_response.route, menu)
-            self.__user_state.set_menu(customer_id, route)
+            message.user_state.menu = route
             return self.process_message(message)
-        elif type(message_response) == EndChatResponse:
-            self.__user_state.delete_menu(customer_id)
-            return message_response.json()
-        elif type(message_response) == TransferToHuman:
-            self.__user_state.delete_menu(customer_id)
-            return message_response.json()
         else:
             raise ChatbotError('Tipo de retorno inválido!')
 

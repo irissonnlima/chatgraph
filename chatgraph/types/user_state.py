@@ -1,3 +1,7 @@
+"""
+Deprecated!!
+"""
+
 from abc import ABC, abstractmethod
 
 
