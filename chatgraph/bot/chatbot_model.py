@@ -113,8 +113,8 @@ class ChatbotApp(ABC):
         Returns:
             str: A resposta gerada pela função da rota, que pode ser uma mensagem ou o resultado de uma redireção.
         """
-        customer_id = message.customer_id
-
+        customer_id = message.user_state.customer_id
+        user_state = message.user_state
         menu = message.user_state.menu
         menu = menu.lower()
         handler = self.__routes.get(menu, None)
@@ -138,8 +138,16 @@ class ChatbotApp(ABC):
         if type(message_response) in (str, float, int):
             response = ChatbotResponse(message_response)
             return response.json()
+        elif type(message_response) == ChatbotResponse:
+            route = self.__adjust_route(message_response.route, menu)
+            response = message_response.json()
+            response['user_state'] = {
+                'customer_id': customer_id,
+                'menu': route,
+                'obs': user_state.obs,
+            }
+            return response            
         elif type(message_response) in (ChatbotResponse, EndChatResponse, TransferToHuman):
-            # route = self.__adjust_route(message_response.route, menu)
             return message_response.json()
         elif type(message_response) == RedirectResponse:
             route = self.__adjust_route(message_response.route, menu)
