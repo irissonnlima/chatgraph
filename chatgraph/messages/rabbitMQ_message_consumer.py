@@ -164,14 +164,16 @@ class RabbitMessageConsumer(MessageConsumer):
         Returns:
             Message: Uma instância da classe Message com os dados extraídos do dicionário.
         """
+        
+        user_state = message.get('user_state', {})
         return Message(
             type=message.get('type', ''),
             text=message.get('text', ''),
             user_state=UserState(
-                customer_id=message.get('customer_id', ''),
-                menu=message.get('menu', ''),
-                lst_update=message.get('lst_update', ''),
-                obs=message.get('obs', {}),
+                customer_id=user_state.get('customer_id', ''),
+                menu=user_state.get('menu', ''),
+                lst_update=user_state.get('lst_update', ''),
+                obs=user_state.get('obs', {}),
             ),
             channel=message.get('channel', ''),
             customer_phone=message.get('customer_phone', ''),
