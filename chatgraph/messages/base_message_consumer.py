@@ -31,3 +31,10 @@ class MessageConsumer(ABC):
             MessageConsumer: A instância do consumidor de mensagens configurado.
         """
         pass
+    
+    @abstractmethod
+    def reprer(self) -> str:
+        '''
+        Retorna uma representação textual do consumidor de mensagens.
+        '''
+        pass

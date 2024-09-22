@@ -28,10 +28,10 @@ class ChatbotResponse:
         '''
         Retorna o objeto em formato json.
         '''
-        return json.dumps({
+        return {
             'type': 'message',
-            'message': self.message,
-        })
+            'text': self.message,
+        }
 
 
 class RedirectResponse:
@@ -71,11 +71,11 @@ class EndChatResponse:
         '''
         Retorna o objeto em formato json.
         '''
-        return json.dumps({
+        return {
             'type': 'tabulate',
             'tabulation_id': self.tabulation_id,
             'observations': self.observations,
-        })
+        }
         
 class TransferToHuman:
     """
@@ -92,8 +92,8 @@ class TransferToHuman:
         '''
         Retorna o objeto em formato json.
         '''
-        return json.dumps({
+        return {
             'type': 'transfer',
             'campaign_id': self.campaign_id,
             'observations': self.observations,
-        })
+        }

@@ -2,6 +2,7 @@ import inspect
 from abc import ABC
 from functools import wraps
 from logging import debug
+import json
 
 from ..error.chatbot_error import ChatbotError, ChatbotMessageError
 from ..messages.base_message_consumer import MessageConsumer
@@ -97,8 +98,9 @@ class ChatbotApp(ABC):
         """
         Inicia o consumo de mensagens pelo chatbot, processando cada mensagem recebida.
         """
+        self.__message_consumer.reprer()
         self.__message_consumer.start_consume(self.process_message)
-
+    
     def process_message(self, message: Message):
         """
         Processa uma mensagem recebida, identificando a rota correspondente e executando a função associada.
@@ -137,7 +139,13 @@ class ChatbotApp(ABC):
 
         if type(message_response) in (str, float, int):
             response = ChatbotResponse(message_response)
-            return response.json()
+            response = message_response.json()
+            response['user_state'] = {
+                'customer_id': customer_id,
+                'menu': menu,
+                'obs': user_state.obs,
+            }
+            return json.dumps(response)
         elif type(message_response) == ChatbotResponse:
             route = self.__adjust_route(message_response.route, menu)
             response = message_response.json()
@@ -146,9 +154,11 @@ class ChatbotApp(ABC):
                 'menu': route,
                 'obs': user_state.obs,
             }
-            return response            
+            return json.dumps(response)            
         elif type(message_response) in (ChatbotResponse, EndChatResponse, TransferToHuman):
-            return message_response.json()
+            response = message_response.json()
+            response['customer_id'] = customer_id
+            return json.dumps(response)
         elif type(message_response) == RedirectResponse:
             route = self.__adjust_route(message_response.route, menu)
             message.user_state.menu = route

@@ -6,7 +6,10 @@ from typing import Callable
 from ..auth.credentials import Credential
 from ..types.message_types import Message, UserState
 from .base_message_consumer import MessageConsumer
-
+from rich.console import Console
+from rich.table import Table
+from rich.text import Text
+from rich.panel import Panel
 
 class RabbitMessageConsumer(MessageConsumer):
     """
@@ -175,3 +178,30 @@ class RabbitMessageConsumer(MessageConsumer):
             company_phone=message.get('company_phone', ''),
             status=message.get('status'),
         )
+
+    def reprer(self):
+        console = Console()
+
+        # Título "ChatGraph" destacado em vermelho e negrito dentro de um painel
+        title_text = Text("ChatGraph", style="bold red", justify="center")
+        title_panel = Panel.fit(title_text, title=" ", border_style="bold red", padding=(1, 4))
+
+        # Linha separadora com emojis
+        separator = Text("🐇🐇🐇 RabbitMessageConsumer 📨📨📨", style="cyan", justify="center")
+
+        # Criação da tabela com os atributos
+        table = Table(show_header=True, header_style="bold magenta", title="RabbitMQ Consumer")
+        table.add_column("Atributo", justify="center", style="cyan", no_wrap=True)
+        table.add_column("Valor", justify="center", style="magenta")
+
+        table.add_row("Virtual Host", self.__virtual_host)
+        table.add_row("Prefetch Count", str(self.__prefetch_count))
+        table.add_row("Queue Consume", self.__queue_consume)
+        table.add_row("AMQP URL", self.__amqp_url)
+        table.add_row("Username", self.__credentials.username)
+        table.add_row("Password", "******")  # Oculta a senha
+
+        # Imprime o título, separador e a tabela centralizada
+        console.print(title_panel, justify="center")
+        console.print(separator, justify="center")
+        console.print(table, justify="center")
