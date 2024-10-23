@@ -1,8 +1,6 @@
 import typer
 from rich.console import Console
 from rich.table import Table
-from rich.text import Text
-from rich.panel import Panel
 from dotenv import load_dotenv
 from ..gRPC.gRPCCall import WhatsappServiceClient, UserStateServiceClient
 import os, re
@@ -62,7 +60,7 @@ def campaigns(regex: str = typer.Option(None, "--regex", "-r", help="Filtro rege
     # Aplicar filtro de regex, se fornecido
     filtered_campaigns = campaigns.campaigns
     if regex:
-        pattern = re.compile(regex)
+        pattern = re.compile(regex, re.IGNORECASE)
         filtered_campaigns = [
             campaign for campaign in campaigns.campaigns
             if pattern.search(campaign.campaign_name)
