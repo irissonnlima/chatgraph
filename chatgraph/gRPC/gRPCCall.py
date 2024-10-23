@@ -108,6 +108,29 @@ class WhatsappServiceClient:
             print(f"Erro ao fazer a requisição gRPC GetTabulationID: {e}")
             return None
 
+    def get_all_campaigns(self):
+        # Cria o request para o método GetAllCampaigns
+        request = whatsapp_pb2.Void()
+
+        # Faz a chamada ao serviço gRPC
+        try:
+            response = self.actions_stub.GetCampaignsList(request)
+            return response
+        except grpc.RpcError as e:
+            print(f"Erro ao fazer a requisição gRPC GetAllCampaigns: {e}")
+            return None
+    
+    def get_all_tabulations(self):
+        # Cria o request para o método GetAllTabulations
+        request = whatsapp_pb2.Void()
+
+        # Faz a chamada ao serviço gRPC
+        try:
+            response = self.actions_stub.GetTabulationsList(request)
+            return response
+        except grpc.RpcError as e:
+            print(f"Erro ao fazer a requisição gRPC GetAllTabulations: {e}")
+            return None
 
 class UserStateServiceClient:
     def __init__(self, grpc_uri=None):
@@ -172,4 +195,16 @@ class UserStateServiceClient:
             return response
         except grpc.RpcError as e:
             print(f"Erro ao fazer a requisição gRPC DeleteUserState: {e}")
+            return None
+    
+    def get_all_user_states(self):
+        # Cria o request para o método GetAllUserStates
+        request = userstate_pb2.Void()
+
+        # Faz a chamada ao serviço gRPC
+        try:
+            response = self.stub.GetAllUserStates(request)
+            return response
+        except grpc.RpcError as e:
+            print(f"Erro ao fazer a requisição gRPC GetAllUserStates: {e}")
             return None
