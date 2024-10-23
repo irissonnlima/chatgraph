@@ -22,6 +22,7 @@ class WhatsappServiceClient:
         
         # Cria o stub (client) para o serviço gRPC
         self.stub = whatsapp_pb2_grpc.MessageServiceStub(self.channel)
+        self.actions_stub = whatsapp_pb2_grpc.ActionsServiceStub(self.channel)
 
     def send_button(self, message_data):
         # Cria o request para o método SendButton
@@ -58,6 +59,55 @@ class WhatsappServiceClient:
         except grpc.RpcError as e:
             print(f"Erro ao fazer a requisição gRPC SendText: {e}")
             return None
+    
+    def transfer_to_human(self, message_data):
+        # Cria o request para o método TransferToHuman
+        request = whatsapp_pb2.MessageRequest(**message_data)
+
+        # Faz a chamada ao serviço gRPC
+        try:
+            response = self.stub.TransferToHuman(request)
+            return response
+        except grpc.RpcError as e:
+            print(f"Erro ao fazer a requisição gRPC TransferToHuman: {e}")
+            return None
+    
+    def end_chat(self, message_data):
+        # Cria o request para o método EndChat
+        request = whatsapp_pb2.MessageRequest(**message_data)
+
+        # Faz a chamada ao serviço gRPC
+        try:
+            response = self.stub.EndChat(request)
+            return response
+        except grpc.RpcError as e:
+            print(f"Erro ao fazer a requisição gRPC EndChat: {e}")
+            return None
+    
+    def get_campaign_id(self, campaign_name):
+        # Cria o request para o método GetCampaignID
+        request = whatsapp_pb2.CampaignName(campaign_name=campaign_name)
+
+        # Faz a chamada ao serviço gRPC
+        try:
+            response = self.actions_stub.GetCampaignID(request)
+            return response
+        except grpc.RpcError as e:
+            print(f"Erro ao fazer a requisição gRPC GetCampaignID: {e}")
+            return None
+        
+    def get_tabulation_id(self, tabulation_name):
+        # Cria o request para o método GetTabulationID
+        request = whatsapp_pb2.TabulationName(tabulation_name=tabulation_name)
+
+        # Faz a chamada ao serviço gRPC
+        try:
+            response = self.actions_stub.GetTabulationID(request)
+            return response
+        except grpc.RpcError as e:
+            print(f"Erro ao fazer a requisição gRPC GetTabulationID: {e}")
+            return None
+
 
 class UserStateServiceClient:
     def __init__(self, grpc_uri=None):

@@ -6,8 +6,9 @@ from logging import error
 
 from ..error.chatbot_error import ChatbotError, ChatbotMessageError
 from ..messages.message_consumer import MessageConsumer
-from ..types.message_types import UserCall
-from ..types.output_state import ChatbotResponse, RedirectResponse, EndChatResponse, TransferToHuman
+from ..types.request_types import UserCall
+from ..types.message_types import messageTypes, Message, Button, ListElements
+from ..types.end_types import RedirectResponse, EndChatResponse, TransferToHuman
 from ..types.route import Route
 from .chatbot_router import ChatbotRouter
 
@@ -143,20 +144,30 @@ class ChatbotApp:
         
         if isinstance(userCall_response, (list, tuple)):
             for response in userCall_response:
-                return self.__process_response(response, userCall)
+                self.__process_func_response(response, userCall)
 
-    def __process_response(self, userCall_response, userCall: UserCall):
+    def __process_func_response(self, userCall_response, userCall: UserCall):
         
         if isinstance(userCall_response, (str, float, int)):
+            userCall.send(Message(text=userCall_response))
+            return
+
+        elif isinstance(userCall_response, Route):
+            userCall.route = userCall_response.current
+            return
             
-            return self.__create_response(userCall_response, customer_id, route, menu, obs)
+        elif isinstance(userCall_response, (Message, Button, ListElements)):
+            userCall.send(userCall_response)
+            
+            return
 
-        elif isinstance(userCall_response, ChatbotResponse):
-            adjusted_route = self.__adjust_route(userCall_response.route, route)
-            return self.__create_response(userCall_response.json(), customer_id, adjusted_route, menu, obs)
-
-        elif isinstance(userCall_response, (EndChatResponse, TransferToHuman)):
-            return self.__end_chat_response(userCall_response, customer_id)
+        elif isinstance(userCall_response, EndChatResponse):
+            userCall.end_chat(userCall_response.obersevations, userCall_response.tabulation_id)
+            return
+        
+        elif isinstance(userCall_response, TransferToHuman):
+            userCall.transfer_to_human(userCall_response.observations, userCall_response.campaign_id)
+            return
 
         elif isinstance(userCall_response, RedirectResponse):
             route = self.__adjust_route(userCall_response.route, route)
@@ -164,7 +175,7 @@ class ChatbotApp:
             return self.process_message(userCall)
 
         elif not userCall_response:
-            return self.__create_response('', customer_id, None, None, None)
+            return
 
         else:
             error('Tipo de retorno inválido!')
@@ -189,29 +200,3 @@ class ChatbotApp:
             route = absolute_route + route
 
         return route
-    
-    def __create_response(self, response, customer_id, route, menu, obs):
-        """
-        Cria uma resposta padronizada em formato JSON com o estado do usuário.
-        """
-        response = ChatbotResponse(response).json() if not isinstance(response, dict) else response
-        response['user_state'] = {
-            'customer_id': customer_id,
-            'route': route,
-            'menu': menu,
-            'obs': obs,
-        }
-        return json.dumps(response)
-
-    def __end_chat_response(self, response, customer_id):
-        """
-        Gera a resposta de finalização ou transferência de chat.
-        """
-        response = response.json()
-        response['user_state'] = {
-            'customer_id': customer_id,
-            'menu': None,
-            'route': None,
-            'obs': None,
-        }
-        return json.dumps(response)

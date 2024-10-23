@@ -4,7 +4,7 @@ import os
 import pika
 from typing import Callable
 from ..auth.credentials import Credential
-from ..types.message_types import UserCall, UserState
+from ..types.request_types import UserCall, UserState
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
@@ -146,16 +146,8 @@ class MessageConsumer:
         message = body.decode()
         message_json = json.loads(message)
         pure_message = self.__transform_message(message_json)
-        response = process_message(pure_message)
+        process_message(pure_message)
 
-        ch.basic_publish(
-            exchange='',
-            routing_key=props.reply_to,
-            properties=pika.BasicProperties(
-                correlation_id=props.correlation_id
-            ),
-            body=str(response),
-        )
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     def __transform_message(self, message: dict) -> UserCall:
@@ -170,6 +162,10 @@ class MessageConsumer:
         """
         
         user_state = message.get('user_state', {})
+        obs = user_state.get('obs', {})
+        if isinstance(obs, str):
+            obs = json.loads(obs)
+            
         return UserCall(
             type=message.get('type', ''),
             text=message.get('text', ''),
@@ -178,7 +174,7 @@ class MessageConsumer:
                 menu=user_state.get('menu', ''),
                 route=user_state.get('route', ''),
                 lst_update=user_state.get('lst_update', ''),
-                obs=user_state.get('obs', {}),
+                obs=obs,
             ),
             channel=message.get('channel', ''),
             customer_phone=message.get('customer_phone', ''),

@@ -46,7 +46,7 @@ class Route:
         previous_route = self.separator.join(self.current.split(self.separator)[:-1])
         return previous_route
 
-    def get_next(self, next_part: str) -> str:
+    def get_next(self, next_part: str) -> 'Route':
         """
         Monta e retorna o próximo caminho com base na parte fornecida.
 
@@ -57,13 +57,14 @@ class Route:
             RouteError: Se a próxima rota montada não estiver na lista de rotas disponíveis.
 
         Returns:
-            str: O próximo caminho construído a partir da rota atual e da parte fornecida.
+            Route: O próximo caminho montado.
         """
         next_part = next_part.strip().lower()
         next_route = f"{self.current.rstrip(self.separator)}{next_part}"
         if next_route not in self.routes:
             raise RouteError(f'Rota não encontrada: {next_route}')
-        return next_route
+        
+        return Route(next_route, self.routes, self.separator)
 
     def __str__(self):
         """

@@ -5,7 +5,7 @@ import warnings
 
 import chatgraph.pb.voll_pb2 as voll__pb2
 
-GRPC_GENERATED_VERSION = '1.66.2'
+GRPC_GENERATED_VERSION = '1.67.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -49,6 +49,16 @@ class MessageServiceStub(object):
                 request_serializer=voll__pb2.MessageRequest.SerializeToString,
                 response_deserializer=voll__pb2.MessageResponse.FromString,
                 _registered_method=True)
+        self.TransferToHuman = channel.unary_unary(
+                '/messagevoll.MessageService/TransferToHuman',
+                request_serializer=voll__pb2.MessageRequest.SerializeToString,
+                response_deserializer=voll__pb2.MessageResponse.FromString,
+                _registered_method=True)
+        self.EndChat = channel.unary_unary(
+                '/messagevoll.MessageService/EndChat',
+                request_serializer=voll__pb2.MessageRequest.SerializeToString,
+                response_deserializer=voll__pb2.MessageResponse.FromString,
+                _registered_method=True)
 
 
 class MessageServiceServicer(object):
@@ -72,6 +82,18 @@ class MessageServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def TransferToHuman(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def EndChat(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_MessageServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -87,6 +109,16 @@ def add_MessageServiceServicer_to_server(servicer, server):
             ),
             'SendText': grpc.unary_unary_rpc_method_handler(
                     servicer.SendText,
+                    request_deserializer=voll__pb2.MessageRequest.FromString,
+                    response_serializer=voll__pb2.MessageResponse.SerializeToString,
+            ),
+            'TransferToHuman': grpc.unary_unary_rpc_method_handler(
+                    servicer.TransferToHuman,
+                    request_deserializer=voll__pb2.MessageRequest.FromString,
+                    response_serializer=voll__pb2.MessageResponse.SerializeToString,
+            ),
+            'EndChat': grpc.unary_unary_rpc_method_handler(
+                    servicer.EndChat,
                     request_deserializer=voll__pb2.MessageRequest.FromString,
                     response_serializer=voll__pb2.MessageResponse.SerializeToString,
             ),
@@ -172,6 +204,175 @@ class MessageService(object):
             '/messagevoll.MessageService/SendText',
             voll__pb2.MessageRequest.SerializeToString,
             voll__pb2.MessageResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def TransferToHuman(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/messagevoll.MessageService/TransferToHuman',
+            voll__pb2.MessageRequest.SerializeToString,
+            voll__pb2.MessageResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def EndChat(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/messagevoll.MessageService/EndChat',
+            voll__pb2.MessageRequest.SerializeToString,
+            voll__pb2.MessageResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+
+class ActionsServiceStub(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.GetCampaignID = channel.unary_unary(
+                '/messagevoll.ActionsService/GetCampaignID',
+                request_serializer=voll__pb2.CampaignName.SerializeToString,
+                response_deserializer=voll__pb2.CampaignDetails.FromString,
+                _registered_method=True)
+        self.GetTabulationID = channel.unary_unary(
+                '/messagevoll.ActionsService/GetTabulationID',
+                request_serializer=voll__pb2.TabulationName.SerializeToString,
+                response_deserializer=voll__pb2.TabulationDetails.FromString,
+                _registered_method=True)
+
+
+class ActionsServiceServicer(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def GetCampaignID(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetTabulationID(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_ActionsServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'GetCampaignID': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetCampaignID,
+                    request_deserializer=voll__pb2.CampaignName.FromString,
+                    response_serializer=voll__pb2.CampaignDetails.SerializeToString,
+            ),
+            'GetTabulationID': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetTabulationID,
+                    request_deserializer=voll__pb2.TabulationName.FromString,
+                    response_serializer=voll__pb2.TabulationDetails.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'messagevoll.ActionsService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('messagevoll.ActionsService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class ActionsService(object):
+    """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def GetCampaignID(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/messagevoll.ActionsService/GetCampaignID',
+            voll__pb2.CampaignName.SerializeToString,
+            voll__pb2.CampaignDetails.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetTabulationID(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/messagevoll.ActionsService/GetTabulationID',
+            voll__pb2.TabulationName.SerializeToString,
+            voll__pb2.TabulationDetails.FromString,
             options,
             channel_credentials,
             insecure,

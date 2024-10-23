@@ -2,8 +2,9 @@ from .auth.credentials import Credential
 from .bot.chatbot_model import ChatbotApp
 from .bot.chatbot_router import ChatbotRouter
 from .messages.message_consumer import MessageConsumer
-from .types.message_types import UserCall, UserState, Element
-from .types.output_state import ChatbotResponse, RedirectResponse, EndChatResponse, TransferToHuman
+from .types.request_types import UserCall, UserState
+from .types.end_types import RedirectResponse, EndChatResponse, TransferToHuman
+from .types.message_types import Message, Button, ListElements
 from .types.route import Route
 
 __all__ = [
@@ -18,5 +19,7 @@ __all__ = [
     'EndChatResponse',
     'TransferToHuman',
     'UserState',
-    'Element',
+    'Message',
+    'Button',
+    'ListElements'
 ]
