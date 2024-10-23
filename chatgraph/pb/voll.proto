@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package messagevoll;
+
+option go_package = "./pb/messagevoll";
+
+service MessageService {
+  rpc SendButton(MessageRequest) returns (MessageResponse);
+  rpc SendList(MessageRequest) returns (MessageResponse);
+  rpc SendText(MessageRequest) returns (MessageResponse);
+  rpc TransferToHuman(MessageRequest) returns (MessageResponse);
+  rpc EndChat(MessageRequest) returns (MessageResponse);
+}
+
+service ActionsService {
+  rpc GetCampaignID(CampaignName) returns (CampaignDetails);
+  rpc GetTabulationID(TabulationName) returns (TabulationDetails);
+}
+
+message MessageRequest {
+  string hook_id = 1;
+  string enterprise_id = 2;
+  string unique_customer_id = 3;
+  string message_title = 4;
+  string message_text = 5;
+  string platform = 6;
+  string message_caption = 7;
+  string button_title = 8;
+  string campaign_name = 9;
+  string tabulation_name = 10;
+  repeated QuickOption options = 11;
+}
+
+message MessageResponse {
+  bool status = 1;
+  string message = 2;
+}
+
+message QuickOption {
+  string title = 1;
+  string description = 2;
+}
+
+message CampaignName {
+  string campaign_name = 1;
+}
+
+message TabulationName {
+  string tabulation_name = 1;
+}
+
+message CampaignDetails{
+  string campaign_name = 1;
+  string campaign_id = 2;
+}
+
+message TabulationDetails{
+  string tabulation_name = 1;
+  string tabulation_id = 2;
+}

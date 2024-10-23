@@ -23,6 +23,13 @@ class Route:
         self.routes = routes
         self.separator = separator
 
+    @property
+    def previous(self)->str:
+        """
+        Retorna a rota anterior a atual do usuário
+        """
+        return self.get_previous()
+    
     def get_previous(self) -> str:
         """
         Retorna o caminho anterior ao caminho atual.

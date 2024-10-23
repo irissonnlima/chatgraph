@@ -1,21 +1,22 @@
 from .auth.credentials import Credential
 from .bot.chatbot_model import ChatbotApp
 from .bot.chatbot_router import ChatbotRouter
-from .messages.rabbitMQ_message_consumer import RabbitMessageConsumer
-from .types.message_types import Message, UserState
+from .messages.message_consumer import MessageConsumer
+from .types.message_types import UserCall, UserState, Element
 from .types.output_state import ChatbotResponse, RedirectResponse, EndChatResponse, TransferToHuman
 from .types.route import Route
 
 __all__ = [
     'ChatbotApp',
     'Credential',
-    'Message',
+    'UserCall',
     'ChatbotRouter',
     'ChatbotResponse',
     'RedirectResponse',
-    'RabbitMessageConsumer',
+    'MessageConsumer',
     'Route',
     'EndChatResponse',
     'TransferToHuman',
     'UserState',
+    'Element',
 ]

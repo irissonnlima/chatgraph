@@ -4,14 +4,13 @@ import os
 import pika
 from typing import Callable
 from ..auth.credentials import Credential
-from ..types.message_types import Message, UserState
-from .base_message_consumer import MessageConsumer
+from ..types.message_types import UserCall, UserState
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 from rich.panel import Panel
 
-class RabbitMessageConsumer(MessageConsumer):
+class MessageConsumer:
     """
     Implementação de MessageConsumer para consumir mensagens de uma fila RabbitMQ.
 
@@ -27,6 +26,7 @@ class RabbitMessageConsumer(MessageConsumer):
         self,
         credential: Credential,
         amqp_url: str,
+        grpc_uri: str,
         queue_consume: str,
         prefetch_count: int = 1,
         virtual_host: str = '/',
@@ -45,6 +45,7 @@ class RabbitMessageConsumer(MessageConsumer):
         self.__prefetch_count = prefetch_count
         self.__queue_consume = queue_consume
         self.__amqp_url = amqp_url
+        self.__grpc_uri = grpc_uri
         self.__credentials = pika.PlainCredentials(
             credential.username, credential.password
         )
@@ -58,7 +59,8 @@ class RabbitMessageConsumer(MessageConsumer):
         queue_env: str = 'RABBIT_QUEUE',
         prefetch_env: str = 'RABBIT_PREFETCH',
         vhost_env: str = 'RABBIT_VHOST',
-    ) -> 'RabbitMessageConsumer':
+        grpc_uri: str = 'GRPC_URI',
+    ) -> 'MessageConsumer':
         """
         Carrega as configurações do RabbitMQ a partir de variáveis de ambiente e retorna uma instância de RabbitMessageConsumer.
 
@@ -82,8 +84,9 @@ class RabbitMessageConsumer(MessageConsumer):
         queue = os.getenv(queue_env)
         prefetch = os.getenv(prefetch_env, 1)
         vhost = os.getenv(vhost_env, '/')
+        grpc = os.getenv(grpc_uri)
 
-        if not username or not password or not url or not queue:
+        if not username or not password or not url or not queue or not grpc:
             raise ValueError('Corrija as variáveis de ambiente!')
 
         return cls(
@@ -92,6 +95,7 @@ class RabbitMessageConsumer(MessageConsumer):
             queue_consume=queue,
             prefetch_count=int(prefetch),
             virtual_host=vhost,
+            grpc_uri=grpc,
         )
 
     def start_consume(self, process_message: Callable) -> None:
@@ -122,7 +126,7 @@ class RabbitMessageConsumer(MessageConsumer):
                 ),
             )
 
-            info('[x] Aguardando solicitações RPC')
+            info('[x] Server inicializado! Aguardando solicitações RPC')
             channel.start_consuming()
         except pika.exceptions.StreamLostError as e:
             debug(e)
@@ -154,7 +158,7 @@ class RabbitMessageConsumer(MessageConsumer):
         )
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-    def __transform_message(self, message: dict) -> Message:
+    def __transform_message(self, message: dict) -> UserCall:
         """
         Transforma o dicionário JSON recebido em uma instância de Message.
 
@@ -166,12 +170,13 @@ class RabbitMessageConsumer(MessageConsumer):
         """
         
         user_state = message.get('user_state', {})
-        return Message(
+        return UserCall(
             type=message.get('type', ''),
             text=message.get('text', ''),
             user_state=UserState(
                 customer_id=user_state.get('customer_id', ''),
                 menu=user_state.get('menu', ''),
+                route=user_state.get('route', ''),
                 lst_update=user_state.get('lst_update', ''),
                 obs=user_state.get('obs', {}),
             ),
@@ -179,6 +184,7 @@ class RabbitMessageConsumer(MessageConsumer):
             customer_phone=message.get('customer_phone', ''),
             company_phone=message.get('company_phone', ''),
             status=message.get('status'),
+            grpc_uri=self.__grpc_uri,
         )
 
     def reprer(self):

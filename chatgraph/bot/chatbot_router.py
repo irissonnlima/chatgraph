@@ -1,3 +1,4 @@
+
 import inspect
 from functools import wraps
 from logging import debug
@@ -37,6 +38,7 @@ class ChatbotRouter:
             signature = inspect.signature(func)
             output_param = signature.return_annotation
 
+            # Itera sobre os parâmetros da função e extrai seus tipos
             for name, param in signature.parameters.items():
                 param_type = (
                     param.annotation
@@ -46,6 +48,7 @@ class ChatbotRouter:
                 params[param_type] = name
                 debug(f'Parameter: {name}, Type: {param_type}')
 
+            # Adiciona a função e seus parâmetros à rota especificada
             self.routes[route_name.strip().lower()] = {
                 'function': func,
                 'params': params,
@@ -74,6 +77,7 @@ class ChatbotRouter:
         if 'start' not in router.routes.keys():
             raise ChatbotError('Erro ao incluir rota, start não encontrado!')
 
+        # Adiciona prefixo às rotas do roteador incluído
         prefixed_routes = {
             (
                 f'{prefix.lower()}'

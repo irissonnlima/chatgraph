@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package userstate;
+
+option go_package = "./pb/userstate";
+
+service UserStateService {
+    rpc SelectUserState(UserStateId) returns (UserState);
+    rpc InsertUserState(UserState) returns (RequestStatus);
+    rpc UpdateUserState(UserState) returns (RequestStatus);
+    rpc DeleteUserState(UserStateId) returns (RequestStatus);
+}
+
+message UserState {
+    string user_id = 1;
+    string menu_id = 2;
+    string route = 3;
+    string obs = 4;
+    string date = 5;
+}
+
+message UserStateId {
+    string user_id = 1;
+}
+
+message RequestStatus {
+    bool status = 1;
+    string message = 2;
+}

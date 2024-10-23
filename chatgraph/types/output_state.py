@@ -13,7 +13,12 @@ class ChatbotResponse:
         route (str, opcional): A rota para a qual o chatbot deve direcionar após esta mensagem. Padrão é None.
     """
 
-    def __init__(self, message: messageTypes = None, route: str = None) -> None:
+    def __init__(
+            self, 
+            message: messageTypes = None, 
+            route: str = None, 
+            abs_text:bool=False
+        ) -> None:
         """
         Inicializa a resposta do chatbot com uma mensagem e uma rota opcional.
 
@@ -21,6 +26,12 @@ class ChatbotResponse:
             message (messageTypes, opcional): A mensagem a ser enviada ao usuário. Pode ser uma string, um número, ou None.
             route (str, opcional): A rota para a qual o chatbot deve direcionar após esta mensagem. Padrão é None.
         """
+        if not message:
+            message = ''
+            
+        if not abs_text:
+            message = message.replace('\t', '')
+            
         self.message = message
         self.route = route
     
@@ -96,4 +107,32 @@ class TransferToHuman:
             'type': 'transfer',
             'campaign_id': self.campaign_id,
             'observations': self.observations,
+        }
+
+class RedirectEntireChatbot:
+    """
+    Representa uma resposta que redireciona o fluxo do chatbot para um outro menu.
+
+    Atributos:
+        menu (str): O menu para o qual o chatbot deve redirecionar.
+        route (str): A rota para a qual o chatbot deve redirecionar.
+    """
+
+    def __init__(self, menu:str, route: str) -> None:
+        """
+        Inicializa a resposta de redirecionamento com a rota especificada.
+
+        Args:
+            route (str): A rota para a qual o chatbot deve redirecionar.
+        """
+        self.route = route
+        self.menu = menu
+    def json(self):
+        '''
+        Retorna o objeto em formato json.
+        '''
+        return {
+            'type': 'redirect',
+            'menu': self.menu,
+            'route': self.route,
         }
