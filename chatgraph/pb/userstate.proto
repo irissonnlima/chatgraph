@@ -9,6 +9,11 @@ service UserStateService {
     rpc InsertUserState(UserState) returns (RequestStatus);
     rpc UpdateUserState(UserState) returns (RequestStatus);
     rpc DeleteUserState(UserStateId) returns (RequestStatus);
+
+    rpc GetAllUserStates(Void) returns (UserStatesList);
+}
+
+message Void {
 }
 
 message UserState {
@@ -17,6 +22,7 @@ message UserState {
     string route = 3;
     string obs = 4;
     string date = 5;
+    string direction = 6;
 }
 
 message UserStateId {
@@ -26,4 +32,8 @@ message UserStateId {
 message RequestStatus {
     bool status = 1;
     string message = 2;
+}
+
+message UserStatesList {
+    repeated UserState user_states = 1;
 }

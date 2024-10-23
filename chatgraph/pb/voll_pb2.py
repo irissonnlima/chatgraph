@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nvoll.proto\x12\x0bmessagevoll\"\x9d\x02\n\x0eMessageRequest\x12\x0f\n\x07hook_id\x18\x01 \x01(\t\x12\x15\n\renterprise_id\x18\x02 \x01(\t\x12\x1a\n\x12unique_customer_id\x18\x03 \x01(\t\x12\x15\n\rmessage_title\x18\x04 \x01(\t\x12\x14\n\x0cmessage_text\x18\x05 \x01(\t\x12\x10\n\x08platform\x18\x06 \x01(\t\x12\x17\n\x0fmessage_caption\x18\x07 \x01(\t\x12\x14\n\x0c\x62utton_title\x18\x08 \x01(\t\x12\x15\n\rcampaign_name\x18\t \x01(\t\x12\x17\n\x0ftabulation_name\x18\n \x01(\t\x12)\n\x07options\x18\x0b \x03(\x0b\x32\x18.messagevoll.QuickOption\"2\n\x0fMessageResponse\x12\x0e\n\x06status\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"1\n\x0bQuickOption\x12\r\n\x05title\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\"%\n\x0c\x43\x61mpaignName\x12\x15\n\rcampaign_name\x18\x01 \x01(\t\")\n\x0eTabulationName\x12\x17\n\x0ftabulation_name\x18\x01 \x01(\t\"=\n\x0f\x43\x61mpaignDetails\x12\x15\n\rcampaign_name\x18\x01 \x01(\t\x12\x13\n\x0b\x63\x61mpaign_id\x18\x02 \x01(\t\"C\n\x11TabulationDetails\x12\x17\n\x0ftabulation_name\x18\x01 \x01(\t\x12\x15\n\rtabulation_id\x18\x02 \x01(\t2\xfb\x02\n\x0eMessageService\x12G\n\nSendButton\x12\x1b.messagevoll.MessageRequest\x1a\x1c.messagevoll.MessageResponse\x12\x45\n\x08SendList\x12\x1b.messagevoll.MessageRequest\x1a\x1c.messagevoll.MessageResponse\x12\x45\n\x08SendText\x12\x1b.messagevoll.MessageRequest\x1a\x1c.messagevoll.MessageResponse\x12L\n\x0fTransferToHuman\x12\x1b.messagevoll.MessageRequest\x1a\x1c.messagevoll.MessageResponse\x12\x44\n\x07\x45ndChat\x12\x1b.messagevoll.MessageRequest\x1a\x1c.messagevoll.MessageResponse2\xaa\x01\n\x0e\x41\x63tionsService\x12H\n\rGetCampaignID\x12\x19.messagevoll.CampaignName\x1a\x1c.messagevoll.CampaignDetails\x12N\n\x0fGetTabulationID\x12\x1b.messagevoll.TabulationName\x1a\x1e.messagevoll.TabulationDetailsB\x12Z\x10./pb/messagevollb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nvoll.proto\x12\x0bmessagevoll\"\x06\n\x04Void\"\x9d\x02\n\x0eMessageRequest\x12\x0f\n\x07hook_id\x18\x01 \x01(\t\x12\x15\n\renterprise_id\x18\x02 \x01(\t\x12\x1a\n\x12unique_customer_id\x18\x03 \x01(\t\x12\x15\n\rmessage_title\x18\x04 \x01(\t\x12\x14\n\x0cmessage_text\x18\x05 \x01(\t\x12\x10\n\x08platform\x18\x06 \x01(\t\x12\x17\n\x0fmessage_caption\x18\x07 \x01(\t\x12\x14\n\x0c\x62utton_title\x18\x08 \x01(\t\x12\x15\n\rcampaign_name\x18\t \x01(\t\x12\x17\n\x0ftabulation_name\x18\n \x01(\t\x12)\n\x07options\x18\x0b \x03(\x0b\x32\x18.messagevoll.QuickOption\"2\n\x0fMessageResponse\x12\x0e\n\x06status\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"1\n\x0bQuickOption\x12\r\n\x05title\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\"%\n\x0c\x43\x61mpaignName\x12\x15\n\rcampaign_name\x18\x01 \x01(\t\")\n\x0eTabulationName\x12\x17\n\x0ftabulation_name\x18\x01 \x01(\t\"=\n\x0f\x43\x61mpaignDetails\x12\x15\n\rcampaign_name\x18\x01 \x01(\t\x12\x13\n\x0b\x63\x61mpaign_id\x18\x02 \x01(\t\"R\n\x0f\x43\x61mpaignElement\x12\x13\n\x0b\x63\x61mpaign_id\x18\x01 \x01(\t\x12\x15\n\rcampaign_name\x18\x02 \x01(\t\x12\x13\n\x0blast_update\x18\x03 \x01(\t\"@\n\rCampaignsList\x12/\n\tcampaigns\x18\x01 \x03(\x0b\x32\x1c.messagevoll.CampaignElement\"C\n\x11TabulationDetails\x12\x17\n\x0ftabulation_name\x18\x01 \x01(\t\x12\x15\n\rtabulation_id\x18\x02 \x01(\t\"\xa9\x01\n\x11TabulationElement\x12\x15\n\rtabulation_id\x18\x01 \x01(\t\x12\x17\n\x0ftabulation_name\x18\x02 \x01(\t\x12\x17\n\x0ftabulation_type\x18\x03 \x01(\t\x12\x12\n\ngroup_name\x18\x04 \x01(\t\x12\"\n\x1a\x63ustomer_service_survey_id\x18\x05 \x01(\t\x12\x13\n\x0blast_update\x18\x06 \x01(\t\"F\n\x0fTabulationsList\x12\x33\n\x0btabulations\x18\x01 \x03(\x0b\x32\x1e.messagevoll.TabulationElement2\xfb\x02\n\x0eMessageService\x12G\n\nSendButton\x12\x1b.messagevoll.MessageRequest\x1a\x1c.messagevoll.MessageResponse\x12\x45\n\x08SendList\x12\x1b.messagevoll.MessageRequest\x1a\x1c.messagevoll.MessageResponse\x12\x45\n\x08SendText\x12\x1b.messagevoll.MessageRequest\x1a\x1c.messagevoll.MessageResponse\x12L\n\x0fTransferToHuman\x12\x1b.messagevoll.MessageRequest\x1a\x1c.messagevoll.MessageResponse\x12\x44\n\x07\x45ndChat\x12\x1b.messagevoll.MessageRequest\x1a\x1c.messagevoll.MessageResponse2\xb4\x02\n\x0e\x41\x63tionsService\x12H\n\rGetCampaignID\x12\x19.messagevoll.CampaignName\x1a\x1c.messagevoll.CampaignDetails\x12\x41\n\x10GetCampaignsList\x12\x11.messagevoll.Void\x1a\x1a.messagevoll.CampaignsList\x12N\n\x0fGetTabulationID\x12\x1b.messagevoll.TabulationName\x1a\x1e.messagevoll.TabulationDetails\x12\x45\n\x12GetTabulationsList\x12\x11.messagevoll.Void\x1a\x1c.messagevoll.TabulationsListB\x12Z\x10./pb/messagevollb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,22 +32,32 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'voll_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z\020./pb/messagevoll'
-  _globals['_MESSAGEREQUEST']._serialized_start=28
-  _globals['_MESSAGEREQUEST']._serialized_end=313
-  _globals['_MESSAGERESPONSE']._serialized_start=315
-  _globals['_MESSAGERESPONSE']._serialized_end=365
-  _globals['_QUICKOPTION']._serialized_start=367
-  _globals['_QUICKOPTION']._serialized_end=416
-  _globals['_CAMPAIGNNAME']._serialized_start=418
-  _globals['_CAMPAIGNNAME']._serialized_end=455
-  _globals['_TABULATIONNAME']._serialized_start=457
-  _globals['_TABULATIONNAME']._serialized_end=498
-  _globals['_CAMPAIGNDETAILS']._serialized_start=500
-  _globals['_CAMPAIGNDETAILS']._serialized_end=561
-  _globals['_TABULATIONDETAILS']._serialized_start=563
-  _globals['_TABULATIONDETAILS']._serialized_end=630
-  _globals['_MESSAGESERVICE']._serialized_start=633
-  _globals['_MESSAGESERVICE']._serialized_end=1012
-  _globals['_ACTIONSSERVICE']._serialized_start=1015
-  _globals['_ACTIONSSERVICE']._serialized_end=1185
+  _globals['_VOID']._serialized_start=27
+  _globals['_VOID']._serialized_end=33
+  _globals['_MESSAGEREQUEST']._serialized_start=36
+  _globals['_MESSAGEREQUEST']._serialized_end=321
+  _globals['_MESSAGERESPONSE']._serialized_start=323
+  _globals['_MESSAGERESPONSE']._serialized_end=373
+  _globals['_QUICKOPTION']._serialized_start=375
+  _globals['_QUICKOPTION']._serialized_end=424
+  _globals['_CAMPAIGNNAME']._serialized_start=426
+  _globals['_CAMPAIGNNAME']._serialized_end=463
+  _globals['_TABULATIONNAME']._serialized_start=465
+  _globals['_TABULATIONNAME']._serialized_end=506
+  _globals['_CAMPAIGNDETAILS']._serialized_start=508
+  _globals['_CAMPAIGNDETAILS']._serialized_end=569
+  _globals['_CAMPAIGNELEMENT']._serialized_start=571
+  _globals['_CAMPAIGNELEMENT']._serialized_end=653
+  _globals['_CAMPAIGNSLIST']._serialized_start=655
+  _globals['_CAMPAIGNSLIST']._serialized_end=719
+  _globals['_TABULATIONDETAILS']._serialized_start=721
+  _globals['_TABULATIONDETAILS']._serialized_end=788
+  _globals['_TABULATIONELEMENT']._serialized_start=791
+  _globals['_TABULATIONELEMENT']._serialized_end=960
+  _globals['_TABULATIONSLIST']._serialized_start=962
+  _globals['_TABULATIONSLIST']._serialized_end=1032
+  _globals['_MESSAGESERVICE']._serialized_start=1035
+  _globals['_MESSAGESERVICE']._serialized_end=1414
+  _globals['_ACTIONSSERVICE']._serialized_start=1417
+  _globals['_ACTIONSSERVICE']._serialized_end=1725
 # @@protoc_insertion_point(module_scope)

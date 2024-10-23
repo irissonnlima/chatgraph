@@ -283,10 +283,20 @@ class ActionsServiceStub(object):
                 request_serializer=voll__pb2.CampaignName.SerializeToString,
                 response_deserializer=voll__pb2.CampaignDetails.FromString,
                 _registered_method=True)
+        self.GetCampaignsList = channel.unary_unary(
+                '/messagevoll.ActionsService/GetCampaignsList',
+                request_serializer=voll__pb2.Void.SerializeToString,
+                response_deserializer=voll__pb2.CampaignsList.FromString,
+                _registered_method=True)
         self.GetTabulationID = channel.unary_unary(
                 '/messagevoll.ActionsService/GetTabulationID',
                 request_serializer=voll__pb2.TabulationName.SerializeToString,
                 response_deserializer=voll__pb2.TabulationDetails.FromString,
+                _registered_method=True)
+        self.GetTabulationsList = channel.unary_unary(
+                '/messagevoll.ActionsService/GetTabulationsList',
+                request_serializer=voll__pb2.Void.SerializeToString,
+                response_deserializer=voll__pb2.TabulationsList.FromString,
                 _registered_method=True)
 
 
@@ -299,7 +309,19 @@ class ActionsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetCampaignsList(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def GetTabulationID(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetTabulationsList(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -313,10 +335,20 @@ def add_ActionsServiceServicer_to_server(servicer, server):
                     request_deserializer=voll__pb2.CampaignName.FromString,
                     response_serializer=voll__pb2.CampaignDetails.SerializeToString,
             ),
+            'GetCampaignsList': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetCampaignsList,
+                    request_deserializer=voll__pb2.Void.FromString,
+                    response_serializer=voll__pb2.CampaignsList.SerializeToString,
+            ),
             'GetTabulationID': grpc.unary_unary_rpc_method_handler(
                     servicer.GetTabulationID,
                     request_deserializer=voll__pb2.TabulationName.FromString,
                     response_serializer=voll__pb2.TabulationDetails.SerializeToString,
+            ),
+            'GetTabulationsList': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetTabulationsList,
+                    request_deserializer=voll__pb2.Void.FromString,
+                    response_serializer=voll__pb2.TabulationsList.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -357,6 +389,33 @@ class ActionsService(object):
             _registered_method=True)
 
     @staticmethod
+    def GetCampaignsList(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/messagevoll.ActionsService/GetCampaignsList',
+            voll__pb2.Void.SerializeToString,
+            voll__pb2.CampaignsList.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def GetTabulationID(request,
             target,
             options=(),
@@ -373,6 +432,33 @@ class ActionsService(object):
             '/messagevoll.ActionsService/GetTabulationID',
             voll__pb2.TabulationName.SerializeToString,
             voll__pb2.TabulationDetails.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetTabulationsList(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/messagevoll.ActionsService/GetTabulationsList',
+            voll__pb2.Void.SerializeToString,
+            voll__pb2.TabulationsList.FromString,
             options,
             channel_credentials,
             insecure,

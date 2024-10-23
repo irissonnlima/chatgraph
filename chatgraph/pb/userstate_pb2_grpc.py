@@ -5,7 +5,7 @@ import warnings
 
 import chatgraph.pb.userstate_pb2 as userstate__pb2
 
-GRPC_GENERATED_VERSION = '1.66.2'
+GRPC_GENERATED_VERSION = '1.67.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -54,6 +54,11 @@ class UserStateServiceStub(object):
                 request_serializer=userstate__pb2.UserStateId.SerializeToString,
                 response_deserializer=userstate__pb2.RequestStatus.FromString,
                 _registered_method=True)
+        self.GetAllUserStates = channel.unary_unary(
+                '/userstate.UserStateService/GetAllUserStates',
+                request_serializer=userstate__pb2.Void.SerializeToString,
+                response_deserializer=userstate__pb2.UserStatesList.FromString,
+                _registered_method=True)
 
 
 class UserStateServiceServicer(object):
@@ -83,6 +88,12 @@ class UserStateServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetAllUserStates(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_UserStateServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -105,6 +116,11 @@ def add_UserStateServiceServicer_to_server(servicer, server):
                     servicer.DeleteUserState,
                     request_deserializer=userstate__pb2.UserStateId.FromString,
                     response_serializer=userstate__pb2.RequestStatus.SerializeToString,
+            ),
+            'GetAllUserStates': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetAllUserStates,
+                    request_deserializer=userstate__pb2.Void.FromString,
+                    response_serializer=userstate__pb2.UserStatesList.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -215,6 +231,33 @@ class UserStateService(object):
             '/userstate.UserStateService/DeleteUserState',
             userstate__pb2.UserStateId.SerializeToString,
             userstate__pb2.RequestStatus.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetAllUserStates(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/userstate.UserStateService/GetAllUserStates',
+            userstate__pb2.Void.SerializeToString,
+            userstate__pb2.UserStatesList.FromString,
             options,
             channel_credentials,
             insecure,
