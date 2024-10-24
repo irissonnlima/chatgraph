@@ -14,6 +14,7 @@ if __name__ == '__main__':
 
         return (
             'Oi', 
+            'Tudo bem?',
             Button(
                 text="Olá, eu sou o chatbot da empresa X. Como posso te ajudar?",
                 buttons=["saber mais", "falar com atendente"],
@@ -23,15 +24,25 @@ if __name__ == '__main__':
     
     @app.route("start.choice")
     def start_choice(usercall: UserCall, rota: Route)->tuple:
-        if usercall.text == "saber mais":
-            return (
-                'Sobre o que você quer saber mais?',
-                Button(
-                    text="Sobre a empresa",
-                    buttons=["sobre produtos", "sobre serviços"],
-                ),
-                rota.get_next('.about')
+        usercall.send(Button(
+            text="Escolha uma opção",
+            buttons=["saber mais", "falar com atendente"],
+        ))
+        usercall.send(ListElements(
+            text="Escolha uma opção",
+            elements=[
+                {'Título': 'descricao'},
+                {'Título': 'descricao'},
+                {'Título': 'descricao'},
+            ]
+        ))
+        
+        usercall.send(Message('Escolha uma opção'))
+        usercall.send('Escolha uma opção')
+        
+        return (
+            'oi',
+            rota.get_previous(),
+            rota.get_next('.choice'),
             )
-        elif usercall.text == "falar com atendente":
-            return 'Ok'
     app.start()

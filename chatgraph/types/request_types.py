@@ -1,8 +1,8 @@
-from ..gRPC.gRPCCall import WhatsappServiceClient, UserStateServiceClient
-from .message_types import Message, Button, ListElements, messageTypes, MessageTypes
+from chatgraph.gRPC.gRPCCall import WhatsappServiceClient, UserStateServiceClient
+from chatgraph.types.message_types import Message, Button, ListElements, messageTypes, MessageTypes
 from dataclasses import dataclass
 from typing import Optional
-import json
+import json, os
 
 @dataclass
 class UserState:
@@ -15,12 +15,56 @@ class UserState:
         lst_update (str): A última atualização do menu.
         obs (dict): Observações adicionais sobre o estado do usuário.
     """
-    customer_id: str
-    menu: str
-    route: str
-    lst_update: str
-    obs: Optional[dict] = None
+    def __init__(
+        self,
+        customer_id: str,
+        menu: str,
+        route: str,
+        lst_update: Optional[str]=None,
+        obs: Optional[dict] = None,
+        direction_in: Optional[bool] = True,
+    ) -> None:
+        
+        self.customer_id = customer_id
+        self.menu = menu
+        self.route = route
+        self.lst_update = lst_update
+        self.obs = obs
+        self.direction_in = direction_in
 
+    def __str__(self):
+        return f"UserState:\n\tcustomer_id={self.customer_id},\n\tmenu={self.menu},\n\troute={self.route},\n\tlst_update={self.lst_update},\n\tobs={self.obs},\n\tdirection_in={self.direction_in}"
+
+    def insert(self, grpc_uri: Optional[str] = None) -> None:
+        if grpc_uri is None:
+            grpc_uri = os.getenv('GRPC_URI')
+        user_state_client = UserStateServiceClient(grpc_uri)
+        
+        user_state_client.insert_user_state({
+            'user_id': self.customer_id,
+            'menu_id': self.menu,
+            'route': self.route,
+            'obs': json.dumps(self.obs),
+        })
+    
+    def update(self, grpc_uri: Optional[str] = None) -> None:
+        if grpc_uri is None:
+            grpc_uri = os.getenv('GRPC_URI')
+        user_state_client = UserStateServiceClient(grpc_uri)
+        
+        user_state_client.update_user_state({
+            'user_id': self.customer_id,
+            'menu_id': self.menu,
+            'route': self.route,
+            'obs': json.dumps(self.obs),
+        })
+    
+    def delete(self, grpc_uri: Optional[str] = None) -> None:
+        if grpc_uri is None:
+            grpc_uri = os.getenv('GRPC_URI')
+        user_state_client = UserStateServiceClient(grpc_uri)
+        
+        user_state_client.delete_user_state(self.customer_id)
 
 class UserCall:
     """
