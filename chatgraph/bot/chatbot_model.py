@@ -144,9 +144,9 @@ class ChatbotApp:
         
         if isinstance(userCall_response, (list, tuple)):
             for response in userCall_response:
-                self.__process_func_response(response, userCall)
+                self.__process_func_response(response, userCall, route=route)
 
-    def __process_func_response(self, userCall_response, userCall: UserCall):
+    def __process_func_response(self, userCall_response, userCall: UserCall, route: str):
         
         if isinstance(userCall_response, (str, float, int)):
             userCall.send(Message(text=userCall_response))

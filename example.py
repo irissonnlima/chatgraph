@@ -1,6 +1,6 @@
 
 if __name__ == '__main__':
-    from chatgraph import ChatbotApp, UserCall, Button, ListElements, Message, RedirectResponse, Route
+    from chatgraph import ChatbotApp, UserCall, Button, ListElements, Message, RedirectResponse, Route, ChatbotRouter
     from dotenv import load_dotenv
     from datetime import datetime
     
@@ -30,11 +30,43 @@ if __name__ == '__main__':
         ))
         usercall.send(ListElements(
             text="Escolha uma opção",
-            elements=[
-                {'Título': 'descricao'},
-                {'Título': 'descricao'},
-                {'Título': 'descricao'},
-            ]
+            elements={
+                    'Título': 'descricao',
+                    'Título': 'descricao',
+                    'Título': 'descricao'
+                }
+        ))
+        
+        usercall.send(Message('Escolha uma opção'))
+        usercall.send('Escolha uma opção')
+        
+        return (
+            'oi',
+            rota.get_next('.rota-b'),
+            )
+    
+    router = ChatbotRouter()
+    
+    @router.route("start")
+    def start(usercall: UserCall, rota: Route)->tuple:
+
+        return (
+            RedirectResponse('start'),
+        )
+    
+    @router.route("start.choice")
+    def start_choice(usercall: UserCall, rota: Route)->tuple:
+        usercall.send(Button(
+            text="Escolha uma opção",
+            buttons=["saber mais", "falar com atendente"],
+        ))
+        usercall.send(ListElements(
+            text="Escolha uma opção",
+            elements={
+                'Título': 'descricao',
+                'Título': 'descricao',
+                'Título': 'descricao'
+                }
         ))
         
         usercall.send(Message('Escolha uma opção'))
@@ -45,4 +77,6 @@ if __name__ == '__main__':
             rota.get_previous(),
             rota.get_next('.choice'),
             )
+    
+    app.include_router(router, prefix='.choice.rota-b')
     app.start()

@@ -84,7 +84,7 @@ class ListElements:
         text:str,
         title: Optional[str] = None,
         button_title: Optional[str] = None,
-        elements: list[dict] = None,
+        elements: dict = None,
         caption: Optional[str] = None,
         absolute_text: bool = False,
         ) -> None:

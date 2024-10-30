@@ -130,7 +130,7 @@ class UserCall:
                 message.text, 
                 message.title, 
                 message.button_title, 
-                message.element_list, 
+                message.elements, 
                 message.caption
             )
         else:
@@ -200,7 +200,7 @@ class UserCall:
                 "button_title": button_title,
                 "message_caption": caption,
                 "message_title": title,
-                "options": [{"title": k, "description": v} for k,v in element_list],
+                "options": [{"title": k, "description": v} for k,v in element_list.items()],
             }
         )
 
