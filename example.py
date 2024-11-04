@@ -10,8 +10,8 @@ if __name__ == '__main__':
     
     
     @app.route("start")
-    def start(usercall: UserCall, rota: Route)->tuple:
-
+    def start(rota: Route)->tuple:
+        
         return (
             'Oi', 
             'Tudo bem?',
