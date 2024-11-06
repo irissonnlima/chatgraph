@@ -230,7 +230,7 @@ class UserCall:
                 "unique_customer_id": self.__user_state.customer_id,
                 "message_text": message,
                 "platform": self.channel,
-                campaign_name: campaign_name,
+                "campaign_name": campaign_name,
             }
         )
 
