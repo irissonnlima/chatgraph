@@ -170,7 +170,7 @@ class MessageConsumer:
             type=message.get('type', ''),
             text=message.get('text', ''),
             user_state=UserState(
-                customer_id=user_state.get('customer_id', ''),
+                customer_id=user_state.get('customer_phone', ''),
                 menu=user_state.get('menu', ''),
                 route=user_state.get('route', ''),
                 lst_update=user_state.get('lst_update', ''),
