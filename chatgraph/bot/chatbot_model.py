@@ -164,7 +164,7 @@ class ChatbotApp:
             return
 
         elif isinstance(userCall_response, EndChatResponse):
-            userCall.end_chat(userCall_response.obersevations, userCall_response.tabulation_id)
+            userCall.end_chat(userCall_response.observations, userCall_response.tabulation_id)
             return
         
         elif isinstance(userCall_response, TransferToHuman):
