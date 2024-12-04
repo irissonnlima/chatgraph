@@ -82,9 +82,9 @@ class ListElements:
     def __init__(
         self, 
         text:str,
+        button_title: str,
+        elements: dict,
         title: Optional[str] = None,
-        button_title: Optional[str] = None,
-        elements: dict = None,
         caption: Optional[str] = None,
         absolute_text: bool = False,
         ) -> None:

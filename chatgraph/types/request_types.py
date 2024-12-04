@@ -20,9 +20,11 @@ class UserState:
         customer_id: str,
         menu: str,
         route: str,
+        voll_id: str,
+        platform: str,
+        direction_in: bool,
         lst_update: Optional[str]=None,
         obs: Optional[dict] = None,
-        direction_in: Optional[bool] = True,
     ) -> None:
         
         self.customer_id = customer_id
@@ -31,6 +33,8 @@ class UserState:
         self.lst_update = lst_update
         self.obs = obs
         self.direction_in = direction_in
+        self.voll_id = voll_id
+        self.platform = platform
 
     def __str__(self):
         return f"UserState:\n\tcustomer_id={self.customer_id},\n\tmenu={self.menu},\n\troute={self.route},\n\tlst_update={self.lst_update},\n\tobs={self.obs},\n\tdirection_in={self.direction_in}"
@@ -45,6 +49,9 @@ class UserState:
             'menu_id': self.menu,
             'route': self.route,
             'obs': json.dumps(self.obs),
+            'direction': self.direction_in,
+            'voll_id': self.voll_id,
+            'platform': self.platform,
         })
     
     def update(self, grpc_uri: Optional[str] = None) -> None:
@@ -127,11 +134,11 @@ class UserCall:
             
         elif isinstance(message, ListElements):
             self.__send_list(
-                message.text, 
-                message.title, 
-                message.button_title, 
-                message.elements, 
-                message.caption
+                text=message.text,
+                title=message.title, 
+                button_title=message.button_title, 
+                caption=message.caption,
+                element_list=message.elements, 
             )
         else:
             raise ValueError("Tipo de mensagem inválido.")
@@ -144,7 +151,7 @@ class UserCall:
             {
                 "hook_id": self.company_phone,
                 "enterprise_id": self.customer_phone,
-                "unique_customer_id": self.__user_state.customer_id,
+                "unique_customer_id": self.__user_state.voll_id,
                 "message_text": text,
                 "platform": self.channel,
             }
@@ -167,7 +174,7 @@ class UserCall:
             {
                 "hook_id": self.company_phone,
                 "enterprise_id": self.customer_phone,
-                "unique_customer_id": self.__user_state.customer_id,
+                "unique_customer_id": self.__user_state.voll_id,
                 "message_text": text,
                 "button_title": title,
                 "message_caption": caption,
@@ -182,11 +189,14 @@ class UserCall:
     def __send_list(
         self, 
         text:str,
+        button_title: str,
         title: str|None = None,
-        button_title: str|None = None,
         element_list: list[dict] = None,
         caption: str|None = None,
         ) -> None:
+        
+        if not button_title:
+            raise NameError('Button Title é um parâmetro obrigatório!')
         
         if len(element_list) > 20:
             raise ValueError("O número máximo de elementos é 20.")
@@ -195,7 +205,7 @@ class UserCall:
             {
                 "hook_id": self.company_phone,
                 "enterprise_id": self.customer_phone,
-                "unique_customer_id": self.__user_state.customer_id,
+                "unique_customer_id": self.__user_state.voll_id,
                 "message_text": text,
                 "button_title": button_title,
                 "message_caption": caption,
@@ -213,6 +223,7 @@ class UserCall:
                 "hook_id": self.company_phone,
                 "enterprise_id": self.customer_phone,
                 "unique_customer_id": self.__user_state.customer_id,
+                "voll_id": self.__user_state.voll_id,
                 "message_text": message,
                 "platform": self.channel,
                 "campaign_name": campaign_name,
@@ -222,15 +233,15 @@ class UserCall:
         if not response.status:
             raise ValueError("Erro ao transferir chat para humano.")
     
-    def end_chat(self, message:str, campaign_name:str) -> None:
+    def end_chat(self, message:str, tabulation_name:str) -> None:
         response = self.__wpp_server_client.end_chat(
             {
+                "tabulation_name": tabulation_name,
                 "hook_id": self.company_phone,
-                "enterprise_id": self.customer_phone,
                 "unique_customer_id": self.__user_state.customer_id,
+                "voll_id": self.__user_state.voll_id,
                 "message_text": message,
                 "platform": self.channel,
-                "campaign_name": campaign_name,
             }
         )
 

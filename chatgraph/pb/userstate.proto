@@ -22,7 +22,9 @@ message UserState {
     string route = 3;
     string obs = 4;
     string date = 5;
-    string direction = 6;
+    bool direction = 6;
+    string voll_id = 7;
+    string platform = 8;
 }
 
 message UserStateId {

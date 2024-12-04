@@ -1,6 +1,6 @@
 
 if __name__ == '__main__':
-    from chatgraph import ChatbotApp, UserCall, Button, ListElements, Message, RedirectResponse, Route, ChatbotRouter
+    from chatgraph import ChatbotApp, UserCall, Button, ListElements, Message, RedirectResponse, Route, ChatbotRouter, EndChatResponse
     from dotenv import load_dotenv
     from datetime import datetime
     
@@ -11,7 +11,7 @@ if __name__ == '__main__':
     
     @app.route("start")
     def start(rota: Route)->tuple:
-        
+        print(rota)
         return (
             'Oi', 
             'Tudo bem?',
@@ -34,7 +34,8 @@ if __name__ == '__main__':
                     'Título': 'descricao',
                     'Título': 'descricao',
                     'Título': 'descricao'
-                }
+                },
+            button_title='Abra o botão'
         ))
         
         usercall.send(Message('Escolha uma opção'))
@@ -49,34 +50,16 @@ if __name__ == '__main__':
     
     @router.route("start")
     def start(usercall: UserCall, rota: Route)->tuple:
-
+        usercall.obs['data'] = str(datetime.now())
+        
         return (
-            RedirectResponse('start'),
+            RedirectResponse('.choice'),
         )
     
     @router.route("start.choice")
     def start_choice(usercall: UserCall, rota: Route)->tuple:
-        usercall.send(Button(
-            text="Escolha uma opção",
-            buttons=["saber mais", "falar com atendente"],
-        ))
-        usercall.send(ListElements(
-            text="Escolha uma opção",
-            elements={
-                'Título': 'descricao',
-                'Título': 'descricao',
-                'Título': 'descricao'
-                }
-        ))
-        
-        usercall.send(Message('Escolha uma opção'))
-        usercall.send('Escolha uma opção')
-        
-        return (
-            'oi',
-            rota.get_previous(),
-            rota.get_next('.choice'),
-            )
+        usercall.send('Até mais!')
+        return EndChatResponse('Cadastro finalizado App', 'Uma obs de teste')
     
     app.include_router(router, prefix='.choice.rota-b')
     app.start()

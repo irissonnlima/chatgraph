@@ -27,14 +27,15 @@ message MessageRequest {
   string hook_id = 1;
   string enterprise_id = 2;
   string unique_customer_id = 3;
-  string message_title = 4;
-  string message_text = 5;
-  string platform = 6;
-  string message_caption = 7;
-  string button_title = 8;
-  string campaign_name = 9;
-  string tabulation_name = 10;
-  repeated QuickOption options = 11;
+  string voll_id = 4;
+  string message_title = 5;
+  string message_text = 6;
+  string platform = 7;
+  string message_caption = 8;
+  string button_title = 9;
+  string campaign_name = 10;
+  string tabulation_name = 11;
+  repeated QuickOption options = 12;
 }
 
 message MessageResponse {
