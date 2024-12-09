@@ -20,9 +20,9 @@ class UserState:
         customer_id: str,
         menu: str,
         route: str,
-        voll_id: str,
         platform: str,
         direction_in: bool,
+        voll_id: Optional[str]=None,
         lst_update: Optional[str]=None,
         obs: Optional[dict] = None,
     ) -> None:

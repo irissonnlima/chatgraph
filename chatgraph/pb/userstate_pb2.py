@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fuserstate.proto\x12\tuserstate\"\x06\n\x04Void\"j\n\tUserState\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x0f\n\x07menu_id\x18\x02 \x01(\t\x12\r\n\x05route\x18\x03 \x01(\t\x12\x0b\n\x03obs\x18\x04 \x01(\t\x12\x0c\n\x04\x64\x61te\x18\x05 \x01(\t\x12\x11\n\tdirection\x18\x06 \x01(\t\"\x1e\n\x0bUserStateId\x12\x0f\n\x07user_id\x18\x01 \x01(\t\"0\n\rRequestStatus\x12\x0e\n\x06status\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\";\n\x0eUserStatesList\x12)\n\x0buser_states\x18\x01 \x03(\x0b\x32\x14.userstate.UserState2\xde\x02\n\x10UserStateService\x12?\n\x0fSelectUserState\x12\x16.userstate.UserStateId\x1a\x14.userstate.UserState\x12\x41\n\x0fInsertUserState\x12\x14.userstate.UserState\x1a\x18.userstate.RequestStatus\x12\x41\n\x0fUpdateUserState\x12\x14.userstate.UserState\x1a\x18.userstate.RequestStatus\x12\x43\n\x0f\x44\x65leteUserState\x12\x16.userstate.UserStateId\x1a\x18.userstate.RequestStatus\x12>\n\x10GetAllUserStates\x12\x0f.userstate.Void\x1a\x19.userstate.UserStatesListB\x10Z\x0e./pb/userstateb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fuserstate.proto\x12\tuserstate\"\x06\n\x04Void\"\x8d\x01\n\tUserState\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x0f\n\x07menu_id\x18\x02 \x01(\t\x12\r\n\x05route\x18\x03 \x01(\t\x12\x0b\n\x03obs\x18\x04 \x01(\t\x12\x0c\n\x04\x64\x61te\x18\x05 \x01(\t\x12\x11\n\tdirection\x18\x06 \x01(\x08\x12\x0f\n\x07voll_id\x18\x07 \x01(\t\x12\x10\n\x08platform\x18\x08 \x01(\t\"\x1e\n\x0bUserStateId\x12\x0f\n\x07user_id\x18\x01 \x01(\t\"0\n\rRequestStatus\x12\x0e\n\x06status\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\";\n\x0eUserStatesList\x12)\n\x0buser_states\x18\x01 \x03(\x0b\x32\x14.userstate.UserState2\xde\x02\n\x10UserStateService\x12?\n\x0fSelectUserState\x12\x16.userstate.UserStateId\x1a\x14.userstate.UserState\x12\x41\n\x0fInsertUserState\x12\x14.userstate.UserState\x1a\x18.userstate.RequestStatus\x12\x41\n\x0fUpdateUserState\x12\x14.userstate.UserState\x1a\x18.userstate.RequestStatus\x12\x43\n\x0f\x44\x65leteUserState\x12\x16.userstate.UserStateId\x1a\x18.userstate.RequestStatus\x12>\n\x10GetAllUserStates\x12\x0f.userstate.Void\x1a\x19.userstate.UserStatesListB\x10Z\x0e./pb/userstateb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,14 +34,14 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._serialized_options = b'Z\016./pb/userstate'
   _globals['_VOID']._serialized_start=30
   _globals['_VOID']._serialized_end=36
-  _globals['_USERSTATE']._serialized_start=38
-  _globals['_USERSTATE']._serialized_end=144
-  _globals['_USERSTATEID']._serialized_start=146
-  _globals['_USERSTATEID']._serialized_end=176
-  _globals['_REQUESTSTATUS']._serialized_start=178
-  _globals['_REQUESTSTATUS']._serialized_end=226
-  _globals['_USERSTATESLIST']._serialized_start=228
-  _globals['_USERSTATESLIST']._serialized_end=287
-  _globals['_USERSTATESERVICE']._serialized_start=290
-  _globals['_USERSTATESERVICE']._serialized_end=640
+  _globals['_USERSTATE']._serialized_start=39
+  _globals['_USERSTATE']._serialized_end=180
+  _globals['_USERSTATEID']._serialized_start=182
+  _globals['_USERSTATEID']._serialized_end=212
+  _globals['_REQUESTSTATUS']._serialized_start=214
+  _globals['_REQUESTSTATUS']._serialized_end=262
+  _globals['_USERSTATESLIST']._serialized_start=264
+  _globals['_USERSTATESLIST']._serialized_end=323
+  _globals['_USERSTATESERVICE']._serialized_start=326
+  _globals['_USERSTATESERVICE']._serialized_end=676
 # @@protoc_insertion_point(module_scope)

@@ -8,12 +8,16 @@ if __name__ == '__main__':
         menu='state',
         route='channel',
         obs={'obs': 'obs'},
-        direction_in=False
+        direction_in=False,
+        platform='workplace',
     )
     
     myUser.insert()
     
     myUser.menu = 'state2'
+    myUser.update()
+    
+    myUser.obs = {'obs2': 'obs2'}
     myUser.update()
     
     myUser.delete()
