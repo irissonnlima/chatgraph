@@ -16,7 +16,7 @@ if __name__ == '__main__':
             'Oi', 
             'Tudo bem?',
             Button(
-                text="Olá, eu sou o chatbot da empresa X. Como posso te ajudar?",
+                text="Olá, eu sou o chatbot das Lojas Quero-Quero. Como posso te ajudar?",
                 buttons=["saber mais", "falar com atendente"],
             ),
             rota.get_next('.choice')

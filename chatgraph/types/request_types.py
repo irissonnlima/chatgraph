@@ -2,6 +2,7 @@ from chatgraph.gRPC.gRPCCall import WhatsappServiceClient, UserStateServiceClien
 from chatgraph.types.message_types import Message, Button, ListElements, messageTypes, MessageTypes
 from dataclasses import dataclass
 from typing import Optional
+from datetime import datetime
 import json, os
 
 @dataclass
@@ -73,6 +74,28 @@ class UserState:
         
         user_state_client.delete_user_state(self.customer_id)
 
+    @classmethod
+    def get_user_state(cls, customer_id: str, grpc_uri: Optional[str] = None) -> 'UserState':
+        if grpc_uri is None:
+            grpc_uri = os.getenv('GRPC_URI')
+        user_state_client = UserStateServiceClient(grpc_uri)
+        
+        response = user_state_client.select_user_state(user_id=customer_id)
+        
+        if not response:
+            raise ValueError("Erro ao buscar estado do usuário.")
+        
+        date = datetime.strptime(response.date, "%Y-%m-%d %H:%M:%S")
+        return cls(
+            customer_id=response.user_id,
+            menu=response.menu_id,
+            route=response.route,
+            obs=json.loads(response.obs),
+            direction_in=response.direction,
+            voll_id=response.voll_id,
+            platform=response.platform,
+            lst_update=date,
+        )
 class UserCall:
     """
     Representa uma mensagem recebida ou enviada pelo chatbot.

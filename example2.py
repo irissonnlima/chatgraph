@@ -3,14 +3,17 @@ from dotenv import load_dotenv
 if __name__ == '__main__':
     load_dotenv()
 
-    myUser = UserState(
-        customer_id='teste de cod',
-        menu='state',
-        route='channel',
-        obs={'obs': 'obs'},
-        direction_in=False,
-        platform='workplace',
-    )
+    # myUser = UserState(
+    #     customer_id='5565981027703',
+    #     menu='prev-fraudes',
+    #     route='start',
+    #     obs={},
+    #     direction_in=False,
+    #     platform='workplace',
+    # )
+    myUser = UserState.get_user_state('5511943733671')
+    
+    print(myUser)
     
     myUser.insert()
     
