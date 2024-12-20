@@ -24,13 +24,13 @@ class Route:
         self.separator = separator
 
     @property
-    def previous(self)->str:
+    def previous(self)->'Route':
         """
         Retorna a rota anterior a atual do usuário
         """
         return self.get_previous()
     
-    def get_previous(self) -> str:
+    def get_previous(self) -> 'Route':
         """
         Retorna o caminho anterior ao caminho atual.
 
@@ -44,7 +44,7 @@ class Route:
             raise RouteError('Não há caminho anterior ao start')
 
         previous_route = self.separator.join(self.current.split(self.separator)[:-1])
-        return previous_route
+        return Route(previous_route, self.routes, self.separator)
 
     def get_next(self, next_part: str) -> 'Route':
         """
