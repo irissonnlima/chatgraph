@@ -224,6 +224,10 @@ class UserCall:
         if len(element_list) > 20:
             raise ValueError("O número máximo de elementos é 20.")
         
+        if not text:
+            raise ValueError("O corpo da mensagem não pode ser vazio.")
+            
+        
         response = self.__wpp_server_client.send_list(
             {
                 "hook_id": self.company_phone,
