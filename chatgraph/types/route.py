@@ -41,7 +41,7 @@ class Route:
             str: O caminho anterior à rota atual.
         """
         if self.current == 'start':
-            raise RouteError('Não há caminho anterior ao start')
+            return Route(self.current, self.routes, self.separator)
 
         previous_route = self.separator.join(self.current.split(self.separator)[:-1])
         return Route(previous_route, self.routes, self.separator)
@@ -60,9 +60,9 @@ class Route:
             Route: O próximo caminho montado.
         """
         next_part = next_part.strip().lower()
-        next_route = f"{self.current.rstrip(self.separator)}{next_part}"
-        if next_route not in self.routes:
-            raise RouteError(f'Rota não encontrada: {next_route}')
+        next_route = f"{self.current.rstrip(self.separator)}.{next_part}"
+        if next_part not in self.routes:
+            raise RouteError(f'Rota não encontrada: {next_part}')
         
         return Route(next_route, self.routes, self.separator)
 

@@ -17,33 +17,56 @@ def start(rota: Route, usercall:UserCall) -> tuple:
     usercall.send(ListElements(
         text="oi",
         elements={
-            'Cartão Quero-Quero 💳': 'fatura, saldo, negociação e outras opções',
-            'Lojas Quero-Quero 🛒 💚': 'compras, central de montagens, Palavra! e outras opções',
-            'Empréstimo Pessoal 💰': '',
-            'Aplicativo 📲': 'Quero-Quero PAG ',
-            'PIX e Conta digital 📳': '',
-            'Para Lojistas 🏬': '',
-            'Botões Whatsapp ✅': '',
-            'Encerrar a conversa 👋': '',
+            'A': 'fatura, saldo, negociação e outras opções',
+            'B': 'compras, central de montagens, Palavra! e outras opções',
+            'C': '',
+            'Voltar': '',
         },
         button_title='👉 Clique aqui'
     ))
     
-    return rota.get_next('start.choice') 
+    return rota.get_next('choice_start') 
 
-# Segunda rota - Escolha da opção
-@app.route("start.choice")
-def start_choice(usercall: UserCall, rota: Route) -> tuple:
-    texto = usercall.text
+
+@app.route("choice_start")
+def choice_start(rota: Route, usercall:UserCall) -> tuple:
     
-    match texto:
-        case 'Empréstimo Pessoal 💰':
-            usercall.send('Você selecionou a opção Empréstimo Pessoal 💰')
-            # return EndChatResponse('Abandono de atendimento', 'teste de chatbot')
-            
-        case _:
-            usercall.send('Você selecionou a opção Cartão Quero-Quero 💳')
-            # return EndChatResponse('Abandono de atendimento', 'teste de chatbot')
+    if usercall.text == 'A':
+        return RedirectResponse('fatura')
+    elif usercall.text == 'B':
+        return RedirectResponse('compras')
+    elif usercall.text == 'C':
+        return RedirectResponse('outros')
+    elif usercall.text == 'Voltar':
+        return rota.get_previous()
+    else:
+        usercall.send('Opção inválida! 😢')
+        return
 
+routerA = ChatbotRouter()
+
+@routerA.route("fatura")
+def fat(rota: Route, usercall:UserCall) -> tuple:
+    
+    usercall.send('Você selecionou a opção fatura! 😊')
+    return rota.get_next('compras')
+
+@routerA.route("compras")
+def comp(rota: Route, usercall:UserCall) -> tuple:
+    
+    usercall.send('Você selecionou a opção compras! 😊')
+    return rota.get_next('outros')
+
+routerB = ChatbotRouter()
+
+@routerB.route("outros")
+def outros(rota: Route, usercall:UserCall) -> tuple:
+    
+    usercall.send('Você selecionou a opção outros! 😊')
+    return rota.get_next('start')
+
+routerA.include_router(routerB)
+
+app.include_router(routerA)
 # Inicia o chatbot
 app.start()

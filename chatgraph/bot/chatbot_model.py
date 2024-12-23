@@ -31,7 +31,7 @@ class ChatbotApp:
         self.__message_consumer = message_consumer
         self.__routes = {}
     
-    def include_router(self, router: ChatbotRouter, prefix: str):
+    def include_router(self, router: ChatbotRouter):
         """
         Inclui um roteador de chatbot com um prefixo nas rotas da aplicação.
 
@@ -42,18 +42,7 @@ class ChatbotApp:
         Raises:
             ChatbotError: Se a rota 'start' não for encontrada no roteador.
         """
-        if 'start' not in router.routes.keys():
-            raise ChatbotError('Erro ao incluir rota, start não encontrado!')
-
-        prefixed_routes = {
-            (
-                f'start{prefix.lower()}'
-                if key.lower() == 'start'
-                else f'start{prefix.lower()}{key.lower().replace("start", "")}'
-            ): value
-            for key, value in router.routes.items()
-        }
-        self.__routes.update(prefixed_routes)
+        self.__routes.update(router.routes)
 
     def route(self, route_name: str):
         """
@@ -66,9 +55,6 @@ class ChatbotApp:
             function: O decorador que adiciona a função à rota especificada.
         """
         route_name = route_name.strip().lower()
-
-        if 'start' not in route_name:
-            route_name = f'start{route_name}'
 
         def decorator(func):
             params = dict()
@@ -121,9 +107,10 @@ class ChatbotApp:
         """
         customer_id = userCall.customer_id
         route = userCall.route.lower()
+        route_handler = route.split('.')[-1]
         menu = userCall.menu.lower()
         obs = userCall.obs
-        handler = self.__routes.get(route, None)
+        handler = self.__routes.get(route_handler, None)
 
         if not handler:
             raise ChatbotMessageError(
@@ -172,7 +159,7 @@ class ChatbotApp:
             return
 
         elif isinstance(userCall_response, RedirectResponse):
-            route = self.__adjust_route(userCall_response.route, route)
+            route = route + '.' + userCall_response.route
             userCall.route = route
             return self.process_message(userCall)
 
