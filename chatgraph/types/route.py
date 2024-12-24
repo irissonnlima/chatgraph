@@ -30,6 +30,13 @@ class Route:
         """
         return self.get_previous()
     
+    @property
+    def current_node(self)->str:
+        """
+        Retorna o nó atual do usuário
+        """
+        return self.current.split(self.separator)[-1]
+    
     def get_previous(self) -> 'Route':
         """
         Retorna o caminho anterior ao caminho atual.

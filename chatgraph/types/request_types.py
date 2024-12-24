@@ -26,6 +26,7 @@ class UserState:
         voll_id: Optional[str]=None,
         lst_update: Optional[str]=None,
         obs: Optional[dict] = None,
+        protocol: Optional[str] = None,
     ) -> None:
         
         self.customer_id = customer_id
@@ -36,6 +37,7 @@ class UserState:
         self.direction_in = direction_in
         self.voll_id = voll_id
         self.platform = platform
+        self.protocol = protocol
 
     def __str__(self):
         return f"UserState:\n\tcustomer_id={self.customer_id},\n\tmenu={self.menu},\n\troute={self.route},\n\tlst_update={self.lst_update},\n\tobs={self.obs},\n\tdirection_in={self.direction_in}"
@@ -53,6 +55,7 @@ class UserState:
             'direction': self.direction_in,
             'voll_id': self.voll_id,
             'platform': self.platform,
+            'protocol': self.protocol,
         })
     
     def update(self, grpc_uri: Optional[str] = None) -> None:
@@ -317,6 +320,26 @@ class UserCall:
     @property
     def customer_id(self):
         return self.__user_state.customer_id
+    
+    @property
+    def voll_id(self):
+        return self.__user_state.voll_id
+    
+    @property
+    def platform(self):
+        return self.__user_state.platform
+    
+    @property
+    def direction_in(self):
+        return self.__user_state.direction_in
+    
+    @property
+    def lst_update(self):
+        return self.__user_state.lst_update
+    
+    @property
+    def protocol(self):
+        return self.__user_state.protocol
     
     @menu.setter
     def menu(self, menu):

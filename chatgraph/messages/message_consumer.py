@@ -178,6 +178,7 @@ class MessageConsumer:
                 voll_id=user_state.get('voll_id', ''),
                 platform=user_state.get('platform', ''),
                 obs=obs,
+                protocol=user_state.get('protocol', ''),
             ),
             channel=message.get('channel', ''),
             customer_phone=message.get('customer_phone', ''),
