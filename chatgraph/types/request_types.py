@@ -55,7 +55,6 @@ class UserState:
             'direction': self.direction_in,
             'voll_id': self.voll_id,
             'platform': self.platform,
-            'protocol': self.protocol,
         })
     
     def update(self, grpc_uri: Optional[str] = None) -> None:
