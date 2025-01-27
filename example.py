@@ -1,4 +1,4 @@
-from chatgraph import ChatbotApp, UserCall, Button, ListElements, Message, RedirectResponse, Route, ChatbotRouter, EndChatResponse
+from chatgraph import ChatbotApp, UserCall, Button, Message, RedirectResponse, Route, ChatbotRouter, EndChatResponse
 from dotenv import load_dotenv
 from datetime import datetime
 
@@ -13,17 +13,6 @@ def start(rota: Route, usercall:UserCall) -> tuple:
     usercall.send('Olá, bem-vindo ao atendimento das Lojas Quero-Quero VerdeCard! 💚')
     
     usercall.send('Selecione uma das opções abaixo para que possamos te ajudar! 😉')
-    
-    usercall.send(ListElements(
-        text="oi",
-        elements={
-            'A': 'fatura, saldo, negociação e outras opções',
-            'B': 'compras, central de montagens, Palavra! e outras opções',
-            'C': '',
-            'Voltar': '',
-        },
-        button_title='👉 Clique aqui'
-    ))
     
     return rota.get_next('choice_start') 
 

@@ -1,103 +1,129 @@
-from chatgraph.gRPC.gRPCCall import WhatsappServiceClient, UserStateServiceClient
-from chatgraph.types.message_types import Message, Button, ListElements, messageTypes, MessageTypes
-from dataclasses import dataclass
+from chatgraph.gRPC.gRPCCall import RouterServiceClient
+from chatgraph.types.message_types import Message, Button, MessageTypes, messageTypes
 from typing import Optional
 from datetime import datetime
 import json, os
 
-@dataclass
+
+class ChatID:
+    """
+    Representa o ID de um chat.
+
+    Atributos:
+        user_id (str): O ID do usuário.
+        company_id (str): O ID da empresa
+    """
+
+    def __init__(
+        self,
+        user_id: str,
+        company_id: str,
+    ):
+        self.user_id = user_id
+        self.company_id = company_id
+
+    def __str__(self):
+        return f"ChatID({self.user_id}, {self.company_id})"
+
+    def to_dict(self) -> dict:
+        return {
+            "user_id": self.user_id,
+            "company_id": self.company_id,
+        }
+
+
 class UserState:
     """
     Representa o estado de um usuário.
-    
+
     Atributos:
-        customer_id (str): O ID do cliente.
+        chatID (ChatID): O ID do chat.
         menu (str): O menu atual.
-        lst_update (str): A última atualização do menu.
-        obs (dict): Observações adicionais sobre o estado do usuário.
+        route (str): A rota atual.
+        protocol (str): O protocolo atual.
+        observations (dict): Observações do estado do usuário.
     """
+
     def __init__(
         self,
-        customer_id: str,
+        chatID: ChatID,
         menu: str,
         route: str,
-        platform: str,
-        direction_in: bool,
-        voll_id: Optional[str]=None,
-        lst_update: Optional[str]=None,
-        obs: Optional[dict] = None,
-        protocol: Optional[str] = None,
+        protocol: str,
+        observation: dict,
     ) -> None:
-        
-        self.customer_id = customer_id
+
+        self.chatID = chatID
         self.menu = menu
         self.route = route
-        self.lst_update = lst_update
-        self.obs = obs
-        self.direction_in = direction_in
-        self.voll_id = voll_id
-        self.platform = platform
+        self.observation = observation
         self.protocol = protocol
 
     def __str__(self):
-        return f"UserState:\n\tcustomer_id={self.customer_id},\n\tmenu={self.menu},\n\troute={self.route},\n\tlst_update={self.lst_update},\n\tobs={self.obs},\n\tdirection_in={self.direction_in}"
+        return f"UserState({self.chatID}, {self.menu}, {self.route}, {self.protocol}, {self.observation})"
+
+    def __chat_id_to_dict(self) -> dict:
+        return {
+            "user_id": self.chatID.user_id,
+            "company_id": self.chatID.company_id,
+        }
+
+    def __user_state_to_dict(self) -> dict:
+        return {
+            "chat_id": {
+                "user_id": self.chatID.user_id,
+                "company_id": self.chatID.company_id,
+            },
+            "menu": self.menu,
+            "route": self.route,
+            "protocol": self.protocol,
+            "observation": json.dumps(self.observation),
+        }
 
     def insert(self, grpc_uri: Optional[str] = None) -> None:
         if grpc_uri is None:
-            grpc_uri = os.getenv('GRPC_URI')
-        user_state_client = UserStateServiceClient(grpc_uri)
-        
-        user_state_client.insert_user_state({
-            'user_id': self.customer_id,
-            'menu_id': self.menu,
-            'route': self.route,
-            'obs': json.dumps(self.obs),
-            'direction': self.direction_in,
-            'voll_id': self.voll_id,
-            'platform': self.platform,
-        })
-    
-    def update(self, grpc_uri: Optional[str] = None) -> None:
-        if grpc_uri is None:
-            grpc_uri = os.getenv('GRPC_URI')
-        user_state_client = UserStateServiceClient(grpc_uri)
-        
-        user_state_client.update_user_state({
-            'user_id': self.customer_id,
-            'menu_id': self.menu,
-            'route': self.route,
-            'obs': json.dumps(self.obs),
-        })
-    
+            grpc_uri = os.getenv("GRPC_URI")
+        router_client = RouterServiceClient(grpc_uri)
+
+        ustate = self.__user_state_to_dict()
+        result = router_client.insert_update_user_state(ustate)
+        return result
+
     def delete(self, grpc_uri: Optional[str] = None) -> None:
         if grpc_uri is None:
-            grpc_uri = os.getenv('GRPC_URI')
-        user_state_client = UserStateServiceClient(grpc_uri)
-        
-        user_state_client.delete_user_state(self.customer_id)
+            grpc_uri = os.getenv("GRPC_URI")
+        router_client = RouterServiceClient(grpc_uri)
+
+        ustate = self.__user_state_to_dict()
+        response = router_client.delete_user_state(ustate["chat_id"])
+        return response
 
     @classmethod
-    def get_user_state(cls, customer_id: str, grpc_uri: Optional[str] = None) -> 'UserState':
+    def get_user_state(
+        cls, user_id: str, company_id: str, grpc_uri: Optional[str] = None
+    ) -> "UserState":
         if grpc_uri is None:
-            grpc_uri = os.getenv('GRPC_URI')
-        user_state_client = UserStateServiceClient(grpc_uri)
-        
-        response = user_state_client.select_user_state(user_id=customer_id)
-        
+            grpc_uri = os.getenv("GRPC_URI")
+        router_client = RouterServiceClient(grpc_uri)
+
+        chat_id = {"user_id": user_id, "company_id": company_id}
+        response = router_client.get_user_state(chat_id)
+
         if not response:
             raise ValueError("Erro ao buscar estado do usuário.")
-        
-        date = datetime.strptime(response.date, "%Y-%m-%d %H:%M:%S")
+
         return cls(
-            customer_id=response.user_id,
-            menu=response.menu_id,
+            chatID=ChatID(
+                user_id=response.chat_id.user_id,
+                company_id=response.chat_id.company_id,
+            ),
+            menu=response.menu,
             route=response.route,
-            obs=json.loads(response.obs),
-            direction_in=response.direction,
-            voll_id=response.voll_id,
-            platform=response.platform,
-            lst_update=date,
+            protocol=response.protocol,
+            observation=json.loads(response.observation),
         )
+
+
 class UserCall:
     """
     Representa uma mensagem recebida ou enviada pelo chatbot.
@@ -111,32 +137,31 @@ class UserCall:
         company_phone (str): O número de telefone da empresa que está enviando ou recebendo a mensagem.
         status (Optional[str]): O status da mensagem (por exemplo, enviada, recebida, lida, etc.). Este campo é opcional.
     """
+
     def __init__(
         self,
-        type: str,
-        text: str,
         user_state: UserState,
-        channel: str,
-        customer_phone: str,
-        company_phone: str,
+        type_message: str,
+        content_message: str,
         grpc_uri: str,
-        status: Optional[str] = None,
     ) -> None:
-        
-        self.type = type
-        self.text = text
-        self.__user_state = user_state
-        self.channel = channel
-        self.customer_phone = customer_phone
-        self.company_phone = company_phone
-        self.status = status
-        
-        self.grpc_uri = grpc_uri
-        
-        self.__wpp_server_client = WhatsappServiceClient(self.grpc_uri)
-        self.__user_state_client = UserStateServiceClient(self.grpc_uri)
 
-    def send(self, message: messageTypes|Message|Button|ListElements) -> None:
+        self.type = type
+        self.type_message = type_message
+        self.content_message = content_message
+        self.__user_state = user_state
+
+        self.__grpc_uri = grpc_uri
+
+        self.__router_client = RouterServiceClient(self.__grpc_uri)
+
+    def __str__(self):
+        return f"UserCall({self.type}, {self.type_message}, {self.content_message}, {self.__user_state})"
+    
+    def send(
+        self,
+        message: messageTypes | Message,
+    ) -> None:
         """
         Envia uma mensagem ao cliente.
 
@@ -144,109 +169,29 @@ class UserCall:
             message (Message|Button|ListElements): A mensagem a ser enviada.
         """
         if isinstance(message, MessageTypes):
-            message = Message(message)
-        
+            message = Message(
+                type="message",
+                detail=str(message),
+            )
+
         if isinstance(message, Message):
-            self.__send_text(message.text, message.absolute_text)
-            
-        elif isinstance(message, Button):
-            self.__send_button(
-                message.text, 
-                message.buttons, 
-                message.title, 
-                message.caption
-            )
-            
-        elif isinstance(message, ListElements):
-            self.__send_list(
-                text=message.text,
-                title=message.title, 
-                button_title=message.button_title, 
-                caption=message.caption,
-                element_list=message.elements, 
-            )
+            self.__send(message)
         else:
             raise ValueError("Tipo de mensagem inválido.")
-    
-    def __send_text(self, text:str, abs_text:bool=False) -> None:
-        if not abs_text:
-            text = text.replace('\t', '')
-        
-        response = self.__wpp_server_client.send_text(
-            {
-                "hook_id": self.company_phone,
-                "enterprise_id": self.customer_phone,
-                "unique_customer_id": self.__user_state.voll_id,
-                "message_text": text,
-                "platform": self.channel,
-            }
-        )
+
+    def __send(self, message: Message) -> None:
+
+        dict_message = message.to_dict()
+        dict_message["chat_id"] = self.__user_state.chatID.to_dict()
+        response = self.__router_client.send_message(dict_message)
 
         if not response.status:
             raise ValueError("Erro ao enviar mensagem de texto.")
-    
-    def __send_button(
-        self, 
-        text:str, 
-        buttons:list, 
-        title: str|None = None,
-        caption: str|None = None,
-        ) -> None:
-        if len(buttons) > 3:
-            raise ValueError("O número máximo de botões é 3.")
-        
-        response = self.__wpp_server_client.send_button(
-            {
-                "hook_id": self.company_phone,
-                "enterprise_id": self.customer_phone,
-                "unique_customer_id": self.__user_state.voll_id,
-                "message_text": text,
-                "button_title": title,
-                "message_caption": caption,
-                "message_title": title,
-                "options": [{"title": b} for b in buttons],
-            }
-        )
 
         if not response.status:
             raise ValueError("Erro ao enviar mensagem de botões.")
 
-    def __send_list(
-        self, 
-        text:str,
-        button_title: str,
-        title: str|None = None,
-        element_list: list[dict] = None,
-        caption: str|None = None,
-        ) -> None:
-        
-        if not button_title:
-            raise NameError('Button Title é um parâmetro obrigatório!')
-        
-        if len(element_list) > 20:
-            raise ValueError("O número máximo de elementos é 20.")
-        
-        if not text:
-            raise ValueError("O corpo da mensagem não pode ser vazio.")
-            
-        
-        response = self.__wpp_server_client.send_list(
-            {
-                "hook_id": self.company_phone,
-                "enterprise_id": self.customer_phone,
-                "unique_customer_id": self.__user_state.voll_id,
-                "message_text": text,
-                "button_title": button_title,
-                "message_caption": caption,
-                "message_title": title,
-                "options": [{"title": k, "description": v} for k,v in element_list.items()],
-            }
-        )
-
-        if not response.status:
-            raise ValueError("Erro ao enviar mensagem de lista.")
-    
-    def transfer_to_human(self, message:str, campaign_name:str) -> None:
+    def transfer_to_human(self, message: str, campaign_name: str) -> None:
         response = self.__wpp_server_client.transfer_to_human(
             {
                 "hook_id": self.company_phone,
@@ -261,8 +206,8 @@ class UserCall:
 
         if not response.status:
             raise ValueError("Erro ao transferir chat para humano.")
-    
-    def end_chat(self, message:str, tabulation_name:str) -> None:
+
+    def end_chat(self, message: str, tabulation_name: str) -> None:
         response = self.__wpp_server_client.end_chat(
             {
                 "tabulation_name": tabulation_name,
@@ -276,94 +221,70 @@ class UserCall:
 
         if not response.status:
             raise ValueError("Erro ao encerrar chat.")
-    
+
     def delete_user_state(self) -> None:
-        response = self.__user_state_client.delete_user_state(self.__user_state.customer_id)
+        response = self.__user_state.delete(self.__grpc_uri)
 
         if not response.status:
             raise ValueError("Erro ao deletar estado do usuário.")
 
     def update_user_state(
-        self, 
+        self,
         menu: str,
         route: str,
-        obs: dict,
-        ) -> None:
-        
-        response = self.__user_state_client.update_user_state({
-            "user_id": self.__user_state.customer_id,
-            "menu_id": menu,
-            "route": route,
-            "obs": json.dumps(obs),
-        })
+        observation: dict,
+    ) -> None:
 
-        if not response.status:
-            raise ValueError("Erro ao atualizar estado do usuário.")
-        
         self.__user_state.menu = menu
         self.__user_state.route = route
-        self.__user_state.obs = obs
-    
+        self.__user_state.observation = observation
+        self.__user_state.insert(self.__grpc_uri)
+
+    @property
+    def chatID(self):
+        return self.__user_state.chatID
+
+    @property
+    def user_id(self):
+        return self.__user_state.chatID.user_id
+
+    @property
+    def company_id(self):
+        return self.__user_state.chatID.company_id
+
     @property
     def menu(self):
         return self.__user_state.menu
-    
+
     @property
     def route(self):
         return self.__user_state.route
-    
-    @property
-    def obs(self):
-        return self.__user_state.obs
-    
+
     @property
     def customer_id(self):
         return self.__user_state.customer_id
-    
-    @property
-    def voll_id(self):
-        return self.__user_state.voll_id
-    
-    @property
-    def platform(self):
-        return self.__user_state.platform
-    
-    @property
-    def direction_in(self):
-        return self.__user_state.direction_in
-    
-    @property
-    def lst_update(self):
-        return self.__user_state.lst_update
-    
+
     @property
     def protocol(self):
         return self.__user_state.protocol
     
+    @property
+    def observation(self):
+        return self.__user_state.observation
+
     @menu.setter
     def menu(self, menu):
-        
-        self.update_user_state(
-            menu, 
-            self.__user_state.route, 
-            self.__user_state.obs
-        )
-    
+
+        self.update_user_state(menu, self.__user_state.route, self.__user_state.obs)
+
     @route.setter
     def route(self, route):
-        
+
+        self.update_user_state(self.__user_state.menu, route, self.__user_state.obs)
+
+    @observation.setter
+    def observation(self, observation):
+
         self.update_user_state(
-            self.__user_state.menu, 
-            route, 
-            self.__user_state.obs
+            self.__user_state.menu, self.__user_state.route, observation
         )
-    
-    @obs.setter
-    def obs(self, obs):
-        
-        self.update_user_state(
-            self.__user_state.menu, 
-            self.__user_state.route, 
-            obs
-        )
-    

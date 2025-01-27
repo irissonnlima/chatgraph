@@ -1,210 +1,121 @@
 import os
 import grpc
-import chatgraph.pb.userstate_pb2 as userstate_pb2
-import chatgraph.pb.userstate_pb2_grpc as userstate_pb2_grpc
 
-import chatgraph.pb.voll_pb2 as whatsapp_pb2
-import chatgraph.pb.voll_pb2_grpc as whatsapp_pb2_grpc
+import chatgraph.pb.router_pb2 as chatbot_pb2
+import chatgraph.pb.router_pb2_grpc as chatbot_pb2_grpc
 
-class WhatsappServiceClient:
+
+class RouterServiceClient:
     def __init__(self, grpc_uri=None):
-        
-        self.grpc_uri = grpc_uri
-        
-        if not grpc_uri:
-            self.grpc_uri = os.getenv('GRPC_URI')
-        
+        self.grpc_uri = grpc_uri or os.getenv("GRPC_URI")
+
         if not self.grpc_uri:
             raise ValueError("A variável de ambiente 'GRPC_URI' não está definida.")
-        
+
         # Cria o canal gRPC
         self.channel = grpc.insecure_channel(self.grpc_uri)
-        
-        # Cria o stub (client) para o serviço gRPC
-        self.stub = whatsapp_pb2_grpc.MessageServiceStub(self.channel)
-        self.actions_stub = whatsapp_pb2_grpc.ActionsServiceStub(self.channel)
 
-    def send_button(self, message_data):
-        # Cria o request para o método SendButton
-        request = whatsapp_pb2.MessageRequest(**message_data)
+        # Cria os stubs para os serviços gRPC
+        self.user_state_stub = chatbot_pb2_grpc.UserStateServiceStub(self.channel)
+        self.send_message_stub = chatbot_pb2_grpc.SendMessageStub(self.channel)
+        self.transfer_stub = chatbot_pb2_grpc.TransferStub(self.channel)
+        self.end_chat_stub = chatbot_pb2_grpc.EndChatStub(self.channel)
 
-        # Faz a chamada ao serviço gRPC
+    def insert_update_user_state(self, user_state_data):
+        request = chatbot_pb2.UserState(**user_state_data)
         try:
-            response = self.stub.SendButton(request)
+            response = self.user_state_stub.InsertUpdateUserState(request)
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao fazer a requisição gRPC SendButton: {e}")
+            print(f"Erro ao chamar InsertUpdateUserState: {e}")
             return None
 
-    def send_list(self, message_data):
-        # Cria o request para o método SendList
-        request = whatsapp_pb2.MessageRequest(**message_data)
-
-        # Faz a chamada ao serviço gRPC
+    def delete_user_state(self, chat_id_data):
+        request = chatbot_pb2.ChatID(**chat_id_data)
         try:
-            response = self.stub.SendList(request)
+            response = self.user_state_stub.DeleteUserState(request)
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao fazer a requisição gRPC SendList: {e}")
+            print(f"Erro ao chamar DeleteUserState: {e}")
             return None
 
-    def send_text(self, message_data):
-        # Cria o request para o método SendText
-        request = whatsapp_pb2.MessageRequest(**message_data)
-
-        # Faz a chamada ao serviço gRPC
+    def get_user_state(self, chat_id_data):
+        request = chatbot_pb2.ChatID(**chat_id_data)
         try:
-            response = self.stub.SendText(request)
+            response = self.user_state_stub.GetUserState(request)
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao fazer a requisição gRPC SendText: {e}")
+            print(f"Erro ao chamar GetUserState: {e}")
             return None
-    
-    def transfer_to_human(self, message_data):
-        # Cria o request para o método TransferToHuman
-        request = whatsapp_pb2.MessageRequest(**message_data)
 
-        # Faz a chamada ao serviço gRPC
+    def send_message(self, message_data):
+        request = chatbot_pb2.Message(**message_data)
         try:
-            response = self.stub.TransferToHuman(request)
+            response = self.send_message_stub.SendMessage(request)
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao fazer a requisição gRPC TransferToHuman: {e}")
+            print(f"Erro ao chamar SendMessage: {e}")
             return None
-    
-    def end_chat(self, message_data):
-        # Cria o request para o método EndChat
-        request = whatsapp_pb2.MessageRequest(**message_data)
 
-        # Faz a chamada ao serviço gRPC
+    def transfer_to_human(self, transfer_request_data):
+        request = chatbot_pb2.TransferToHumanRequest(**transfer_request_data)
         try:
-            response = self.stub.EndChat(request)
+            response = self.transfer_stub.TransferToHuman(request)
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao fazer a requisição gRPC EndChat: {e}")
+            print(f"Erro ao chamar TransferToHuman: {e}")
             return None
-    
+
+    def transfer_to_menu(self, transfer_request_data):
+        request = chatbot_pb2.TransferToMenuRequest(**transfer_request_data)
+        try:
+            response = self.transfer_stub.TransferToMenu(request)
+            return response
+        except grpc.RpcError as e:
+            print(f"Erro ao chamar TransferToMenu: {e}")
+            return None
+
+    def end_chat(self, end_chat_request_data):
+        request = chatbot_pb2.EndChatRequest(**end_chat_request_data)
+        try:
+            response = self.end_chat_stub.EndChat(request)
+            return response
+        except grpc.RpcError as e:
+            print(f"Erro ao chamar EndChat: {e}")
+            return None
+
     def get_campaign_id(self, campaign_name):
-        # Cria o request para o método GetCampaignID
-        request = whatsapp_pb2.CampaignName(campaign_name=campaign_name)
-
-        # Faz a chamada ao serviço gRPC
+        request = chatbot_pb2.CampaignName(name=campaign_name)
         try:
-            response = self.actions_stub.GetCampaignID(request)
+            response = self.transfer_stub.GetCampaignID(request)
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao fazer a requisição gRPC GetCampaignID: {e}")
-            return None
-        
-    def get_tabulation_id(self, tabulation_name):
-        # Cria o request para o método GetTabulationID
-        request = whatsapp_pb2.TabulationName(tabulation_name=tabulation_name)
-
-        # Faz a chamada ao serviço gRPC
-        try:
-            response = self.actions_stub.GetTabulationID(request)
-            return response
-        except grpc.RpcError as e:
-            print(f"Erro ao fazer a requisição gRPC GetTabulationID: {e}")
+            print(f"Erro ao chamar GetCampaignID: {e}")
             return None
 
     def get_all_campaigns(self):
-        # Cria o request para o método GetAllCampaigns
-        request = whatsapp_pb2.Void()
-
-        # Faz a chamada ao serviço gRPC
+        request = chatbot_pb2.Void()
         try:
-            response = self.actions_stub.GetCampaignsList(request)
+            response = self.transfer_stub.GetAllCampaigns(request)
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao fazer a requisição gRPC GetAllCampaigns: {e}")
+            print(f"Erro ao chamar GetAllCampaigns: {e}")
             return None
-    
+
+    def get_tabulation_id(self, tabulation_name):
+        request = chatbot_pb2.TabulationName(name=tabulation_name)
+        try:
+            response = self.end_chat_stub.GetTabulationID(request)
+            return response
+        except grpc.RpcError as e:
+            print(f"Erro ao chamar GetTabulationID: {e}")
+            return None
+
     def get_all_tabulations(self):
-        # Cria o request para o método GetAllTabulations
-        request = whatsapp_pb2.Void()
-
-        # Faz a chamada ao serviço gRPC
+        request = chatbot_pb2.Void()
         try:
-            response = self.actions_stub.GetTabulationsList(request)
+            response = self.end_chat_stub.GetAllTabulations(request)
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao fazer a requisição gRPC GetAllTabulations: {e}")
-            return None
-
-class UserStateServiceClient:
-    def __init__(self, grpc_uri=None):
-        
-        self.grpc_uri = grpc_uri
-        
-        if not grpc_uri:
-            self.grpc_uri = os.getenv('GRPC_URI')
-        
-        if not self.grpc_uri:
-            raise ValueError("A variável de ambiente 'GRPC_URI' não está definida.")
-        
-        # Cria o canal gRPC
-        self.channel = grpc.insecure_channel(self.grpc_uri)
-        
-        # Cria o stub (client) para o serviço gRPC
-        self.stub = userstate_pb2_grpc.UserStateServiceStub(self.channel)
-
-    def select_user_state(self, user_id):
-        # Cria o request para o método SelectUserState
-        request = userstate_pb2.UserStateId(user_id=user_id)
-
-        # Faz a chamada ao serviço gRPC
-        try:
-            response = self.stub.SelectUserState(request)
-            return response
-        except grpc.RpcError as e:
-            print(f"Erro ao fazer a requisição gRPC SelectUserState: {e}")
-            return None
-
-    def insert_user_state(self, user_state_data):
-        # Cria o request para o método InsertUserState
-        request = userstate_pb2.UserState(**user_state_data)
-
-        # Faz a chamada ao serviço gRPC
-        try:
-            response = self.stub.InsertUserState(request)
-            return response
-        except grpc.RpcError as e:
-            print(f"Erro ao fazer a requisição gRPC InsertUserState: {e}")
-            return None
-
-    def update_user_state(self, user_state_data):
-        # Cria o request para o método UpdateUserState
-        request = userstate_pb2.UserState(**user_state_data)
-
-        # Faz a chamada ao serviço gRPC
-        try:
-            response = self.stub.UpdateUserState(request)
-            return response
-        except grpc.RpcError as e:
-            print(f"Erro ao fazer a requisição gRPC UpdateUserState: {e}")
-            return None
-
-    def delete_user_state(self, user_id):
-        # Cria o request para o método DeleteUserState
-        request = userstate_pb2.UserStateId(user_id=user_id)
-
-        # Faz a chamada ao serviço gRPC
-        try:
-            response = self.stub.DeleteUserState(request)
-            return response
-        except grpc.RpcError as e:
-            print(f"Erro ao fazer a requisição gRPC DeleteUserState: {e}")
-            return None
-    
-    def get_all_user_states(self):
-        # Cria o request para o método GetAllUserStates
-        request = userstate_pb2.Void()
-
-        # Faz a chamada ao serviço gRPC
-        try:
-            response = self.stub.GetAllUserStates(request)
-            return response
-        except grpc.RpcError as e:
-            print(f"Erro ao fazer a requisição gRPC GetAllUserStates: {e}")
+            print(f"Erro ao chamar GetAllTabulations: {e}")
             return None

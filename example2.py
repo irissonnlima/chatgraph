@@ -1,28 +1,24 @@
-from chatgraph import UserState
+from chatgraph import UserState, ChatID
 from dotenv import load_dotenv
 if __name__ == '__main__':
     load_dotenv()
 
     myUser = UserState(
-        customer_id='5565981027703',
-        menu='prev-fraudes',
-        route='start',
-        obs={},
-        direction_in=False,
-        platform='workplace',
+        chatID=ChatID('5565981027703', '1234567890'),
+        menu='state1',
+        route='route1',
+        protocol='protocol1',
+        observation={'obs1': 'obs1'}
     )
     
     myUser.insert()
     
-    myUser = UserState.get_user_state('5565981027703')
+    myUser = UserState.get_user_state('554784167795', '5551997469917')
     
     print(myUser)
+    myUser.route = 'route2'
     
+    myUser.insert()
     
-    myUser.menu = 'state2'
-    myUser.update()
-    
-    myUser.obs = {'obs2': 'obs2'}
-    myUser.update()
     
     myUser.delete()

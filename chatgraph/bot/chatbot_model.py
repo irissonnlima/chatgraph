@@ -2,12 +2,13 @@ import inspect
 from functools import wraps
 from logging import debug
 import json
+import asyncio
 from logging import error
 
-from ..error.chatbot_error import ChatbotError, ChatbotMessageError
+from ..error.chatbot_error import ChatbotMessageError
 from ..messages.message_consumer import MessageConsumer
 from ..types.request_types import UserCall
-from ..types.message_types import messageTypes, Message, Button, ListElements
+from ..types.message_types import Message, Button
 from ..types.end_types import RedirectResponse, EndChatResponse, TransferToHuman
 from ..types.route import Route
 from .chatbot_router import ChatbotRouter
@@ -88,8 +89,10 @@ class ChatbotApp:
         """
         Inicia o consumo de mensagens pelo chatbot, processando cada mensagem recebida.
         """
+        
+        
         self.__message_consumer.reprer()
-        self.__message_consumer.start_consume(self.process_message)
+        asyncio.run(self.__message_consumer.start_consume(self.process_message))
     
     def process_message(self, userCall: UserCall):
         """
@@ -105,16 +108,16 @@ class ChatbotApp:
         Returns:
             str: A resposta gerada pela função da rota, que pode ser uma mensagem ou o resultado de uma redireção.
         """
-        customer_id = userCall.customer_id
+        user_id = userCall.user_id
         route = userCall.route.lower()
         route_handler = route.split('.')[-1]
         menu = userCall.menu.lower()
-        obs = userCall.obs
+        observation = userCall.observation
         handler = self.__routes.get(route_handler, None)
 
         if not handler:
             raise ChatbotMessageError(
-                customer_id, f'Rota não encontrada para {route}!'
+                user_id, f'Rota não encontrada para {route}!'
             )
             
         func = handler['function']

@@ -3,106 +3,109 @@ from typing import Optional, Union
 messageTypes = Union[str, float, int]
 MessageTypes = (str, float, int)
 
-class Message:
-    """
-    Representa uma mensagem enviada ou recebida pelo chatbot.
-    
-    Atributos:
-        message (str): O conteúdo textual da mensagem.
-        absolute_text (bool): Se True, o texto não será modificado.
-    """
-    
-    def __init__(
-        self, 
-        text:str,
-        absolute_text: bool = False,
-        ) -> None:
-        self.absolute_text = absolute_text
-        
-        if not absolute_text:
-            text = text.replace('\t', '')
-            
-        self.text = text
+
+TITLE_MAX_LENGTH = 20
+DETAIL_MAX_LENGTH = 72
+
 
 class Button:
     """
     Representa uma lista rápida de botões.
-    
+
     Atributos:
-        text (str): O texto da mensagem.
-        buttons (list[str]): A lista de botões.
-        title (str): O título da mensagem.
-        caption (str): A legenda da mensagem.
+        typeButton (str): O tipo do botão.
+        title (str): O texto do botão.
+        detail (str): A descrição do botão.
         absolute_text (bool): Se True, o texto não será modificado.
-    
-    Limitações:
-        O número máximo de botões é 3.
-        O texto do botão deve ter no máximo 20 caracteres.
-    """
-    def __init__(
-        self, 
-        text:str, 
-        buttons: list[str],
-        title: Optional[str] = None,
-        caption: Optional[str] = None,
-        absolute_text: bool = False,
-        ) -> None:
-        self.absolute_text = absolute_text
-        
-        if not absolute_text:
-            text = text.replace('\t', '')
-        
-        assert len(buttons) <= 3, "O número máximo de botões é 3."
-        
-        for button in buttons:
-            assert len(button) <= 20, "O texto do botão deve ter no máximo 20 caracteres."
-        
-        self.text = text
-        self.buttons = buttons
-        self.title = title
-        self.caption = caption
 
-class ListElements:
+    Limitações:
+        O título do botão deve ter no máximo 20 caracteres.
+        A descrição do botão deve ter no máximo 72 caracteres.
     """
-    Representa uma lista de elementos.
-    
-    atributos:
-        text (str): O texto da mensagem.
+
+    def __init__(
+        self,
+        typeButton: str,
+        title: Optional[str] = None,
+        detail: Optional[str] = None,
+        absolute_text: Optional[bool] = False,
+    ) -> None:
+
+        self.absolute_text = absolute_text
+
+        if not absolute_text:
+            detail = detail.replace("\t", "")
+
+        assert (
+            len(title) <= TITLE_MAX_LENGTH
+        ), f"O texto do botão deve ter no máximo {TITLE_MAX_LENGTH} caracteres."
+        assert (
+            len(detail) <= DETAIL_MAX_LENGTH
+        ), f"A descrição do botão deve ter no máximo {DETAIL_MAX_LENGTH} caracteres."
+
+        self.type = typeButton
+        self.title = title
+        self.detail = detail
+
+    def to_dict(self):
+        return {
+            "type": self.type,
+            "title": self.title,
+            "detail": self.detail,
+        }
+
+
+class Message:
+    """
+    Representa uma mensagem universal enviada pelo chatbot.
+
+    Atributos:
+        type (str): O tipo da mensagem.
+        url (str): A URL da mensagem.
+        filename (str): O nome do arquivo da mensagem.
         title (str): O título da mensagem.
-        button_title (str): O título do botão.
-        elements (list[dict]): A lista de elementos.
+        detail (str): A descrição da mensagem.
         caption (str): A legenda da mensagem.
+        buttons (list[Button]): A lista de botões da mensagem.
         absolute_text (bool): Se True, o texto não será modificado.
-    
-    Limitações:
-        O número máximo de elementos é 10.
-        O título do elemento deve ter no máximo 24 caracteres.
-        A descrição do elemento deve ter no máximo 72 caracteres.
     """
+
     def __init__(
-        self, 
-        text:str,
-        button_title: str,
-        elements: dict,
+        self,
+        type: str,
+        url: Optional[str] = None,
+        filename: Optional[str] = None,
         title: Optional[str] = None,
+        detail: Optional[str] = None,
         caption: Optional[str] = None,
-        absolute_text: bool = False,
-        ) -> None:
+        buttons: Optional[list[Button]] = None,
+        display_button: Optional[Button] = None,
+        absolute_text: Optional[bool] = False,
+    ) -> None:
         self.absolute_text = absolute_text
-        
+
         if not absolute_text:
-            text = text.replace('\t', '')
-        
-        assert len(elements) <= 10, "O número máximo de elementos é 10."
-        
-        for key, value in elements.items():
-            assert len(key) <= 24, "O título do elemento deve ter no máximo 24 caracteres."
-            assert len(value) <= 72, "A descrição do elemento deve ter no máximo 72 caracteres."
-        
-        self.text = text
+            detail = detail.replace("\t", "")
+
+        self.type = type
+        self.url = url
+        self.filename = filename
         self.title = title
-        self.button_title = button_title
-        self.elements = elements
+        self.detail = detail
         self.caption = caption
+        self.buttons = buttons or []
+        self.display_button = display_button
 
-
+    def to_dict(self):
+        return {
+            "message": {
+                "type": self.type,
+                "url": self.url,
+                "filename": self.filename,
+                "title": self.title,
+                "detail": self.detail,
+                "caption": self.caption,
+            },
+            "buttons": [button.to_dict() for button in self.buttons],
+            "display_button": self.display_button.to_dict() if self.display_button else None, 
+        }
