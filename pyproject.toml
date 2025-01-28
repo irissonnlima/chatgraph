@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "chatgraph"
-version = "0.4.2"
+version = "0.5.0"
 description = "A user-friendly chatbot library"
 authors = ["Irisson N. Lima <irisson.lima@verdecard.com.br>"]
 readme = "README.md"

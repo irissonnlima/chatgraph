@@ -25,9 +25,9 @@ class Button:
 
     def __init__(
         self,
-        typeButton: str,
         title: Optional[str] = None,
         detail: Optional[str] = None,
+        typeButton: Optional[str]="postback",
         absolute_text: Optional[bool] = False,
     ) -> None:
 
@@ -72,12 +72,12 @@ class Message:
 
     def __init__(
         self,
-        type: str,
+        detail: Optional[str] = None,
+        title: Optional[str] = None,
+        caption: Optional[str] = None,
+        type: Optional[str]="message",
         url: Optional[str] = None,
         filename: Optional[str] = None,
-        title: Optional[str] = None,
-        detail: Optional[str] = None,
-        caption: Optional[str] = None,
         buttons: Optional[list[Button]] = None,
         display_button: Optional[Button] = None,
         absolute_text: Optional[bool] = False,

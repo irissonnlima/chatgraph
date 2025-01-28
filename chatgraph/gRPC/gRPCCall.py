@@ -1,5 +1,6 @@
 import os
 import grpc
+import json
 
 import chatgraph.pb.router_pb2 as chatbot_pb2
 import chatgraph.pb.router_pb2_grpc as chatbot_pb2_grpc
@@ -25,6 +26,8 @@ class RouterServiceClient:
         request = chatbot_pb2.UserState(**user_state_data)
         try:
             response = self.user_state_stub.InsertUpdateUserState(request)
+            if not response.status:
+                print(f"Erro ao chamar SendMessage: {response.message}")
             return response
         except grpc.RpcError as e:
             print(f"Erro ao chamar InsertUpdateUserState: {e}")
@@ -34,6 +37,8 @@ class RouterServiceClient:
         request = chatbot_pb2.ChatID(**chat_id_data)
         try:
             response = self.user_state_stub.DeleteUserState(request)
+            if not response.status:
+                print(f"Erro ao chamar SendMessage: {response.message}")
             return response
         except grpc.RpcError as e:
             print(f"Erro ao chamar DeleteUserState: {e}")
@@ -49,9 +54,14 @@ class RouterServiceClient:
             return None
 
     def send_message(self, message_data):
+        # print(json.dumps(message_data))
+        
         request = chatbot_pb2.Message(**message_data)
+        
         try:
             response = self.send_message_stub.SendMessage(request)
+            if not response.status:
+                print(f"Erro ao chamar SendMessage: {response.message}")
             return response
         except grpc.RpcError as e:
             print(f"Erro ao chamar SendMessage: {e}")
@@ -61,6 +71,8 @@ class RouterServiceClient:
         request = chatbot_pb2.TransferToHumanRequest(**transfer_request_data)
         try:
             response = self.transfer_stub.TransferToHuman(request)
+            if not response.status:
+                print(f"Erro ao chamar SendMessage: {response.message}")
             return response
         except grpc.RpcError as e:
             print(f"Erro ao chamar TransferToHuman: {e}")
@@ -70,6 +82,8 @@ class RouterServiceClient:
         request = chatbot_pb2.TransferToMenuRequest(**transfer_request_data)
         try:
             response = self.transfer_stub.TransferToMenu(request)
+            if not response.status:
+                print(f"Erro ao chamar SendMessage: {response.message}")
             return response
         except grpc.RpcError as e:
             print(f"Erro ao chamar TransferToMenu: {e}")
@@ -79,13 +93,15 @@ class RouterServiceClient:
         request = chatbot_pb2.EndChatRequest(**end_chat_request_data)
         try:
             response = self.end_chat_stub.EndChat(request)
+            if not response.status:
+                print(f"Erro ao chamar SendMessage: {response.message}")
             return response
         except grpc.RpcError as e:
             print(f"Erro ao chamar EndChat: {e}")
             return None
 
     def get_campaign_id(self, campaign_name):
-        request = chatbot_pb2.CampaignName(name=campaign_name)
+        request = chatbot_pb2.CampaignName(**campaign_name)
         try:
             response = self.transfer_stub.GetCampaignID(request)
             return response
@@ -103,7 +119,7 @@ class RouterServiceClient:
             return None
 
     def get_tabulation_id(self, tabulation_name):
-        request = chatbot_pb2.TabulationName(name=tabulation_name)
+        request = chatbot_pb2.TabulationName(**tabulation_name)
         try:
             response = self.end_chat_stub.GetTabulationID(request)
             return response

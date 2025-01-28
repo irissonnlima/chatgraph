@@ -1,6 +1,7 @@
-from chatgraph import ChatbotApp, UserCall, Button, Message, RedirectResponse, Route, ChatbotRouter, EndChatResponse
+from chatgraph import ChatbotApp, UserCall, Button, Message, RedirectResponse, Route, ChatbotRouter, BackgroundTask
 from dotenv import load_dotenv
 from datetime import datetime
+import asyncio
 
 load_dotenv()
 app = ChatbotApp()
@@ -9,24 +10,40 @@ app = ChatbotApp()
 @app.route("start")
 def start(rota: Route, usercall:UserCall) -> tuple:
     
-    print(rota, usercall)
     usercall.send('Olá, bem-vindo ao atendimento das Lojas Quero-Quero VerdeCard! 💚')
     
-    usercall.send('Selecione uma das opções abaixo para que possamos te ajudar! 😉')
+    async def func(usercall: UserCall):
+        print('Iniciando a função em segundo plano...')
+        await asyncio.sleep(5)
+        print('Finalizando a função em segundo plano...')
+        usercall.send('Você ainda está aí? 😅')
+    BackgroundTask(func, usercall)
     
-    return rota.get_next('choice_start') 
+    message = Message(
+        'Selecione uma das opções abaixo para que possamos te ajudar! 😉',
+        title="roboto",
+        caption="Escolha uma opção:",
+        buttons=[
+            Button('A', 'Fatura'),
+            Button('B', 'Compras'),
+            Button('D', 'Lista de compras'),
+            Button('C', 'Outros'),
+        ],
+        display_button=Button('Abrir', 'Abrir')
+        )
+    usercall.send(message)
 
 
 @app.route("choice_start")
 def choice_start(rota: Route, usercall:UserCall) -> tuple:
     
-    if usercall.text == 'A':
+    if usercall.content_message == 'A':
         return RedirectResponse('fatura')
-    elif usercall.text == 'B':
+    elif usercall.content_message == 'B':
         return RedirectResponse('compras')
-    elif usercall.text == 'C':
+    elif usercall.content_message == 'C':
         return RedirectResponse('outros')
-    elif usercall.text == 'Voltar':
+    elif usercall.content_message == 'Voltar':
         return rota.get_previous()
     else:
         usercall.send('Opção inválida! 😢')
@@ -35,27 +52,31 @@ def choice_start(rota: Route, usercall:UserCall) -> tuple:
 routerA = ChatbotRouter()
 
 @routerA.route("fatura")
-def fat(rota: Route, usercall:UserCall) -> tuple:
+async def fat(rota: Route, usercall:UserCall) -> tuple:
     
-    usercall.send('Você selecionou a opção fatura! 😊')
-    return rota.get_next('compras')
-
-@routerA.route("compras")
-def comp(rota: Route, usercall:UserCall) -> tuple:
     
-    usercall.send('Você selecionou a opção compras! 😊')
-    return rota.get_next('outros')
-
-routerB = ChatbotRouter()
-
-@routerB.route("outros")
-def outros(rota: Route, usercall:UserCall) -> tuple:
-    
-    usercall.send('Você selecionou a opção outros! 😊')
-    return rota.get_next('start')
-
-routerA.include_router(routerB)
-
-app.include_router(routerA)
+    usercall.send(
+        Message(
+            detail="Selecione uma das opções abaixo para que possamos te ajudar! 😉",
+            buttons=[
+                Button(
+                    title="Cartão Verdecard 👌💻👥📑",
+                    detail="fatura, saldo, negociação e outras opções mais algum texto para testar o tamanho do botão",
+                ),
+                Button(
+                    title="Lojas Quero-Quero ",
+                    detail="compras, central de montagens, Palavra! e outras opções",
+                ),
+                Button(title="Empréstimo Pessoal", detail=""),
+                Button(title="Aplicativo ", detail="Quero-Quero PAG"),
+                Button(title="PIX|Conta digital", detail=""),
+                Button(title="Para Lojistas ", detail=""),
+                Button(title="Botões Whatsapp ", detail=""),
+                Button(title="Encerrar conversa ", detail=""),
+            ],
+            display_button=Button("👉 Clique aqui", ""),
+            caption="",
+        )
+    )
 # Inicia o chatbot
 app.start()

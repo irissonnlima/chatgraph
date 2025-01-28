@@ -98,10 +98,9 @@ class MessageConsumer:
             message = body.decode()
             message_json = json.loads(message)
             pure_message = self.__transform_message(message_json)
-            print(pure_message)
             await process_message(pure_message)
         except Exception as e:
-            debug(f"Erro ao processar mensagem: {e}")
+            print(f"Erro ao processar mensagem: {e}")
 
     def __transform_message(self, message: dict) -> UserCall:
         user_state = message.get("user_state", {})

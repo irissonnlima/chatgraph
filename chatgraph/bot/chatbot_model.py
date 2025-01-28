@@ -1,9 +1,7 @@
 import inspect
 from functools import wraps
-from logging import debug
-import json
+from logging import debug, error
 import asyncio
-from logging import error
 
 from ..error.chatbot_error import ChatbotMessageError
 from ..messages.message_consumer import MessageConsumer
@@ -28,20 +26,16 @@ class ChatbotApp:
         """
         if not message_consumer:
             message_consumer = MessageConsumer.load_dotenv()
-            
+
         self.__message_consumer = message_consumer
         self.__routes = {}
-    
+
     def include_router(self, router: ChatbotRouter):
         """
         Inclui um roteador de chatbot com um prefixo nas rotas da aplicação.
 
         Args:
             router (ChatbotRouter): O roteador contendo as rotas a serem adicionadas.
-            prefix (str): O prefixo a ser adicionado às rotas do roteador.
-
-        Raises:
-            ChatbotError: Se a rota 'start' não for encontrada no roteador.
         """
         self.__routes.update(router.routes)
 
@@ -58,7 +52,7 @@ class ChatbotApp:
         route_name = route_name.strip().lower()
 
         def decorator(func):
-            params = dict()
+            params = {}
             signature = inspect.signature(func)
             output_param = signature.return_annotation
 
@@ -66,20 +60,20 @@ class ChatbotApp:
                 param_type = (
                     param.annotation
                     if param.annotation != inspect.Parameter.empty
-                    else 'Any'
+                    else "Any"
                 )
                 params[param_type] = name
-                debug(f'Parameter: {name}, Type: {param_type}')
+                debug(f"Parameter: {name}, Type: {param_type}")
 
             self.__routes[route_name] = {
-                'function': func,
-                'params': params,
-                'return': output_param,
+                "function": func,
+                "params": params,
+                "return": output_param,
             }
 
             @wraps(func)
-            def wrapper(*args, **kwargs):
-                return func(*args, **kwargs)
+            async def wrapper(*args, **kwargs):
+                return await func(*args, **kwargs)
 
             return wrapper
 
@@ -89,106 +83,103 @@ class ChatbotApp:
         """
         Inicia o consumo de mensagens pelo chatbot, processando cada mensagem recebida.
         """
-        
-        
         self.__message_consumer.reprer()
         asyncio.run(self.__message_consumer.start_consume(self.process_message))
-    
-    def process_message(self, userCall: UserCall):
+
+    async def process_message(self, userCall: UserCall):
         """
         Processa uma mensagem recebida, identificando a rota correspondente e executando a função associada.
 
         Args:
-            userCall (Message): A mensagem a ser processada.
+            userCall (UserCall): A mensagem a ser processada.
 
         Raises:
             ChatbotMessageError: Se nenhuma rota for encontrada para o menu atual do usuário.
-            ChatbotError: Se o tipo de retorno da função associada à rota for inválido.
-
-        Returns:
-            str: A resposta gerada pela função da rota, que pode ser uma mensagem ou o resultado de uma redireção.
         """
         user_id = userCall.user_id
         route = userCall.route.lower()
-        route_handler = route.split('.')[-1]
-        menu = userCall.menu.lower()
-        observation = userCall.observation
+        route_handler = route.split(".")[-1]
+
         handler = self.__routes.get(route_handler, None)
 
         if not handler:
-            raise ChatbotMessageError(
-                user_id, f'Rota não encontrada para {route}!'
-            )
-            
-        func = handler['function']
-        userCall_name = handler['params'].get(UserCall, None)
-        route_state_name = handler['params'].get(Route, None)
+            raise ChatbotMessageError(user_id, f"Rota não encontrada para {route}!")
 
-        kwargs = dict()
+        func = handler["function"]
+        userCall_name = handler["params"].get(UserCall, None)
+        route_state_name = handler["params"].get(Route, None)
+
+        kwargs = {}
         if userCall_name:
             kwargs[userCall_name] = userCall
         if route_state_name:
             kwargs[route_state_name] = Route(route, list(self.__routes.keys()))
 
-        userCall_response = func(**kwargs)
-        
+        if asyncio.iscoroutinefunction(func):
+            userCall_response = await func(**kwargs)
+        else:
+            loop = asyncio.get_running_loop()
+            userCall_response = await loop.run_in_executor(None, lambda: func(**kwargs))
+
         if isinstance(userCall_response, (list, tuple)):
             for response in userCall_response:
-                self.__process_func_response(response, userCall, route=route)
+                await self.__process_func_response(response, userCall, route=route)
         else:
-            self.__process_func_response(userCall_response, userCall, route=route)
+            await self.__process_func_response(userCall_response, userCall, route=route)
 
-    def __process_func_response(self, userCall_response, userCall: UserCall, route: str):
-        
+    async def __process_func_response(
+        self, userCall_response, userCall: UserCall, route: str
+    ):
+        """
+        Processa a resposta de uma função associada a uma rota, enviando mensagens ou ajustando estados.
+
+        Args:
+            userCall_response: A resposta gerada pela função da rota.
+            userCall (UserCall): O objeto UserCall associado à mensagem processada.
+            route (str): O nome da rota atual.
+        """
+        loop = asyncio.get_running_loop()
+
         if isinstance(userCall_response, (str, float, int)):
-            userCall.send(Message(text=userCall_response))
+            # Envia o resultado como mensagem (executando a chamada síncrona no executor)
+            await loop.run_in_executor(None, userCall.send, Message(userCall_response))
             return
 
         elif isinstance(userCall_response, Route):
             userCall.route = userCall_response.current
             return
-            
-        elif isinstance(userCall_response, (Message, Button, ListElements)):
-            userCall.send(userCall_response)
-            
+
+        elif isinstance(userCall_response, (Message, Button)):
+            # Envia o objeto Message ou Button
+            await loop.run_in_executor(None, userCall.send, userCall_response)
             return
 
         elif isinstance(userCall_response, EndChatResponse):
-            userCall.end_chat(userCall_response.observations, userCall_response.tabulation_id)
+            await loop.run_in_executor(
+                None,
+                userCall.end_chat,
+                userCall_response.observations,
+                userCall_response.tabulation_id,
+            )
             return
-        
+
         elif isinstance(userCall_response, TransferToHuman):
-            userCall.transfer_to_human(userCall_response.observations, userCall_response.campaign_id)
+            await loop.run_in_executor(
+                None,
+                userCall.transfer_to_human,
+                userCall_response.observations,
+                userCall_response.campaign_id,
+            )
             return
 
         elif isinstance(userCall_response, RedirectResponse):
-            route = route + '.' + userCall_response.route
+            route = route + "." + userCall_response.route
             userCall.route = route
-            return self.process_message(userCall)
+            await self.process_message(userCall)
 
         elif not userCall_response:
             return
 
         else:
-            error('Tipo de retorno inválido!')
+            error("Tipo de retorno inválido!")
             return None
-        
-
-    def __adjust_route(self, route: str, absolute_route: str) -> str:
-        """
-        Ajusta a rota fornecida para incluir o prefixo necessário, se não estiver presente.
-
-        Args:
-            route (str): A rota que precisa ser ajustada.
-            absolute_route (str): A rota completa atual, usada como referência.
-
-        Returns:
-            str: A rota ajustada.
-        """
-        if not route:
-            return absolute_route
-
-        if 'start' not in route:
-            route = absolute_route + route
-
-        return route

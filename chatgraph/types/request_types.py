@@ -147,8 +147,8 @@ class UserCall:
     ) -> None:
 
         self.type = type
-        self.type_message = type_message
-        self.content_message = content_message
+        self.__type_message = type_message
+        self.__content_message = content_message
         self.__user_state = user_state
 
         self.__grpc_uri = grpc_uri
@@ -156,7 +156,7 @@ class UserCall:
         self.__router_client = RouterServiceClient(self.__grpc_uri)
 
     def __str__(self):
-        return f"UserCall({self.type}, {self.type_message}, {self.content_message}, {self.__user_state})"
+        return f"UserCall({self.type}, {self.__type_message}, {self.__content_message}, {self.__user_state})"
     
     def send(
         self,
@@ -192,15 +192,13 @@ class UserCall:
             raise ValueError("Erro ao enviar mensagem de botões.")
 
     def transfer_to_human(self, message: str, campaign_name: str) -> None:
-        response = self.__wpp_server_client.transfer_to_human(
+        
+        campaign = self.__router_client.get_campaign_id({"name": campaign_name})
+        
+        response = self.__router_client.transfer_to_human(
             {
-                "hook_id": self.company_phone,
-                "enterprise_id": self.customer_phone,
-                "unique_customer_id": self.__user_state.customer_id,
-                "voll_id": self.__user_state.voll_id,
-                "message_text": message,
-                "platform": self.channel,
-                "campaign_name": campaign_name,
+                "chat_id": self.__user_state.chatID.to_dict(),
+                "campaign_id": campaign.id,
             }
         )
 
@@ -208,14 +206,12 @@ class UserCall:
             raise ValueError("Erro ao transferir chat para humano.")
 
     def end_chat(self, message: str, tabulation_name: str) -> None:
-        response = self.__wpp_server_client.end_chat(
+        tabulation = self.__router_client.get_tabulation_id({"name": tabulation_name})
+        
+        response = self.__router_client.end_chat(
             {
-                "tabulation_name": tabulation_name,
-                "hook_id": self.company_phone,
-                "unique_customer_id": self.__user_state.customer_id,
-                "voll_id": self.__user_state.voll_id,
-                "message_text": message,
-                "platform": self.channel,
+                "chat_id": self.__user_state.chatID.to_dict(),
+                "tabulation_id": tabulation.id,
             }
         )
 
@@ -271,16 +267,24 @@ class UserCall:
     @property
     def observation(self):
         return self.__user_state.observation
+    
+    @property
+    def type_message(self):
+        return self.__type_message
+    
+    @property
+    def content_message(self):
+        return self.__content_message
 
     @menu.setter
     def menu(self, menu):
 
-        self.update_user_state(menu, self.__user_state.route, self.__user_state.obs)
+        self.update_user_state(menu, self.__user_state.route, self.__user_state.observation)
 
     @route.setter
     def route(self, route):
 
-        self.update_user_state(self.__user_state.menu, route, self.__user_state.obs)
+        self.update_user_state(self.__user_state.menu, route, self.__user_state.observation)
 
     @observation.setter
     def observation(self, observation):
