@@ -10,7 +10,7 @@ from ..types.message_types import Message, Button
 from ..types.end_types import RedirectResponse, EndChatResponse, TransferToHuman
 from ..types.route import Route
 from .chatbot_router import ChatbotRouter
-
+from ..types.background_task import BackgroundTask
 
 class ChatbotApp:
     """
@@ -177,8 +177,15 @@ class ChatbotApp:
             userCall.route = route
             await self.process_message(userCall)
 
+        
         elif not userCall_response:
+            route = route + "." + route.split(".")[-1]
+            userCall.route = route
             return
+        
+        elif isinstance(userCall_response, BackgroundTask):
+            response = await userCall_response.run()
+            await self.__process_func_response(response, userCall, route=route)
 
         else:
             error("Tipo de retorno inválido!")

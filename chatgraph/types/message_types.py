@@ -33,15 +33,16 @@ class Button:
 
         self.absolute_text = absolute_text
 
-        if not absolute_text:
+        if not absolute_text and detail:
             detail = detail.replace("\t", "")
 
         assert (
             len(title) <= TITLE_MAX_LENGTH
         ), f"O texto do botão deve ter no máximo {TITLE_MAX_LENGTH} caracteres."
-        assert (
-            len(detail) <= DETAIL_MAX_LENGTH
-        ), f"A descrição do botão deve ter no máximo {DETAIL_MAX_LENGTH} caracteres."
+        if detail:
+            assert (
+                len(detail) <= DETAIL_MAX_LENGTH
+            ), f"A descrição do botão deve ter no máximo {DETAIL_MAX_LENGTH} caracteres."
 
         self.type = typeButton
         self.title = title
@@ -84,7 +85,7 @@ class Message:
     ) -> None:
         self.absolute_text = absolute_text
 
-        if not absolute_text:
+        if not absolute_text and type == "message":
             detail = detail.replace("\t", "")
 
         self.type = type
