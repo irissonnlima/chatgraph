@@ -5,29 +5,31 @@ import warnings
 
 import chatgraph.pb.router_pb2 as router__pb2
 
-GRPC_GENERATED_VERSION = '1.67.0'
+GRPC_GENERATED_VERSION = "1.73.0"
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
 try:
     from grpc._utilities import first_version_is_lower
-    _version_not_supported = first_version_is_lower(GRPC_VERSION, GRPC_GENERATED_VERSION)
+
+    _version_not_supported = first_version_is_lower(
+        GRPC_VERSION, GRPC_GENERATED_VERSION
+    )
 except ImportError:
     _version_not_supported = True
 
 if _version_not_supported:
     raise RuntimeError(
-        f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in router_pb2_grpc.py depends on'
-        + f' grpcio>={GRPC_GENERATED_VERSION}.'
-        + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
-        + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
+        f"The grpc package installed is at version {GRPC_VERSION},"
+        + f" but the generated code in router_pb2_grpc.py depends on"
+        + f" grpcio>={GRPC_GENERATED_VERSION}."
+        + f" Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}"
+        + f" or downgrade your generated code using grpcio-tools<={GRPC_VERSION}."
     )
 
 
 class UserStateServiceStub(object):
-    """/// Serviços de Estado do Usuário /////
-    """
+    """/// Serviços de Estado do Usuário /////"""
 
     def __init__(self, channel):
         """Constructor.
@@ -36,105 +38,112 @@ class UserStateServiceStub(object):
             channel: A grpc.Channel.
         """
         self.InsertUpdateUserState = channel.unary_unary(
-                '/chatbot.UserStateService/InsertUpdateUserState',
-                request_serializer=router__pb2.UserState.SerializeToString,
-                response_deserializer=router__pb2.RequestStatus.FromString,
-                _registered_method=True)
+            "/chatbot.UserStateService/InsertUpdateUserState",
+            request_serializer=router__pb2.UserState.SerializeToString,
+            response_deserializer=router__pb2.RequestStatus.FromString,
+            _registered_method=True,
+        )
         self.DeleteUserState = channel.unary_unary(
-                '/chatbot.UserStateService/DeleteUserState',
-                request_serializer=router__pb2.ChatID.SerializeToString,
-                response_deserializer=router__pb2.RequestStatus.FromString,
-                _registered_method=True)
+            "/chatbot.UserStateService/DeleteUserState",
+            request_serializer=router__pb2.ChatID.SerializeToString,
+            response_deserializer=router__pb2.RequestStatus.FromString,
+            _registered_method=True,
+        )
         self.GetUserState = channel.unary_unary(
-                '/chatbot.UserStateService/GetUserState',
-                request_serializer=router__pb2.ChatID.SerializeToString,
-                response_deserializer=router__pb2.UserState.FromString,
-                _registered_method=True)
+            "/chatbot.UserStateService/GetUserState",
+            request_serializer=router__pb2.ChatID.SerializeToString,
+            response_deserializer=router__pb2.UserState.FromString,
+            _registered_method=True,
+        )
         self.GetAllUserStates = channel.unary_unary(
-                '/chatbot.UserStateService/GetAllUserStates',
-                request_serializer=router__pb2.Void.SerializeToString,
-                response_deserializer=router__pb2.UserStateList.FromString,
-                _registered_method=True)
+            "/chatbot.UserStateService/GetAllUserStates",
+            request_serializer=router__pb2.Void.SerializeToString,
+            response_deserializer=router__pb2.UserStateList.FromString,
+            _registered_method=True,
+        )
 
 
 class UserStateServiceServicer(object):
-    """/// Serviços de Estado do Usuário /////
-    """
+    """/// Serviços de Estado do Usuário /////"""
 
     def InsertUpdateUserState(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def DeleteUserState(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def GetUserState(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def GetAllUserStates(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_UserStateServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'InsertUpdateUserState': grpc.unary_unary_rpc_method_handler(
-                    servicer.InsertUpdateUserState,
-                    request_deserializer=router__pb2.UserState.FromString,
-                    response_serializer=router__pb2.RequestStatus.SerializeToString,
-            ),
-            'DeleteUserState': grpc.unary_unary_rpc_method_handler(
-                    servicer.DeleteUserState,
-                    request_deserializer=router__pb2.ChatID.FromString,
-                    response_serializer=router__pb2.RequestStatus.SerializeToString,
-            ),
-            'GetUserState': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetUserState,
-                    request_deserializer=router__pb2.ChatID.FromString,
-                    response_serializer=router__pb2.UserState.SerializeToString,
-            ),
-            'GetAllUserStates': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetAllUserStates,
-                    request_deserializer=router__pb2.Void.FromString,
-                    response_serializer=router__pb2.UserStateList.SerializeToString,
-            ),
+        "InsertUpdateUserState": grpc.unary_unary_rpc_method_handler(
+            servicer.InsertUpdateUserState,
+            request_deserializer=router__pb2.UserState.FromString,
+            response_serializer=router__pb2.RequestStatus.SerializeToString,
+        ),
+        "DeleteUserState": grpc.unary_unary_rpc_method_handler(
+            servicer.DeleteUserState,
+            request_deserializer=router__pb2.ChatID.FromString,
+            response_serializer=router__pb2.RequestStatus.SerializeToString,
+        ),
+        "GetUserState": grpc.unary_unary_rpc_method_handler(
+            servicer.GetUserState,
+            request_deserializer=router__pb2.ChatID.FromString,
+            response_serializer=router__pb2.UserState.SerializeToString,
+        ),
+        "GetAllUserStates": grpc.unary_unary_rpc_method_handler(
+            servicer.GetAllUserStates,
+            request_deserializer=router__pb2.Void.FromString,
+            response_serializer=router__pb2.UserStateList.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'chatbot.UserStateService', rpc_method_handlers)
+        "chatbot.UserStateService", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('chatbot.UserStateService', rpc_method_handlers)
+    server.add_registered_method_handlers(
+        "chatbot.UserStateService", rpc_method_handlers
+    )
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class UserStateService(object):
-    """/// Serviços de Estado do Usuário /////
-    """
+    """/// Serviços de Estado do Usuário /////"""
 
     @staticmethod
-    def InsertUpdateUserState(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def InsertUpdateUserState(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/chatbot.UserStateService/InsertUpdateUserState',
+            "/chatbot.UserStateService/InsertUpdateUserState",
             router__pb2.UserState.SerializeToString,
             router__pb2.RequestStatus.FromString,
             options,
@@ -145,23 +154,26 @@ class UserStateService(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
     @staticmethod
-    def DeleteUserState(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def DeleteUserState(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/chatbot.UserStateService/DeleteUserState',
+            "/chatbot.UserStateService/DeleteUserState",
             router__pb2.ChatID.SerializeToString,
             router__pb2.RequestStatus.FromString,
             options,
@@ -172,23 +184,26 @@ class UserStateService(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
     @staticmethod
-    def GetUserState(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def GetUserState(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/chatbot.UserStateService/GetUserState',
+            "/chatbot.UserStateService/GetUserState",
             router__pb2.ChatID.SerializeToString,
             router__pb2.UserState.FromString,
             options,
@@ -199,23 +214,26 @@ class UserStateService(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
     @staticmethod
-    def GetAllUserStates(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def GetAllUserStates(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/chatbot.UserStateService/GetAllUserStates',
+            "/chatbot.UserStateService/GetAllUserStates",
             router__pb2.Void.SerializeToString,
             router__pb2.UserStateList.FromString,
             options,
@@ -226,12 +244,12 @@ class UserStateService(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
 
 class SendMessageStub(object):
-    """/// Serviços de Mensagens /////
-    """
+    """/// Serviços de Mensagens /////"""
 
     def __init__(self, channel):
         """Constructor.
@@ -240,57 +258,110 @@ class SendMessageStub(object):
             channel: A grpc.Channel.
         """
         self.SendMessage = channel.unary_unary(
-                '/chatbot.SendMessage/SendMessage',
-                request_serializer=router__pb2.Message.SerializeToString,
-                response_deserializer=router__pb2.RequestStatus.FromString,
-                _registered_method=True)
+            "/chatbot.SendMessage/SendMessage",
+            request_serializer=router__pb2.Message.SerializeToString,
+            response_deserializer=router__pb2.RequestStatus.FromString,
+            _registered_method=True,
+        )
+        self.SendImage = channel.unary_unary(
+            "/chatbot.SendMessage/SendImage",
+            request_serializer=router__pb2.FileMessage.SerializeToString,
+            response_deserializer=router__pb2.RequestStatus.FromString,
+            _registered_method=True,
+        )
+        self.SendFile = channel.unary_unary(
+            "/chatbot.SendMessage/SendFile",
+            request_serializer=router__pb2.FileMessage.SerializeToString,
+            response_deserializer=router__pb2.RequestStatus.FromString,
+            _registered_method=True,
+        )
+        self.UploadFile = channel.unary_unary(
+            "/chatbot.SendMessage/UploadFile",
+            request_serializer=router__pb2.UploadFileRequest.SerializeToString,
+            response_deserializer=router__pb2.RequestStatus.FromString,
+            _registered_method=True,
+        )
 
 
 class SendMessageServicer(object):
-    """/// Serviços de Mensagens /////
-    """
+    """/// Serviços de Mensagens /////"""
 
     def SendMessage(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
+    def SendImage(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
+    def SendFile(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
+    def UploadFile(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_SendMessageServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'SendMessage': grpc.unary_unary_rpc_method_handler(
-                    servicer.SendMessage,
-                    request_deserializer=router__pb2.Message.FromString,
-                    response_serializer=router__pb2.RequestStatus.SerializeToString,
-            ),
+        "SendMessage": grpc.unary_unary_rpc_method_handler(
+            servicer.SendMessage,
+            request_deserializer=router__pb2.Message.FromString,
+            response_serializer=router__pb2.RequestStatus.SerializeToString,
+        ),
+        "SendImage": grpc.unary_unary_rpc_method_handler(
+            servicer.SendImage,
+            request_deserializer=router__pb2.FileMessage.FromString,
+            response_serializer=router__pb2.RequestStatus.SerializeToString,
+        ),
+        "SendFile": grpc.unary_unary_rpc_method_handler(
+            servicer.SendFile,
+            request_deserializer=router__pb2.FileMessage.FromString,
+            response_serializer=router__pb2.RequestStatus.SerializeToString,
+        ),
+        "UploadFile": grpc.unary_unary_rpc_method_handler(
+            servicer.UploadFile,
+            request_deserializer=router__pb2.UploadFileRequest.FromString,
+            response_serializer=router__pb2.RequestStatus.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'chatbot.SendMessage', rpc_method_handlers)
+        "chatbot.SendMessage", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('chatbot.SendMessage', rpc_method_handlers)
+    server.add_registered_method_handlers("chatbot.SendMessage", rpc_method_handlers)
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class SendMessage(object):
-    """/// Serviços de Mensagens /////
-    """
+    """/// Serviços de Mensagens /////"""
 
     @staticmethod
-    def SendMessage(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def SendMessage(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/chatbot.SendMessage/SendMessage',
+            "/chatbot.SendMessage/SendMessage",
             router__pb2.Message.SerializeToString,
             router__pb2.RequestStatus.FromString,
             options,
@@ -301,12 +372,102 @@ class SendMessage(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
+
+    @staticmethod
+    def SendImage(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            "/chatbot.SendMessage/SendImage",
+            router__pb2.FileMessage.SerializeToString,
+            router__pb2.RequestStatus.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True,
+        )
+
+    @staticmethod
+    def SendFile(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            "/chatbot.SendMessage/SendFile",
+            router__pb2.FileMessage.SerializeToString,
+            router__pb2.RequestStatus.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True,
+        )
+
+    @staticmethod
+    def UploadFile(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            "/chatbot.SendMessage/UploadFile",
+            router__pb2.UploadFileRequest.SerializeToString,
+            router__pb2.RequestStatus.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True,
+        )
 
 
 class TransferStub(object):
-    """/// Serviços de Transfer /////
-    """
+    """/// Serviços de Transfer /////"""
 
     def __init__(self, channel):
         """Constructor.
@@ -315,105 +476,110 @@ class TransferStub(object):
             channel: A grpc.Channel.
         """
         self.GetAllCampaigns = channel.unary_unary(
-                '/chatbot.Transfer/GetAllCampaigns',
-                request_serializer=router__pb2.Void.SerializeToString,
-                response_deserializer=router__pb2.CampaignsList.FromString,
-                _registered_method=True)
+            "/chatbot.Transfer/GetAllCampaigns",
+            request_serializer=router__pb2.Void.SerializeToString,
+            response_deserializer=router__pb2.CampaignsList.FromString,
+            _registered_method=True,
+        )
         self.GetCampaignID = channel.unary_unary(
-                '/chatbot.Transfer/GetCampaignID',
-                request_serializer=router__pb2.CampaignName.SerializeToString,
-                response_deserializer=router__pb2.CampaignDetails.FromString,
-                _registered_method=True)
+            "/chatbot.Transfer/GetCampaignID",
+            request_serializer=router__pb2.CampaignName.SerializeToString,
+            response_deserializer=router__pb2.CampaignDetails.FromString,
+            _registered_method=True,
+        )
         self.TransferToHuman = channel.unary_unary(
-                '/chatbot.Transfer/TransferToHuman',
-                request_serializer=router__pb2.TransferToHumanRequest.SerializeToString,
-                response_deserializer=router__pb2.RequestStatus.FromString,
-                _registered_method=True)
+            "/chatbot.Transfer/TransferToHuman",
+            request_serializer=router__pb2.TransferToHumanRequest.SerializeToString,
+            response_deserializer=router__pb2.RequestStatus.FromString,
+            _registered_method=True,
+        )
         self.TransferToMenu = channel.unary_unary(
-                '/chatbot.Transfer/TransferToMenu',
-                request_serializer=router__pb2.TransferToMenuRequest.SerializeToString,
-                response_deserializer=router__pb2.RequestStatus.FromString,
-                _registered_method=True)
+            "/chatbot.Transfer/TransferToMenu",
+            request_serializer=router__pb2.TransferToMenuRequest.SerializeToString,
+            response_deserializer=router__pb2.RequestStatus.FromString,
+            _registered_method=True,
+        )
 
 
 class TransferServicer(object):
-    """/// Serviços de Transfer /////
-    """
+    """/// Serviços de Transfer /////"""
 
     def GetAllCampaigns(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def GetCampaignID(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def TransferToHuman(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def TransferToMenu(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_TransferServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'GetAllCampaigns': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetAllCampaigns,
-                    request_deserializer=router__pb2.Void.FromString,
-                    response_serializer=router__pb2.CampaignsList.SerializeToString,
-            ),
-            'GetCampaignID': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetCampaignID,
-                    request_deserializer=router__pb2.CampaignName.FromString,
-                    response_serializer=router__pb2.CampaignDetails.SerializeToString,
-            ),
-            'TransferToHuman': grpc.unary_unary_rpc_method_handler(
-                    servicer.TransferToHuman,
-                    request_deserializer=router__pb2.TransferToHumanRequest.FromString,
-                    response_serializer=router__pb2.RequestStatus.SerializeToString,
-            ),
-            'TransferToMenu': grpc.unary_unary_rpc_method_handler(
-                    servicer.TransferToMenu,
-                    request_deserializer=router__pb2.TransferToMenuRequest.FromString,
-                    response_serializer=router__pb2.RequestStatus.SerializeToString,
-            ),
+        "GetAllCampaigns": grpc.unary_unary_rpc_method_handler(
+            servicer.GetAllCampaigns,
+            request_deserializer=router__pb2.Void.FromString,
+            response_serializer=router__pb2.CampaignsList.SerializeToString,
+        ),
+        "GetCampaignID": grpc.unary_unary_rpc_method_handler(
+            servicer.GetCampaignID,
+            request_deserializer=router__pb2.CampaignName.FromString,
+            response_serializer=router__pb2.CampaignDetails.SerializeToString,
+        ),
+        "TransferToHuman": grpc.unary_unary_rpc_method_handler(
+            servicer.TransferToHuman,
+            request_deserializer=router__pb2.TransferToHumanRequest.FromString,
+            response_serializer=router__pb2.RequestStatus.SerializeToString,
+        ),
+        "TransferToMenu": grpc.unary_unary_rpc_method_handler(
+            servicer.TransferToMenu,
+            request_deserializer=router__pb2.TransferToMenuRequest.FromString,
+            response_serializer=router__pb2.RequestStatus.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'chatbot.Transfer', rpc_method_handlers)
+        "chatbot.Transfer", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('chatbot.Transfer', rpc_method_handlers)
+    server.add_registered_method_handlers("chatbot.Transfer", rpc_method_handlers)
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class Transfer(object):
-    """/// Serviços de Transfer /////
-    """
+    """/// Serviços de Transfer /////"""
 
     @staticmethod
-    def GetAllCampaigns(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def GetAllCampaigns(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/chatbot.Transfer/GetAllCampaigns',
+            "/chatbot.Transfer/GetAllCampaigns",
             router__pb2.Void.SerializeToString,
             router__pb2.CampaignsList.FromString,
             options,
@@ -424,23 +590,26 @@ class Transfer(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
     @staticmethod
-    def GetCampaignID(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def GetCampaignID(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/chatbot.Transfer/GetCampaignID',
+            "/chatbot.Transfer/GetCampaignID",
             router__pb2.CampaignName.SerializeToString,
             router__pb2.CampaignDetails.FromString,
             options,
@@ -451,23 +620,26 @@ class Transfer(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
     @staticmethod
-    def TransferToHuman(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def TransferToHuman(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/chatbot.Transfer/TransferToHuman',
+            "/chatbot.Transfer/TransferToHuman",
             router__pb2.TransferToHumanRequest.SerializeToString,
             router__pb2.RequestStatus.FromString,
             options,
@@ -478,23 +650,26 @@ class Transfer(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
     @staticmethod
-    def TransferToMenu(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def TransferToMenu(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/chatbot.Transfer/TransferToMenu',
+            "/chatbot.Transfer/TransferToMenu",
             router__pb2.TransferToMenuRequest.SerializeToString,
             router__pb2.RequestStatus.FromString,
             options,
@@ -505,12 +680,12 @@ class Transfer(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
 
 class EndChatStub(object):
-    """/// Serviços de EndChat /////
-    """
+    """/// Serviços de EndChat /////"""
 
     def __init__(self, channel):
         """Constructor.
@@ -519,89 +694,93 @@ class EndChatStub(object):
             channel: A grpc.Channel.
         """
         self.GetAllTabulations = channel.unary_unary(
-                '/chatbot.EndChat/GetAllTabulations',
-                request_serializer=router__pb2.Void.SerializeToString,
-                response_deserializer=router__pb2.TabulationsList.FromString,
-                _registered_method=True)
+            "/chatbot.EndChat/GetAllTabulations",
+            request_serializer=router__pb2.Void.SerializeToString,
+            response_deserializer=router__pb2.TabulationsList.FromString,
+            _registered_method=True,
+        )
         self.GetTabulationID = channel.unary_unary(
-                '/chatbot.EndChat/GetTabulationID',
-                request_serializer=router__pb2.TabulationName.SerializeToString,
-                response_deserializer=router__pb2.TabulationDetails.FromString,
-                _registered_method=True)
+            "/chatbot.EndChat/GetTabulationID",
+            request_serializer=router__pb2.TabulationName.SerializeToString,
+            response_deserializer=router__pb2.TabulationDetails.FromString,
+            _registered_method=True,
+        )
         self.EndChat = channel.unary_unary(
-                '/chatbot.EndChat/EndChat',
-                request_serializer=router__pb2.EndChatRequest.SerializeToString,
-                response_deserializer=router__pb2.RequestStatus.FromString,
-                _registered_method=True)
+            "/chatbot.EndChat/EndChat",
+            request_serializer=router__pb2.EndChatRequest.SerializeToString,
+            response_deserializer=router__pb2.RequestStatus.FromString,
+            _registered_method=True,
+        )
 
 
 class EndChatServicer(object):
-    """/// Serviços de EndChat /////
-    """
+    """/// Serviços de EndChat /////"""
 
     def GetAllTabulations(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def GetTabulationID(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def EndChat(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_EndChatServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'GetAllTabulations': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetAllTabulations,
-                    request_deserializer=router__pb2.Void.FromString,
-                    response_serializer=router__pb2.TabulationsList.SerializeToString,
-            ),
-            'GetTabulationID': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetTabulationID,
-                    request_deserializer=router__pb2.TabulationName.FromString,
-                    response_serializer=router__pb2.TabulationDetails.SerializeToString,
-            ),
-            'EndChat': grpc.unary_unary_rpc_method_handler(
-                    servicer.EndChat,
-                    request_deserializer=router__pb2.EndChatRequest.FromString,
-                    response_serializer=router__pb2.RequestStatus.SerializeToString,
-            ),
+        "GetAllTabulations": grpc.unary_unary_rpc_method_handler(
+            servicer.GetAllTabulations,
+            request_deserializer=router__pb2.Void.FromString,
+            response_serializer=router__pb2.TabulationsList.SerializeToString,
+        ),
+        "GetTabulationID": grpc.unary_unary_rpc_method_handler(
+            servicer.GetTabulationID,
+            request_deserializer=router__pb2.TabulationName.FromString,
+            response_serializer=router__pb2.TabulationDetails.SerializeToString,
+        ),
+        "EndChat": grpc.unary_unary_rpc_method_handler(
+            servicer.EndChat,
+            request_deserializer=router__pb2.EndChatRequest.FromString,
+            response_serializer=router__pb2.RequestStatus.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'chatbot.EndChat', rpc_method_handlers)
+        "chatbot.EndChat", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('chatbot.EndChat', rpc_method_handlers)
+    server.add_registered_method_handlers("chatbot.EndChat", rpc_method_handlers)
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class EndChat(object):
-    """/// Serviços de EndChat /////
-    """
+    """/// Serviços de EndChat /////"""
 
     @staticmethod
-    def GetAllTabulations(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def GetAllTabulations(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/chatbot.EndChat/GetAllTabulations',
+            "/chatbot.EndChat/GetAllTabulations",
             router__pb2.Void.SerializeToString,
             router__pb2.TabulationsList.FromString,
             options,
@@ -612,23 +791,26 @@ class EndChat(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
     @staticmethod
-    def GetTabulationID(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def GetTabulationID(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/chatbot.EndChat/GetTabulationID',
+            "/chatbot.EndChat/GetTabulationID",
             router__pb2.TabulationName.SerializeToString,
             router__pb2.TabulationDetails.FromString,
             options,
@@ -639,23 +821,26 @@ class EndChat(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
     @staticmethod
-    def EndChat(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def EndChat(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/chatbot.EndChat/EndChat',
+            "/chatbot.EndChat/EndChat",
             router__pb2.EndChatRequest.SerializeToString,
             router__pb2.RequestStatus.FromString,
             options,
@@ -666,4 +851,5 @@ class EndChat(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )

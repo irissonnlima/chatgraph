@@ -7,10 +7,16 @@ from ..error.chatbot_error import ChatbotMessageError
 from ..messages.message_consumer import MessageConsumer
 from ..types.request_types import UserCall
 from ..types.message_types import Message, Button
-from ..types.end_types import RedirectResponse, EndChatResponse, TransferToHuman
+from ..types.end_types import (
+    RedirectResponse,
+    EndChatResponse,
+    TransferToHuman,
+    TransferToMenu,
+)
 from ..types.route import Route
 from .chatbot_router import ChatbotRouter
 from ..types.background_task import BackgroundTask
+
 
 class ChatbotApp:
     """
@@ -172,17 +178,25 @@ class ChatbotApp:
             )
             return
 
+        elif isinstance(userCall_response, TransferToMenu):
+            await loop.run_in_executor(
+                None,
+                userCall.transfer_to_menu,
+                userCall_response.menu,
+                userCall_response.user_message,
+            )
+            return
+
         elif isinstance(userCall_response, RedirectResponse):
             route = route + "." + userCall_response.route
             userCall.route = route
             await self.process_message(userCall)
 
-        
         elif not userCall_response:
             route = route + "." + route.split(".")[-1]
             userCall.route = route
             return
-        
+
         elif isinstance(userCall_response, BackgroundTask):
             response = await userCall_response.run()
             await self.__process_func_response(response, userCall, route=route)

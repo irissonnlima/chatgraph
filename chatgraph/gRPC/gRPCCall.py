@@ -55,9 +55,9 @@ class RouterServiceClient:
 
     def send_message(self, message_data):
         # print(json.dumps(message_data))
-        
+
         request = chatbot_pb2.Message(**message_data)
-        
+
         try:
             response = self.send_message_stub.SendMessage(request)
             if not response.status:
@@ -65,6 +65,20 @@ class RouterServiceClient:
             return response
         except grpc.RpcError as e:
             print(f"Erro ao chamar SendMessage: {e}")
+            return None
+
+    def send_image(self, message_data):
+        # print(json.dumps(message_data))
+
+        request = chatbot_pb2.FileMessage(**message_data)
+
+        try:
+            response = self.send_message_stub.SendImage(request)
+            if not response.status:
+                print(f"Erro ao chamar SendImage: {response.message}")
+            return response
+        except grpc.RpcError as e:
+            print(f"Erro ao chamar SendImage: {e}")
             return None
 
     def transfer_to_human(self, transfer_request_data):
@@ -83,7 +97,7 @@ class RouterServiceClient:
         try:
             response = self.transfer_stub.TransferToMenu(request)
             if not response.status:
-                print(f"Erro ao chamar SendMessage: {response.message}")
+                print(f"Erro ao chamar TransferToMenu: {response.message}")
             return response
         except grpc.RpcError as e:
             print(f"Erro ao chamar TransferToMenu: {e}")

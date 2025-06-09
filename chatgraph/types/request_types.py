@@ -1,4 +1,5 @@
 from chatgraph.gRPC.gRPCCall import RouterServiceClient
+from chatgraph.types.image import ImageData, SendImage
 from chatgraph.types.message_types import Message, Button, MessageTypes, messageTypes
 from typing import Optional
 from datetime import datetime
@@ -157,7 +158,7 @@ class UserCall:
 
     def __str__(self):
         return f"UserCall({self.type}, {self.__type_message}, {self.__content_message}, {self.__user_state})"
-    
+
     def send(
         self,
         message: messageTypes | Message,
@@ -174,10 +175,26 @@ class UserCall:
                 detail=str(message),
             )
 
+        if isinstance(message, ImageData):
+            message = SendImage(
+                image=message,
+                message=Message(type="message", detail=""),
+            )
+
         if isinstance(message, Message):
             self.__send(message)
+        elif isinstance(message, SendImage):
+            self.__send_image(message)
         else:
             raise ValueError("Tipo de mensagem inválido.")
+
+    def __send_image(self, message: SendImage) -> None:
+        dict_message = message.to_dict()
+        dict_message["message"]["chat_id"] = self.__user_state.chatID.to_dict()
+        response = self.__router_client.send_image(dict_message)
+
+        if not response.status:
+            raise ValueError("Erro ao enviar imagem.")
 
     def __send(self, message: Message) -> None:
 
@@ -192,26 +209,41 @@ class UserCall:
             raise ValueError("Erro ao enviar mensagem de botões.")
 
     def transfer_to_human(self, message: str, campaign_name: str) -> None:
-        
+
         campaign = self.__router_client.get_campaign_id({"name": campaign_name})
-        
+
         response = self.__router_client.transfer_to_human(
             {
                 "chat_id": self.__user_state.chatID.to_dict(),
                 "campaign_id": campaign.id,
+                "observation": message,
             }
         )
 
         if not response.status:
             raise ValueError("Erro ao transferir chat para humano.")
 
+    def transfer_to_menu(self, menu: str, message: str) -> None:
+
+        response = self.__router_client.transfer_to_menu(
+            {
+                "chat_id": self.__user_state.chatID.to_dict(),
+                "menu": menu,
+                "user_message": message,
+            }
+        )
+
+        if not response.status:
+            raise ValueError("Erro ao transferir chat para menu.")
+
     def end_chat(self, message: str, tabulation_name: str) -> None:
         tabulation = self.__router_client.get_tabulation_id({"name": tabulation_name})
-        
+
         response = self.__router_client.end_chat(
             {
                 "chat_id": self.__user_state.chatID.to_dict(),
                 "tabulation_id": tabulation.id,
+                "observation": message,
             }
         )
 
@@ -263,15 +295,15 @@ class UserCall:
     @property
     def protocol(self):
         return self.__user_state.protocol
-    
+
     @property
     def observation(self):
         return self.__user_state.observation
-    
+
     @property
     def type_message(self):
         return self.__type_message
-    
+
     @property
     def content_message(self):
         return self.__content_message
@@ -279,12 +311,16 @@ class UserCall:
     @menu.setter
     def menu(self, menu):
 
-        self.update_user_state(menu, self.__user_state.route, self.__user_state.observation)
+        self.update_user_state(
+            menu, self.__user_state.route, self.__user_state.observation
+        )
 
     @route.setter
     def route(self, route):
 
-        self.update_user_state(self.__user_state.menu, route, self.__user_state.observation)
+        self.update_user_state(
+            self.__user_state.menu, route, self.__user_state.observation
+        )
 
     @observation.setter
     def observation(self, observation):

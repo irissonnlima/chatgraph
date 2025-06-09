@@ -15,6 +15,9 @@ service UserStateService {
 ///// Serviços de Mensagens /////
 service SendMessage {
     rpc SendMessage(Message) returns (RequestStatus);
+    rpc SendImage(FileMessage) returns (RequestStatus);
+    rpc SendFile(FileMessage) returns (RequestStatus);
+    rpc UploadFile(UploadFileRequest) returns (RequestStatus);
 }
 
 ///// Serviços de Transfer /////
@@ -80,10 +83,23 @@ message Message {
     Button display_button = 4;
 }
 
+message FileMessage {
+    Message message = 1;
+    string file_id = 2;
+}
+
+message UploadFileRequest {
+    string file_id = 1;
+    string file_url = 2;
+    string file_type = 3;
+    bytes file_content = 4;
+}
+
 ///// Mensagens para Serviços de Transfer /////
 message TransferToHumanRequest{
     ChatID chat_id = 1;
     string campaign_id = 2;
+    string observation = 3;
 }
 
 message TransferToMenuRequest{
@@ -110,6 +126,7 @@ message TabulationsList{
 message EndChatRequest {
     ChatID chat_id = 1;
     string tabulation_id = 2;
+    string observation = 3;
 }
 
 message CampaignName {
