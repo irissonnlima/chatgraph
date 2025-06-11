@@ -43,6 +43,12 @@ class UserStateServiceStub(object):
             response_deserializer=router__pb2.RequestStatus.FromString,
             _registered_method=True,
         )
+        self.SetRoute = channel.unary_unary(
+            "/chatbot.UserStateService/SetRoute",
+            request_serializer=router__pb2.RouteRequest.SerializeToString,
+            response_deserializer=router__pb2.RequestStatus.FromString,
+            _registered_method=True,
+        )
         self.DeleteUserState = channel.unary_unary(
             "/chatbot.UserStateService/DeleteUserState",
             request_serializer=router__pb2.ChatID.SerializeToString,
@@ -72,6 +78,12 @@ class UserStateServiceServicer(object):
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
+    def SetRoute(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
     def DeleteUserState(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -96,6 +108,11 @@ def add_UserStateServiceServicer_to_server(servicer, server):
         "InsertUpdateUserState": grpc.unary_unary_rpc_method_handler(
             servicer.InsertUpdateUserState,
             request_deserializer=router__pb2.UserState.FromString,
+            response_serializer=router__pb2.RequestStatus.SerializeToString,
+        ),
+        "SetRoute": grpc.unary_unary_rpc_method_handler(
+            servicer.SetRoute,
+            request_deserializer=router__pb2.RouteRequest.FromString,
             response_serializer=router__pb2.RequestStatus.SerializeToString,
         ),
         "DeleteUserState": grpc.unary_unary_rpc_method_handler(
@@ -145,6 +162,36 @@ class UserStateService(object):
             target,
             "/chatbot.UserStateService/InsertUpdateUserState",
             router__pb2.UserState.SerializeToString,
+            router__pb2.RequestStatus.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True,
+        )
+
+    @staticmethod
+    def SetRoute(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            "/chatbot.UserStateService/SetRoute",
+            router__pb2.RouteRequest.SerializeToString,
             router__pb2.RequestStatus.FromString,
             options,
             channel_credentials,

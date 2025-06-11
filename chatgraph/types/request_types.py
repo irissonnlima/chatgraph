@@ -1,5 +1,5 @@
 from chatgraph.gRPC.gRPCCall import RouterServiceClient
-from chatgraph.types.image import ImageData, SendImage
+from chatgraph.types.image import ImageData, ImageMessage
 from chatgraph.types.message_types import Message, Button, MessageTypes, messageTypes
 from typing import Optional
 from datetime import datetime
@@ -176,25 +176,37 @@ class UserCall:
             )
 
         if isinstance(message, ImageData):
-            message = SendImage(
+            message = ImageMessage(
                 image=message,
-                message=Message(type="message", detail=""),
             )
 
         if isinstance(message, Message):
             self.__send(message)
-        elif isinstance(message, SendImage):
+        elif isinstance(message, ImageMessage):
             self.__send_image(message)
         else:
             raise ValueError("Tipo de mensagem inválido.")
 
-    def __send_image(self, message: SendImage) -> None:
+    def __upload_file(self, image: ImageData) -> None:
+        dict_image = image.get_upload_dict()
+        response = self.__router_client.upload_file(dict_image)
+
+        if not response.status:
+            raise ValueError("Erro ao fazer upload do arquivo.")
+        else:
+            print("Arquivo enviado com sucesso.")
+
+    def __send_image(self, message: ImageMessage) -> None:
         dict_message = message.to_dict()
         dict_message["message"]["chat_id"] = self.__user_state.chatID.to_dict()
         response = self.__router_client.send_image(dict_message)
 
-        if not response.status:
+        if not response.status and response.message != "arquivo não encontrado":
             raise ValueError("Erro ao enviar imagem.")
+        elif response.message == "arquivo não encontrado":
+            self.__upload_file(message.image)
+            print("tentando enviar imagem novamente...")
+            self.__send_image(message)
 
     def __send(self, message: Message) -> None:
 

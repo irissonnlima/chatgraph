@@ -74,11 +74,24 @@ class RouterServiceClient:
 
         try:
             response = self.send_message_stub.SendImage(request)
-            if not response.status:
+            if not response.status and response.message != "arquivo não encontrado":
                 print(f"Erro ao chamar SendImage: {response.message}")
+            elif response.message == "arquivo não encontrado":
+                print("Arquivo não encontrado, Carregando arquivo...")
             return response
         except grpc.RpcError as e:
             print(f"Erro ao chamar SendImage: {e}")
+            return None
+
+    def upload_file(self, file_data):
+        request = chatbot_pb2.UploadFileRequest(**file_data)
+        try:
+            response = self.send_message_stub.UploadFile(request)
+            if not response.status:
+                print(f"Erro ao chamar UploadFile: {response.message}")
+            return response
+        except grpc.RpcError as e:
+            print(f"Erro ao chamar UploadFile: {e}")
             return None
 
     def transfer_to_human(self, transfer_request_data):

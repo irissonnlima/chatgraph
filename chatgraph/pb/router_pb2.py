@@ -9,73 +9,71 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+
 _runtime_version.ValidateProtobufRuntimeVersion(
-    _runtime_version.Domain.PUBLIC,
-    6,
-    31,
-    0,
-    '',
-    'router.proto'
+    _runtime_version.Domain.PUBLIC, 6, 31, 0, "", "router.proto"
 )
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
 
 
-
-
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0crouter.proto\x12\x07\x63hatbot\"\x06\n\x04Void\"0\n\rRequestStatus\x12\x0e\n\x06status\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"-\n\x06\x43hatID\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x12\n\ncompany_id\x18\x02 \x01(\t\"q\n\tUserState\x12 \n\x07\x63hat_id\x18\x01 \x01(\x0b\x32\x0f.chatbot.ChatID\x12\x0c\n\x04menu\x18\x02 \x01(\t\x12\r\n\x05route\x18\x03 \x01(\t\x12\x10\n\x08protocol\x18\x04 \x01(\t\x12\x13\n\x0bobservation\x18\x05 \x01(\t\"8\n\rUserStateList\x12\'\n\x0buser_states\x18\x01 \x03(\x0b\x32\x12.chatbot.UserState\"j\n\x0bTextMessage\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x0b\n\x03url\x18\x02 \x01(\t\x12\x10\n\x08\x66ilename\x18\x03 \x01(\t\x12\r\n\x05title\x18\x04 \x01(\t\x12\x0e\n\x06\x64\x65tail\x18\x05 \x01(\t\x12\x0f\n\x07\x63\x61ption\x18\x06 \x01(\t\"5\n\x06\x42utton\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0e\n\x06\x64\x65tail\x18\x03 \x01(\t\"\x9d\x01\n\x07Message\x12 \n\x07\x63hat_id\x18\x01 \x01(\x0b\x32\x0f.chatbot.ChatID\x12%\n\x07message\x18\x02 \x01(\x0b\x32\x14.chatbot.TextMessage\x12 \n\x07\x62uttons\x18\x03 \x03(\x0b\x32\x0f.chatbot.Button\x12\'\n\x0e\x64isplay_button\x18\x04 \x01(\x0b\x32\x0f.chatbot.Button\"A\n\x0b\x46ileMessage\x12!\n\x07message\x18\x01 \x01(\x0b\x32\x10.chatbot.Message\x12\x0f\n\x07\x66ile_id\x18\x02 \x01(\t\"_\n\x11UploadFileRequest\x12\x0f\n\x07\x66ile_id\x18\x01 \x01(\t\x12\x10\n\x08\x66ile_url\x18\x02 \x01(\t\x12\x11\n\tfile_type\x18\x03 \x01(\t\x12\x14\n\x0c\x66ile_content\x18\x04 \x01(\x0c\"d\n\x16TransferToHumanRequest\x12 \n\x07\x63hat_id\x18\x01 \x01(\x0b\x32\x0f.chatbot.ChatID\x12\x13\n\x0b\x63\x61mpaign_id\x18\x02 \x01(\t\x12\x13\n\x0bobservation\x18\x03 \x01(\t\"]\n\x15TransferToMenuRequest\x12 \n\x07\x63hat_id\x18\x01 \x01(\x0b\x32\x0f.chatbot.ChatID\x12\x0c\n\x04menu\x18\x02 \x01(\t\x12\x14\n\x0cuser_message\x18\x03 \x01(\t\"\x1e\n\x0eTabulationName\x12\x0c\n\x04name\x18\x01 \x01(\t\"B\n\x11TabulationDetails\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x13\n\x0blast_update\x18\x03 \x01(\t\"B\n\x0fTabulationsList\x12/\n\x0btabulations\x18\x01 \x03(\x0b\x32\x1a.chatbot.TabulationDetails\"^\n\x0e\x45ndChatRequest\x12 \n\x07\x63hat_id\x18\x01 \x01(\x0b\x32\x0f.chatbot.ChatID\x12\x15\n\rtabulation_id\x18\x02 \x01(\t\x12\x13\n\x0bobservation\x18\x03 \x01(\t\"\x1c\n\x0c\x43\x61mpaignName\x12\x0c\n\x04name\x18\x01 \x01(\t\"@\n\x0f\x43\x61mpaignDetails\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x13\n\x0blast_update\x18\x03 \x01(\t\"<\n\rCampaignsList\x12+\n\tcampaigns\x18\x01 \x03(\x0b\x32\x18.chatbot.CampaignDetails2\x83\x02\n\x10UserStateService\x12\x43\n\x15InsertUpdateUserState\x12\x12.chatbot.UserState\x1a\x16.chatbot.RequestStatus\x12:\n\x0f\x44\x65leteUserState\x12\x0f.chatbot.ChatID\x1a\x16.chatbot.RequestStatus\x12\x33\n\x0cGetUserState\x12\x0f.chatbot.ChatID\x1a\x12.chatbot.UserState\x12\x39\n\x10GetAllUserStates\x12\r.chatbot.Void\x1a\x16.chatbot.UserStateList2\xfd\x01\n\x0bSendMessage\x12\x37\n\x0bSendMessage\x12\x10.chatbot.Message\x1a\x16.chatbot.RequestStatus\x12\x39\n\tSendImage\x12\x14.chatbot.FileMessage\x1a\x16.chatbot.RequestStatus\x12\x38\n\x08SendFile\x12\x14.chatbot.FileMessage\x1a\x16.chatbot.RequestStatus\x12@\n\nUploadFile\x12\x1a.chatbot.UploadFileRequest\x1a\x16.chatbot.RequestStatus2\x9c\x02\n\x08Transfer\x12\x38\n\x0fGetAllCampaigns\x12\r.chatbot.Void\x1a\x16.chatbot.CampaignsList\x12@\n\rGetCampaignID\x12\x15.chatbot.CampaignName\x1a\x18.chatbot.CampaignDetails\x12J\n\x0fTransferToHuman\x12\x1f.chatbot.TransferToHumanRequest\x1a\x16.chatbot.RequestStatus\x12H\n\x0eTransferToMenu\x12\x1e.chatbot.TransferToMenuRequest\x1a\x16.chatbot.RequestStatus2\xcb\x01\n\x07\x45ndChat\x12<\n\x11GetAllTabulations\x12\r.chatbot.Void\x1a\x18.chatbot.TabulationsList\x12\x46\n\x0fGetTabulationID\x12\x17.chatbot.TabulationName\x1a\x1a.chatbot.TabulationDetails\x12:\n\x07\x45ndChat\x12\x17.chatbot.EndChatRequest\x1a\x16.chatbot.RequestStatusB\x0bZ\t./chatbotb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b'\n\x0crouter.proto\x12\x07\x63hatbot"\x06\n\x04Void"0\n\rRequestStatus\x12\x0e\n\x06status\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t"-\n\x06\x43hatID\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x12\n\ncompany_id\x18\x02 \x01(\t"q\n\tUserState\x12 \n\x07\x63hat_id\x18\x01 \x01(\x0b\x32\x0f.chatbot.ChatID\x12\x0c\n\x04menu\x18\x02 \x01(\t\x12\r\n\x05route\x18\x03 \x01(\t\x12\x10\n\x08protocol\x18\x04 \x01(\t\x12\x13\n\x0bobservation\x18\x05 \x01(\t"8\n\rUserStateList\x12\'\n\x0buser_states\x18\x01 \x03(\x0b\x32\x12.chatbot.UserState"?\n\x0cRouteRequest\x12 \n\x07\x63hat_id\x18\x01 \x01(\x0b\x32\x0f.chatbot.ChatID\x12\r\n\x05route\x18\x02 \x01(\t"j\n\x0bTextMessage\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x0b\n\x03url\x18\x02 \x01(\t\x12\x10\n\x08\x66ilename\x18\x03 \x01(\t\x12\r\n\x05title\x18\x04 \x01(\t\x12\x0e\n\x06\x64\x65tail\x18\x05 \x01(\t\x12\x0f\n\x07\x63\x61ption\x18\x06 \x01(\t"5\n\x06\x42utton\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0e\n\x06\x64\x65tail\x18\x03 \x01(\t"\x9d\x01\n\x07Message\x12 \n\x07\x63hat_id\x18\x01 \x01(\x0b\x32\x0f.chatbot.ChatID\x12%\n\x07message\x18\x02 \x01(\x0b\x32\x14.chatbot.TextMessage\x12 \n\x07\x62uttons\x18\x03 \x03(\x0b\x32\x0f.chatbot.Button\x12\'\n\x0e\x64isplay_button\x18\x04 \x01(\x0b\x32\x0f.chatbot.Button"A\n\x0b\x46ileMessage\x12!\n\x07message\x18\x01 \x01(\x0b\x32\x10.chatbot.Message\x12\x0f\n\x07\x66ile_id\x18\x02 \x01(\t"z\n\x11UploadFileRequest\x12\x10\n\x08\x66ile_url\x18\x01 \x01(\t\x12\x11\n\tfile_type\x18\x02 \x01(\t\x12\x16\n\x0e\x66ile_extension\x18\x03 \x01(\t\x12\x12\n\nexpiration\x18\x04 \x01(\t\x12\x14\n\x0c\x66ile_content\x18\x05 \x01(\x0c"d\n\x16TransferToHumanRequest\x12 \n\x07\x63hat_id\x18\x01 \x01(\x0b\x32\x0f.chatbot.ChatID\x12\x13\n\x0b\x63\x61mpaign_id\x18\x02 \x01(\t\x12\x13\n\x0bobservation\x18\x03 \x01(\t"l\n\x15TransferToMenuRequest\x12 \n\x07\x63hat_id\x18\x01 \x01(\x0b\x32\x0f.chatbot.ChatID\x12\x0c\n\x04menu\x18\x02 \x01(\t\x12\r\n\x05route\x18\x03 \x01(\t\x12\x14\n\x0cuser_message\x18\x04 \x01(\t"\x1e\n\x0eTabulationName\x12\x0c\n\x04name\x18\x01 \x01(\t"B\n\x11TabulationDetails\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x13\n\x0blast_update\x18\x03 \x01(\t"B\n\x0fTabulationsList\x12/\n\x0btabulations\x18\x01 \x03(\x0b\x32\x1a.chatbot.TabulationDetails"^\n\x0e\x45ndChatRequest\x12 \n\x07\x63hat_id\x18\x01 \x01(\x0b\x32\x0f.chatbot.ChatID\x12\x15\n\rtabulation_id\x18\x02 \x01(\t\x12\x13\n\x0bobservation\x18\x03 \x01(\t"\x1c\n\x0c\x43\x61mpaignName\x12\x0c\n\x04name\x18\x01 \x01(\t"@\n\x0f\x43\x61mpaignDetails\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x13\n\x0blast_update\x18\x03 \x01(\t"<\n\rCampaignsList\x12+\n\tcampaigns\x18\x01 \x03(\x0b\x32\x18.chatbot.CampaignDetails2\xbe\x02\n\x10UserStateService\x12\x43\n\x15InsertUpdateUserState\x12\x12.chatbot.UserState\x1a\x16.chatbot.RequestStatus\x12\x39\n\x08SetRoute\x12\x15.chatbot.RouteRequest\x1a\x16.chatbot.RequestStatus\x12:\n\x0f\x44\x65leteUserState\x12\x0f.chatbot.ChatID\x1a\x16.chatbot.RequestStatus\x12\x33\n\x0cGetUserState\x12\x0f.chatbot.ChatID\x1a\x12.chatbot.UserState\x12\x39\n\x10GetAllUserStates\x12\r.chatbot.Void\x1a\x16.chatbot.UserStateList2\xfd\x01\n\x0bSendMessage\x12\x37\n\x0bSendMessage\x12\x10.chatbot.Message\x1a\x16.chatbot.RequestStatus\x12\x39\n\tSendImage\x12\x14.chatbot.FileMessage\x1a\x16.chatbot.RequestStatus\x12\x38\n\x08SendFile\x12\x14.chatbot.FileMessage\x1a\x16.chatbot.RequestStatus\x12@\n\nUploadFile\x12\x1a.chatbot.UploadFileRequest\x1a\x16.chatbot.RequestStatus2\x9c\x02\n\x08Transfer\x12\x38\n\x0fGetAllCampaigns\x12\r.chatbot.Void\x1a\x16.chatbot.CampaignsList\x12@\n\rGetCampaignID\x12\x15.chatbot.CampaignName\x1a\x18.chatbot.CampaignDetails\x12J\n\x0fTransferToHuman\x12\x1f.chatbot.TransferToHumanRequest\x1a\x16.chatbot.RequestStatus\x12H\n\x0eTransferToMenu\x12\x1e.chatbot.TransferToMenuRequest\x1a\x16.chatbot.RequestStatus2\xcb\x01\n\x07\x45ndChat\x12<\n\x11GetAllTabulations\x12\r.chatbot.Void\x1a\x18.chatbot.TabulationsList\x12\x46\n\x0fGetTabulationID\x12\x17.chatbot.TabulationName\x1a\x1a.chatbot.TabulationDetails\x12:\n\x07\x45ndChat\x12\x17.chatbot.EndChatRequest\x1a\x16.chatbot.RequestStatusB\x0bZ\t./chatbotb\x06proto3'
+)
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'router_pb2', _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "router_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
-  _globals['DESCRIPTOR']._loaded_options = None
-  _globals['DESCRIPTOR']._serialized_options = b'Z\t./chatbot'
-  _globals['_VOID']._serialized_start=25
-  _globals['_VOID']._serialized_end=31
-  _globals['_REQUESTSTATUS']._serialized_start=33
-  _globals['_REQUESTSTATUS']._serialized_end=81
-  _globals['_CHATID']._serialized_start=83
-  _globals['_CHATID']._serialized_end=128
-  _globals['_USERSTATE']._serialized_start=130
-  _globals['_USERSTATE']._serialized_end=243
-  _globals['_USERSTATELIST']._serialized_start=245
-  _globals['_USERSTATELIST']._serialized_end=301
-  _globals['_TEXTMESSAGE']._serialized_start=303
-  _globals['_TEXTMESSAGE']._serialized_end=409
-  _globals['_BUTTON']._serialized_start=411
-  _globals['_BUTTON']._serialized_end=464
-  _globals['_MESSAGE']._serialized_start=467
-  _globals['_MESSAGE']._serialized_end=624
-  _globals['_FILEMESSAGE']._serialized_start=626
-  _globals['_FILEMESSAGE']._serialized_end=691
-  _globals['_UPLOADFILEREQUEST']._serialized_start=693
-  _globals['_UPLOADFILEREQUEST']._serialized_end=788
-  _globals['_TRANSFERTOHUMANREQUEST']._serialized_start=790
-  _globals['_TRANSFERTOHUMANREQUEST']._serialized_end=890
-  _globals['_TRANSFERTOMENUREQUEST']._serialized_start=892
-  _globals['_TRANSFERTOMENUREQUEST']._serialized_end=985
-  _globals['_TABULATIONNAME']._serialized_start=987
-  _globals['_TABULATIONNAME']._serialized_end=1017
-  _globals['_TABULATIONDETAILS']._serialized_start=1019
-  _globals['_TABULATIONDETAILS']._serialized_end=1085
-  _globals['_TABULATIONSLIST']._serialized_start=1087
-  _globals['_TABULATIONSLIST']._serialized_end=1153
-  _globals['_ENDCHATREQUEST']._serialized_start=1155
-  _globals['_ENDCHATREQUEST']._serialized_end=1249
-  _globals['_CAMPAIGNNAME']._serialized_start=1251
-  _globals['_CAMPAIGNNAME']._serialized_end=1279
-  _globals['_CAMPAIGNDETAILS']._serialized_start=1281
-  _globals['_CAMPAIGNDETAILS']._serialized_end=1345
-  _globals['_CAMPAIGNSLIST']._serialized_start=1347
-  _globals['_CAMPAIGNSLIST']._serialized_end=1407
-  _globals['_USERSTATESERVICE']._serialized_start=1410
-  _globals['_USERSTATESERVICE']._serialized_end=1669
-  _globals['_SENDMESSAGE']._serialized_start=1672
-  _globals['_SENDMESSAGE']._serialized_end=1925
-  _globals['_TRANSFER']._serialized_start=1928
-  _globals['_TRANSFER']._serialized_end=2212
-  _globals['_ENDCHAT']._serialized_start=2215
-  _globals['_ENDCHAT']._serialized_end=2418
+    _globals["DESCRIPTOR"]._loaded_options = None
+    _globals["DESCRIPTOR"]._serialized_options = b"Z\t./chatbot"
+    _globals["_VOID"]._serialized_start = 25
+    _globals["_VOID"]._serialized_end = 31
+    _globals["_REQUESTSTATUS"]._serialized_start = 33
+    _globals["_REQUESTSTATUS"]._serialized_end = 81
+    _globals["_CHATID"]._serialized_start = 83
+    _globals["_CHATID"]._serialized_end = 128
+    _globals["_USERSTATE"]._serialized_start = 130
+    _globals["_USERSTATE"]._serialized_end = 243
+    _globals["_USERSTATELIST"]._serialized_start = 245
+    _globals["_USERSTATELIST"]._serialized_end = 301
+    _globals["_ROUTEREQUEST"]._serialized_start = 303
+    _globals["_ROUTEREQUEST"]._serialized_end = 366
+    _globals["_TEXTMESSAGE"]._serialized_start = 368
+    _globals["_TEXTMESSAGE"]._serialized_end = 474
+    _globals["_BUTTON"]._serialized_start = 476
+    _globals["_BUTTON"]._serialized_end = 529
+    _globals["_MESSAGE"]._serialized_start = 532
+    _globals["_MESSAGE"]._serialized_end = 689
+    _globals["_FILEMESSAGE"]._serialized_start = 691
+    _globals["_FILEMESSAGE"]._serialized_end = 756
+    _globals["_UPLOADFILEREQUEST"]._serialized_start = 758
+    _globals["_UPLOADFILEREQUEST"]._serialized_end = 880
+    _globals["_TRANSFERTOHUMANREQUEST"]._serialized_start = 882
+    _globals["_TRANSFERTOHUMANREQUEST"]._serialized_end = 982
+    _globals["_TRANSFERTOMENUREQUEST"]._serialized_start = 984
+    _globals["_TRANSFERTOMENUREQUEST"]._serialized_end = 1092
+    _globals["_TABULATIONNAME"]._serialized_start = 1094
+    _globals["_TABULATIONNAME"]._serialized_end = 1124
+    _globals["_TABULATIONDETAILS"]._serialized_start = 1126
+    _globals["_TABULATIONDETAILS"]._serialized_end = 1192
+    _globals["_TABULATIONSLIST"]._serialized_start = 1194
+    _globals["_TABULATIONSLIST"]._serialized_end = 1260
+    _globals["_ENDCHATREQUEST"]._serialized_start = 1262
+    _globals["_ENDCHATREQUEST"]._serialized_end = 1356
+    _globals["_CAMPAIGNNAME"]._serialized_start = 1358
+    _globals["_CAMPAIGNNAME"]._serialized_end = 1386
+    _globals["_CAMPAIGNDETAILS"]._serialized_start = 1388
+    _globals["_CAMPAIGNDETAILS"]._serialized_end = 1452
+    _globals["_CAMPAIGNSLIST"]._serialized_start = 1454
+    _globals["_CAMPAIGNSLIST"]._serialized_end = 1514
+    _globals["_USERSTATESERVICE"]._serialized_start = 1517
+    _globals["_USERSTATESERVICE"]._serialized_end = 1835
+    _globals["_SENDMESSAGE"]._serialized_start = 1838
+    _globals["_SENDMESSAGE"]._serialized_end = 2091
+    _globals["_TRANSFER"]._serialized_start = 2094
+    _globals["_TRANSFER"]._serialized_end = 2378
+    _globals["_ENDCHAT"]._serialized_start = 2381
+    _globals["_ENDCHAT"]._serialized_end = 2584
 # @@protoc_insertion_point(module_scope)

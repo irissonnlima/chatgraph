@@ -12,7 +12,7 @@ from .types.end_types import (
 from .types.message_types import Message, Button
 from .types.route import Route
 from .types.background_task import BackgroundTask
-from .types.image import ImageData, SendImage
+from .types.image import ImageData, ImageMessage
 
 __all__ = [
     "ChatbotApp",
@@ -32,5 +32,5 @@ __all__ = [
     "Button",
     "BackgroundTask",
     "ImageData",
-    "SendImage",
+    "ImageMessage",
 ]
