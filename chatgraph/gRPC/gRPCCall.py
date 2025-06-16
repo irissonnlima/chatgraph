@@ -1,6 +1,7 @@
 import os
 import grpc
 import json
+from rich.console import Console
 
 import chatgraph.pb.router_pb2 as chatbot_pb2
 import chatgraph.pb.router_pb2_grpc as chatbot_pb2_grpc
@@ -22,15 +23,22 @@ class RouterServiceClient:
         self.transfer_stub = chatbot_pb2_grpc.TransferStub(self.channel)
         self.end_chat_stub = chatbot_pb2_grpc.EndChatStub(self.channel)
 
+        self.console = Console()
+
     def insert_update_user_state(self, user_state_data):
         request = chatbot_pb2.UserState(**user_state_data)
         try:
             response = self.user_state_stub.InsertUpdateUserState(request)
             if not response.status:
-                print(f"Erro ao chamar SendMessage: {response.message}")
+                self.console.print(
+                    f"Erro ao chamar InsertUpdateUserState: {response.message}",
+                    style="bold red",
+                )
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao chamar InsertUpdateUserState: {e}")
+            self.console.print(
+                f"Erro ao chamar InsertUpdateUserState: {e}", style="bold red"
+            )
             return None
 
     def delete_user_state(self, chat_id_data):
@@ -38,10 +46,12 @@ class RouterServiceClient:
         try:
             response = self.user_state_stub.DeleteUserState(request)
             if not response.status:
-                print(f"Erro ao chamar SendMessage: {response.message}")
+                self.console.print(
+                    f"Erro ao chamar SendMessage: {response.message}", style="bold red"
+                )
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao chamar DeleteUserState: {e}")
+            self.console.print(f"Erro ao chamar DeleteUserState: {e}", style="bold red")
             return None
 
     def get_user_state(self, chat_id_data):
@@ -50,7 +60,7 @@ class RouterServiceClient:
             response = self.user_state_stub.GetUserState(request)
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao chamar GetUserState: {e}")
+            self.console.print(f"Erro ao chamar GetUserState: {e}", style="bold red")
             return None
 
     def send_message(self, message_data):
@@ -61,10 +71,12 @@ class RouterServiceClient:
         try:
             response = self.send_message_stub.SendMessage(request)
             if not response.status:
-                print(f"Erro ao chamar SendMessage: {response.message}")
+                self.console.print(
+                    f"Erro ao chamar SendMessage: {response.message}", style="bold red"
+                )
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao chamar SendMessage: {e}")
+            self.console.print(f"Erro ao chamar SendMessage: {e}", style="bold red")
             return None
 
     def send_image(self, message_data):
@@ -75,12 +87,14 @@ class RouterServiceClient:
         try:
             response = self.send_message_stub.SendImage(request)
             if not response.status and response.message != "arquivo não encontrado":
-                print(f"Erro ao chamar SendImage: {response.message}")
+                self.console.print(
+                    f"Erro ao chamar SendImage: {response.message}", style="bold red"
+                )
             elif response.message == "arquivo não encontrado":
                 print("Arquivo não encontrado, Carregando arquivo...")
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao chamar SendImage: {e}")
+            self.console.print(f"Erro ao chamar SendImage: {e}", style="bold red")
             return None
 
     def upload_file(self, file_data):
@@ -88,10 +102,12 @@ class RouterServiceClient:
         try:
             response = self.send_message_stub.UploadFile(request)
             if not response.status:
-                print(f"Erro ao chamar UploadFile: {response.message}")
+                self.console.print(
+                    f"Erro ao chamar UploadFile: {response.message}", style="bold red"
+                )
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao chamar UploadFile: {e}")
+            self.console.print(f"Erro ao chamar UploadFile: {e}", style="bold red")
             return None
 
     def transfer_to_human(self, transfer_request_data):
@@ -99,10 +115,12 @@ class RouterServiceClient:
         try:
             response = self.transfer_stub.TransferToHuman(request)
             if not response.status:
-                print(f"Erro ao chamar SendMessage: {response.message}")
+                self.console.print(
+                    f"Erro ao chamar SendMessage: {response.message}", style="bold red"
+                )
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao chamar TransferToHuman: {e}")
+            self.console.print(f"Erro ao chamar TransferToHuman: {e}", style="bold red")
             return None
 
     def transfer_to_menu(self, transfer_request_data):
@@ -110,10 +128,13 @@ class RouterServiceClient:
         try:
             response = self.transfer_stub.TransferToMenu(request)
             if not response.status:
-                print(f"Erro ao chamar TransferToMenu: {response.message}")
+                self.console.print(
+                    f"Erro ao chamar TransferToMenu: {response.message}",
+                    style="bold red",
+                )
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao chamar TransferToMenu: {e}")
+            self.console.print(f"Erro ao chamar TransferToMenu: {e}", style="bold red")
             return None
 
     def end_chat(self, end_chat_request_data):
@@ -121,10 +142,12 @@ class RouterServiceClient:
         try:
             response = self.end_chat_stub.EndChat(request)
             if not response.status:
-                print(f"Erro ao chamar SendMessage: {response.message}")
+                self.console.print(
+                    f"Erro ao chamar SendMessage: {response.message}", style="bold red"
+                )
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao chamar EndChat: {e}")
+            self.console.print(f"Erro ao chamar EndChat: {e}", style="bold red")
             return None
 
     def get_campaign_id(self, campaign_name):
@@ -133,7 +156,7 @@ class RouterServiceClient:
             response = self.transfer_stub.GetCampaignID(request)
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao chamar GetCampaignID: {e}")
+            self.console.print(f"Erro ao chamar GetCampaignID: {e}", style="bold red")
             return None
 
     def get_all_campaigns(self):
@@ -142,7 +165,7 @@ class RouterServiceClient:
             response = self.transfer_stub.GetAllCampaigns(request)
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao chamar GetAllCampaigns: {e}")
+            self.console.print(f"Erro ao chamar GetAllCampaigns: {e}", style="bold red")
             return None
 
     def get_tabulation_id(self, tabulation_name):
@@ -151,7 +174,7 @@ class RouterServiceClient:
             response = self.end_chat_stub.GetTabulationID(request)
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao chamar GetTabulationID: {e}")
+            self.console.print(f"Erro ao chamar GetTabulationID: {e}", style="bold red")
             return None
 
     def get_all_tabulations(self):
@@ -160,5 +183,7 @@ class RouterServiceClient:
             response = self.end_chat_stub.GetAllTabulations(request)
             return response
         except grpc.RpcError as e:
-            print(f"Erro ao chamar GetAllTabulations: {e}")
+            self.console.print(
+                f"Erro ao chamar GetAllTabulations: {e}", style="bold red"
+            )
             return None

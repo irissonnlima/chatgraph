@@ -3,6 +3,8 @@ from chatgraph import (
     UserCall,
     Route,
     ImageData,
+    EndChatResponse,
+    TransferToHuman,
 )
 from dotenv import load_dotenv
 from datetime import datetime
@@ -11,12 +13,12 @@ import asyncio
 load_dotenv()
 app = ChatbotApp()
 
-rs_sc_link = "https://tcr-8yb1cjol-1320354164.cos.sa-saopaulo.myqcloud.com/router_documents/rs_sc.jpeg"
-pr_ms_sp_link = "https://tcr-8yb1cjol-1320354164.cos.sa-saopaulo.myqcloud.com/router_documents/pr_ms_sp.jpeg"
-
-image_rs_sc = ImageData(url=rs_sc_link)
-image_pr_ms_sp = ImageData(url=pr_ms_sp_link)
-image_lixeira = ImageData(image_path="lixeira.png")
+# rs_sc_link = "https://tcr-8yb1cjol-1320354164.cos.sa-saopaulo.myqcloud.com/router_documents/rs_sc.jpeg"
+# pr_ms_sp_link = "https://tcr-8yb1cjol-1320354164.cos.sa-saopaulo.myqcloud.com/router_documents/pr_ms_sp.jpeg"
+#
+# image_rs_sc = ImageData(url=rs_sc_link)
+# image_pr_ms_sp = ImageData(url=pr_ms_sp_link)
+# image_lixeira = ImageData(image_path="lixeira.png")
 
 
 # Rota inicial com emojis
@@ -24,8 +26,12 @@ image_lixeira = ImageData(image_path="lixeira.png")
 async def start(rota: Route, usercall: UserCall) -> tuple:
 
     usercall.send("Olá, bem-vindo ao atendimento das Lojas Quero-Quero VerdeCard! 💚")
-    usercall.send(image_lixeira)
+    # usercall.send(image_lixeira)
 
+    return TransferToHuman(
+        campaign_id="02d990ff-b90d-4f93-a012-7a145e05f647",
+        observations="Atendimento encerrado pelo usuário teste.",
+    )
     # return TransferToMenu(menu="dEfault", user_message="oi.")
 
     """ async def func(usercall: UserCall):

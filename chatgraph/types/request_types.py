@@ -4,6 +4,7 @@ from chatgraph.types.message_types import Message, Button, MessageTypes, message
 from typing import Optional
 from datetime import datetime
 import json, os
+from rich.console import Console
 
 
 class ChatID:
@@ -155,6 +156,7 @@ class UserCall:
         self.__grpc_uri = grpc_uri
 
         self.__router_client = RouterServiceClient(self.__grpc_uri)
+        self.console = Console()
 
     def __str__(self):
         return f"UserCall({self.type}, {self.__type_message}, {self.__content_message}, {self.__user_state})"
@@ -220,14 +222,20 @@ class UserCall:
         if not response.status:
             raise ValueError("Erro ao enviar mensagem de botões.")
 
-    def transfer_to_human(self, message: str, campaign_name: str) -> None:
+    def transfer_to_human(
+        self, message: str, campaign_id: str = None, campaign_name: str = None
+    ) -> None:
 
-        campaign = self.__router_client.get_campaign_id({"name": campaign_name})
+        if campaign_id is None and campaign_name is None:
+            raise ValueError("Você deve informar o ID ou o nome da campanha.")
+        if not campaign_id:
+            campaign = self.__router_client.get_campaign_id({"name": campaign_name})
+            campaign_id = campaign.id
 
         response = self.__router_client.transfer_to_human(
             {
                 "chat_id": self.__user_state.chatID.to_dict(),
-                "campaign_id": campaign.id,
+                "campaign_id": campaign_id,
                 "observation": message,
             }
         )
@@ -248,13 +256,19 @@ class UserCall:
         if not response.status:
             raise ValueError("Erro ao transferir chat para menu.")
 
-    def end_chat(self, message: str, tabulation_name: str) -> None:
-        tabulation = self.__router_client.get_tabulation_id({"name": tabulation_name})
+    def end_chat(self, message: str, tabulation_id: str, tabulation_name: str) -> None:
+        if tabulation_id is None and tabulation_name is None:
+            raise ValueError("Você deve informar o ID ou o nome da tabulação.")
+        if not tabulation_id:
+            tabulation = self.__router_client.get_tabulation_id(
+                {"name": tabulation_name}
+            )
+            tabulation_id = tabulation.id
 
         response = self.__router_client.end_chat(
             {
                 "chat_id": self.__user_state.chatID.to_dict(),
-                "tabulation_id": tabulation.id,
+                "tabulation_id": tabulation_id,
                 "observation": message,
             }
         )
@@ -340,3 +354,7 @@ class UserCall:
         self.update_user_state(
             self.__user_state.menu, self.__user_state.route, observation
         )
+
+    @content_message.setter
+    def content_message(self, content_message: str):
+        self.__content_message = content_message

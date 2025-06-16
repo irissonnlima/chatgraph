@@ -2,6 +2,7 @@ import inspect
 from functools import wraps
 from logging import debug, error
 import asyncio
+import re
 
 from ..error.chatbot_error import ChatbotMessageError
 from ..messages.message_consumer import MessageConsumer
@@ -16,6 +17,11 @@ from ..types.end_types import (
 from ..types.route import Route
 from .chatbot_router import ChatbotRouter
 from ..types.background_task import BackgroundTask
+from .default_functions import voltar
+
+DEFAULT_FUNCTION: dict[str, callable] = {
+    r"^\s*(voltar)\s*$": voltar,
+}
 
 
 class ChatbotApp:
@@ -23,16 +29,22 @@ class ChatbotApp:
     Classe principal para a aplicação do chatbot, gerencia as rotas e a lógica de processamento de mensagens.
     """
 
-    def __init__(self, message_consumer: MessageConsumer = None):
+    def __init__(
+        self,
+        message_consumer: MessageConsumer = None,
+        default_functions: dict[str, callable] = DEFAULT_FUNCTION,
+    ):
         """
         Inicializa a classe ChatbotApp com um estado de usuário e um consumidor de mensagens.
 
         Args:
             message_consumer (MessageConsumer): O consumidor de mensagens que lida com a entrada de mensagens no sistema.
+            default_functions (dict[str, callable]): Dicionário de funções padrão que podem ser usadas antes das rotas.
         """
         if not message_consumer:
             message_consumer = MessageConsumer.load_dotenv()
 
+        self.default_functions = default_functions
         self.__message_consumer = message_consumer
         self.__routes = {}
 
@@ -106,7 +118,20 @@ class ChatbotApp:
         route = userCall.route.lower()
         route_handler = route.split(".")[-1]
 
-        handler = self.__routes.get(route_handler, None)
+        matchDefault = False
+
+        for regex, func in self.default_functions.items():
+            if re.match(regex, userCall.content_message):
+                matchDefault = True
+                debug(f"Função padrão encontrada: {func.__name__} para a rota {route}")
+                handler = {
+                    "function": func,
+                    "params": {UserCall: "userCall", Route: "route"},
+                }
+                break
+
+        if not matchDefault:
+            handler = self.__routes.get(route_handler, None)
 
         if not handler:
             raise ChatbotMessageError(user_id, f"Rota não encontrada para {route}!")
@@ -126,6 +151,9 @@ class ChatbotApp:
         else:
             loop = asyncio.get_running_loop()
             userCall_response = await loop.run_in_executor(None, lambda: func(**kwargs))
+
+        if matchDefault:
+            userCall.content_message = ""
 
         if isinstance(userCall_response, (list, tuple)):
             for response in userCall_response:
@@ -166,6 +194,7 @@ class ChatbotApp:
                 userCall.end_chat,
                 userCall_response.observations,
                 userCall_response.tabulation_id,
+                userCall_response.tabulation_name,
             )
             return
 
@@ -175,6 +204,7 @@ class ChatbotApp:
                 userCall.transfer_to_human,
                 userCall_response.observations,
                 userCall_response.campaign_id,
+                userCall_response.campaign_name,
             )
             return
 

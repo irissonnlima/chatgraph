@@ -25,11 +25,20 @@ class EndChatResponse:
         observations (str): As observações finais do chatbot.
     """
 
-    def __init__(self, tabulation_id: str, observations: str) -> None:
+    def __init__(
+        self,
+        tabulation_id: str,
+        tabulation_name: str | None = None,
+        observations: str | None = None,
+    ) -> None:
         """
         Finzaliza e tabula as informações do chatbot.
         """
+        if not tabulation_id and not tabulation_name:
+            raise ValueError("tabulation_id or tabulation_name must be provided.")
+
         self.tabulation_id = tabulation_id
+        self.tabulation_name = tabulation_name
         self.observations = observations
 
 
@@ -38,11 +47,17 @@ class TransferToHuman:
     Representa uma transferencia para um atendente humano.
     """
 
-    def __init__(self, campaign_id: str, observations: str) -> None:
+    def __init__(
+        self,
+        campaign_id: str,
+        campaign_name: str | None = None,
+        observations: str | None = None,
+    ) -> None:
         """
         Finzaliza e tabula as informações do chatbot.
         """
         self.campaign_id = campaign_id
+        self.campaign_name = campaign_name
         self.observations = observations
 
 

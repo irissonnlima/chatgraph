@@ -10,7 +10,7 @@ class Route:
         routes (list[str]): A lista de todas as rotas disponíveis no fluxo.
     """
 
-    def __init__(self, current: str, routes: list[str], separator:str='.'):
+    def __init__(self, current: str, routes: list[str], separator: str = "."):
         """
         Inicializa a rota com a rota atual e a lista de rotas disponíveis.
 
@@ -24,20 +24,20 @@ class Route:
         self.separator = separator
 
     @property
-    def previous(self)->'Route':
+    def previous(self) -> "Route":
         """
         Retorna a rota anterior a atual do usuário
         """
         return self.get_previous()
-    
+
     @property
-    def current_node(self)->str:
+    def current_node(self) -> str:
         """
         Retorna o nó atual do usuário
         """
         return self.current.split(self.separator)[-1]
-    
-    def get_previous(self) -> 'Route':
+
+    def get_previous(self) -> "Route":
         """
         Retorna o caminho anterior ao caminho atual.
 
@@ -47,13 +47,18 @@ class Route:
         Returns:
             str: O caminho anterior à rota atual.
         """
-        if self.current == 'start':
+        if self.current == "start":
             return Route(self.current, self.routes, self.separator)
 
-        previous_route = self.separator.join(self.current.split(self.separator)[:-1])
+        rotas_dedup = self.separator.join(
+            dict.fromkeys(self.current.split(self.separator))
+        )
+
+        previous_route = self.separator.join(rotas_dedup.split(self.separator)[:-1])
+
         return Route(previous_route, self.routes, self.separator)
 
-    def get_next(self, next_part: str) -> 'Route':
+    def get_next(self, next_part: str) -> "Route":
         """
         Monta e retorna o próximo caminho com base na parte fornecida.
 
@@ -69,8 +74,8 @@ class Route:
         next_part = next_part.strip().lower()
         next_route = f"{self.current.rstrip(self.separator)}.{next_part}"
         if next_part not in self.routes:
-            raise RouteError(f'Rota não encontrada: {next_part}')
-        
+            raise RouteError(f"Rota não encontrada: {next_part}")
+
         return Route(next_route, self.routes, self.separator)
 
     def __str__(self):
@@ -80,7 +85,7 @@ class Route:
         Returns:
             str: A representação em string da rota atual.
         """
-        return f'Route(current={self.current})'
+        return f"Route(current={self.current})"
 
     def __repr__(self):
         """
