@@ -49,7 +49,7 @@ class TransferToHuman:
 
     def __init__(
         self,
-        campaign_id: str,
+        campaign_id: str | None = None,
         campaign_name: str | None = None,
         observations: str | None = None,
     ) -> None:
