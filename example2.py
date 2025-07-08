@@ -5,7 +5,7 @@ if __name__ == "__main__":
     load_dotenv()
 
     myUser = UserState(
-        chatID=ChatID("5565981027703", "1234567890"),
+        chatID=ChatID(os.getenv('NUMBER_KEY'), "1234567890"),
         menu="state1",
         route="route1",
         protocol="protocol1",
@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     myUser.insert()
 
-    myUser = UserState.get_user_state("5565981027703", "1234567890")
+    myUser = UserState.get_user_state(os.getenv('NUMBER_KEY'), "1234567890")
 
     print(myUser)
     myUser.route = "route2"
