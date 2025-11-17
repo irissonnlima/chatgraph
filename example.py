@@ -24,7 +24,8 @@ app = ChatbotApp()
 # Rota inicial com emojis
 @app.route("start")
 async def start(rota: Route, usercall: UserCall) -> tuple:
-
+    file = usercall.read_file('data/file.png'): File
+    message = Message(file=file)
     usercall.send("Olá, bem-vindo ao atendimento das Lojas Quero-Quero VerdeCard! 💚")
     # usercall.send(image_lixeira)
 
