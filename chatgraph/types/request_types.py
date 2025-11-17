@@ -163,7 +163,7 @@ class UserCall:
 
     def send(
         self,
-        message: messageTypes | Message,
+        message: messageTypes | Message | File,
     ) -> None:
         """
         Envia uma mensagem ao cliente.
@@ -221,60 +221,6 @@ class UserCall:
 
         if not response.status:
             raise ValueError("Erro ao enviar mensagem de botões.")
-
-    def transfer_to_human(
-        self, message: str, campaign_id: str = None, campaign_name: str = None
-    ) -> None:
-
-        if campaign_id is None and campaign_name is None:
-            raise ValueError("Você deve informar o ID ou o nome da campanha.")
-        if not campaign_id:
-            campaign = self.__router_client.get_campaign_id({"name": campaign_name})
-            campaign_id = campaign.id
-
-        response = self.__router_client.transfer_to_human(
-            {
-                "chat_id": self.__user_state.chatID.to_dict(),
-                "campaign_id": campaign_id,
-                "observation": message,
-            }
-        )
-
-        if not response.status:
-            raise ValueError("Erro ao transferir chat para humano.")
-
-    def transfer_to_menu(self, menu: str, message: str) -> None:
-
-        response = self.__router_client.transfer_to_menu(
-            {
-                "chat_id": self.__user_state.chatID.to_dict(),
-                "menu": menu,
-                "user_message": message,
-            }
-        )
-
-        if not response.status:
-            raise ValueError("Erro ao transferir chat para menu.")
-
-    def end_chat(self, message: str, tabulation_id: str, tabulation_name: str) -> None:
-        if tabulation_id is None and tabulation_name is None:
-            raise ValueError("Você deve informar o ID ou o nome da tabulação.")
-        if not tabulation_id:
-            tabulation = self.__router_client.get_tabulation_id(
-                {"name": tabulation_name}
-            )
-            tabulation_id = tabulation.id
-
-        response = self.__router_client.end_chat(
-            {
-                "chat_id": self.__user_state.chatID.to_dict(),
-                "tabulation_id": tabulation_id,
-                "observation": message,
-            }
-        )
-
-        if not response.status:
-            raise ValueError("Erro ao encerrar chat.")
 
     def delete_user_state(self) -> None:
         response = self.__user_state.delete(self.__grpc_uri)

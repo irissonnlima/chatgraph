@@ -220,6 +220,7 @@ class ChatbotApp:
         elif isinstance(userCall_response, RedirectResponse):
             route = route + "." + userCall_response.route
             userCall.route = route
+            usercall.setRoute(userCall_response.route)
             await self.process_message(userCall)
 
         elif not userCall_response:
