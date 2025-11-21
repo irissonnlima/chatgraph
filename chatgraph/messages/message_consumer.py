@@ -5,7 +5,7 @@ import os
 import aio_pika
 from typing import Callable
 from ..auth.credentials import Credential
-from ..types.request_types import UserCall, UserState, ChatID
+from ..types.usercall import UserCall, UserState, ChatID
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text

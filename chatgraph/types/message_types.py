@@ -1,7 +1,7 @@
 from typing import Optional, Union
 
 messageTypes = Union[str, float, int]
-MessageTypes = (str, float, int)
+
 
 
 TITLE_MAX_LENGTH = 20

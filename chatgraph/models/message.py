@@ -8,7 +8,12 @@ botões, arquivos e seus tipos no sistema de chatbot.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Union
+import httpx
+import os
+import hashlib
+
+MessageTypes = Union[str, float, int]
 
 
 @dataclass
@@ -18,7 +23,6 @@ class File:
 
     Attributes:
         id: ID único do arquivo
-        send_type: Tipo de envio (IMAGE, VIDEO, AUDIO, FILE)
         url: URL do arquivo
         name: Nome do arquivo (ex: "document.pdf")
         mime_type: Tipo MIME do arquivo
@@ -30,7 +34,6 @@ class File:
     """
 
     id: str = ''
-    send_type: Optional[str] = ''
     url: str = ''
     name: str = ''
     mime_type: str = ''
@@ -39,6 +42,7 @@ class File:
     created_at: str = ''
     expires_after_days: int = 0
     actualized_at: str = ''
+    bytes_data: Optional[bytes] = None
 
     def is_empty(self) -> bool:
         """Verifica se o arquivo está vazio."""
@@ -74,11 +78,9 @@ class File:
     @classmethod
     def from_dict(cls, data: dict) -> 'File':
         """Cria instância a partir de dicionário."""
-        send_type = None
 
         return cls(
             id=data.get('id', ''),
-            send_type=send_type,
             url=data.get('url', ''),
             name=data.get('name', ''),
             mime_type=data.get('mime_type', ''),
@@ -88,6 +90,53 @@ class File:
             expires_after_days=data.get('expires_after_days', 0),
             actualized_at=data.get('actualized_at', ''),
         )
+
+    async def __check_file_exists(self) -> bool:
+        if os.path.isfile(self.name):
+            return True
+        return False
+
+    async def __deal_with_url(self) -> bytes:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(self.url)
+            response.raise_for_status()
+            return response.content
+
+    async def __deal_with_path(self) -> bytes:
+        """Lê os bytes de um arquivo dado seu caminho."""
+        if not await self.__check_file_exists():
+            raise ValueError('Arquivo não encontrado para envio.')
+
+        with open(self.name, 'rb') as file:
+            self.bytes_data = file.read()
+        return self.bytes_data
+
+    async def __make_file_hash(
+        self,
+    ) -> str:
+        """Gera hash SHA-256 de bytes do arquivo."""
+        if not self.bytes_data:
+            raise ValueError('Dados do arquivo não carregados para hash.')
+
+        self.hash_id = hashlib.sha256(self.bytes_data).hexdigest()
+        return self.hash_id
+
+    async def load_file(self):
+        if not self.name and not self.url:
+            raise ValueError(
+                'Nenhum dado de arquivo fornecido para carregamento.'
+            )
+
+        try:
+            if self.url:
+                self.bytes_data = await self.__deal_with_url()
+            else:
+                self.bytes_data = await self.__deal_with_path()
+            if not self.hash_id and self.bytes_data:
+                self.hash_id = await self.__make_file_hash()
+
+        except Exception as e:
+            raise ValueError(f'Erro ao carregar arquivo: {e}')
 
 
 class ButtonType(Enum):
@@ -210,22 +259,25 @@ class Message:
         file: Arquivo anexado (opcional)
     """
 
-    def __init__(
-        self,
-        text_message: TextMessage | str,
-        buttons: List[Button] = [],
-        display_button: Optional[Button] = None,
-        file: Optional[File] = None,
-    ):
-        self.text_message = text_message
-        if isinstance(text_message, str):
-            self.text_message = TextMessage(detail=text_message)
-
     text_message: TextMessage = field(default_factory=TextMessage)
     buttons: List[Button] = field(default_factory=list)
     display_button: Optional[Button] = None
     date_time: datetime = field(default_factory=datetime.now)
-    file: Optional[File] = None
+    file: Optional[File] = field(default_factory=File)
+
+    def __init__(
+        self,
+        text_message: TextMessage | str = '',
+        buttons: List[Button] = [],
+        display_button: Optional[Button] = None,
+        file: Optional[File | str] = None,
+    ):
+        self.buttons = buttons
+        self.display_button = display_button
+        self.date_time = datetime.now()
+
+        self.__load_text_message(text_message)
+        self.__load_file(file)
 
     def has_buttons(self) -> bool:
         """Verifica se a mensagem possui botões."""
@@ -233,7 +285,19 @@ class Message:
 
     def has_file(self) -> bool:
         """Verifica se a mensagem possui arquivo anexado."""
-        return self.file is not None
+        return self.file is not None and not self.file.is_empty()
+
+    def __load_file(self, file: Optional[File | str]) -> None:
+        if isinstance(file, str):
+            self.file = File(name=file)
+        else:
+            self.file = file
+
+    def __load_text_message(self, text_message: TextMessage | str) -> None:
+        if isinstance(text_message, str):
+            self.text_message = TextMessage(detail=text_message)
+        else:
+            self.text_message = text_message
 
     def to_dict(self) -> dict:
         """Converte para dicionário."""

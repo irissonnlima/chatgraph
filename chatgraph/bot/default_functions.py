@@ -1,4 +1,4 @@
-from ..types.request_types import UserCall
+from ..types.usercall import UserCall
 from ..types.message_types import Message, Button
 from ..types.end_types import (
     RedirectResponse,

@@ -2,7 +2,7 @@ from .auth.credentials import Credential
 from .bot.chatbot_model import ChatbotApp
 from .bot.chatbot_router import ChatbotRouter
 from .messages.message_consumer import MessageConsumer
-from .types.request_types import UserCall, UserState, ChatID
+from .types.usercall import UserCall, UserState, ChatID
 from .types.end_types import (
     RedirectResponse,
     EndChatResponse,

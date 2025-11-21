@@ -4,6 +4,7 @@ import httpx
 
 from ..models.userstate import UserState, ChatID, Menu, User
 from ..models.message import Message, File, Button, TextMessage
+from ..models.actions import EndAction
 
 
 class RouterHTTPClient:
@@ -301,14 +302,19 @@ class RouterHTTPClient:
         """
         pass
 
-    async def end_chat(self, end_data: Dict[str, Any]) -> Any:
+    async def end_chat(
+        self,
+        chat_id: ChatID,
+        end_action: EndAction,
+        origin: str,
+    ) -> Any:
         """
         Encerra o atendimento com tabulação.
 
         Args:
             end_data: Dicionário contendo:
                 - chat_id: ID do chat (user_id, company_id)
-                - tabulation_id: ID da tabulação de encerramento
+                - end_action: ID da tabulação de encerramento
                 - observation: Observação sobre o encerramento
 
         Returns:
@@ -317,4 +323,24 @@ class RouterHTTPClient:
         Raises:
             Exception: Se houver erro na comunicação.
         """
-        pass
+        endpoint = '/session/end/'
+        payload = {
+            'chat_id': chat_id.to_dict(),
+            'end_action': end_action.to_dict(),
+            'origin': origin,
+        }
+
+        async with self._client as client:
+            response = await client.post(
+                endpoint,
+                json=payload,
+            )
+            response.raise_for_status()
+            response_data = response.json()
+            status = response_data.get('status')
+            message = response_data.get('message')
+
+            if not status:
+                raise Exception(f'Erro ao encerrar chat: {message}')
+
+            return response_data

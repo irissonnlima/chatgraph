@@ -6,7 +6,7 @@ import re
 
 from ..error.chatbot_error import ChatbotMessageError
 from ..messages.message_consumer import MessageConsumer
-from ..types.request_types import UserCall
+from ..types.usercall import UserCall
 from ..types.message_types import Message, Button
 from ..types.end_types import (
     RedirectResponse,
