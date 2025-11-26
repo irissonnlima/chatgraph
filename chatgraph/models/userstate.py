@@ -6,6 +6,7 @@ no sistema de chatbot, incluindo identificação, informações pessoais,
 menu atual e metadados da sessão.
 """
 
+import json
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -149,7 +150,7 @@ class UserState:
     session_id: Optional[int] = None
     menu: Optional[Menu] = field(default_factory=Menu)
     user: Optional[User] = field(default_factory=User)
-    route: Optional[str] = None
+    route: str = 'start'
     direction_in: Optional[bool] = None
     observation: Optional[str] = None
     last_update: Optional[str] = None
@@ -193,10 +194,21 @@ class UserState:
             chat_id=ChatID.from_dict(chat_id_data),
             menu=Menu.from_dict(menu_data) if menu_data else Menu(),
             user=User.from_dict(user_data) if user_data else User(),
-            route=data.get('route'),
+            route=data.get('route', 'start'),
             direction_in=data.get('direction_in'),
             observation=data.get('observation'),
             platform=data.get('platform', ''),
             last_update=data.get('last_update'),
             dt_created=data.get('dt_created'),
         )
+
+    @property
+    def observation_dict(self) -> dict:
+        """Retorna a observação como dicionário."""
+
+        if self.observation:
+            try:
+                return json.loads(self.observation)
+            except json.JSONDecodeError:
+                return {}
+        return {}

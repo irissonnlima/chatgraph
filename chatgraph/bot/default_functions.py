@@ -1,5 +1,5 @@
 from ..types.usercall import UserCall
-from ..types.message_types import Message, Button
+from ..models.message import Message, Button
 from ..types.end_types import (
     RedirectResponse,
     EndChatResponse,
@@ -9,7 +9,7 @@ from ..types.end_types import (
 from ..types.route import Route
 
 
-async def voltar(route: Route, userCall: UserCall) -> tuple:
+async def voltar(route: Route, userCall: UserCall) -> RedirectResponse:
     """
     Função para voltar à rota anterior.
     Args:

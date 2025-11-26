@@ -43,6 +43,7 @@ class File:
     expires_after_days: int = 0
     actualized_at: str = ''
     bytes_data: Optional[bytes] = None
+    hash_id: Optional[str] = ''
 
     def is_empty(self) -> bool:
         """Verifica se o arquivo está vazio."""
@@ -89,6 +90,13 @@ class File:
             created_at=data.get('created_at', ''),
             expires_after_days=data.get('expires_after_days', 0),
             actualized_at=data.get('actualized_at', ''),
+        )
+
+    @classmethod
+    def from_path(cls, path: str) -> 'File':
+        """Cria instância a partir de um caminho de arquivo."""
+        return cls(
+            name=path,
         )
 
     async def __check_file_exists(self) -> bool:
@@ -271,10 +279,11 @@ class Message:
         buttons: List[Button] = [],
         display_button: Optional[Button] = None,
         file: Optional[File | str] = None,
+        date_time: Optional[datetime] = None,
     ):
         self.buttons = buttons
         self.display_button = display_button
-        self.date_time = datetime.now()
+        self.date_time = date_time if date_time is not None else datetime.now()
 
         self.__load_text_message(text_message)
         self.__load_file(file)
@@ -310,7 +319,7 @@ class Message:
         if self.display_button:
             data['display_button'] = self.display_button.to_dict()
         if self.file:
-            data['file'] = self.file
+            data['file'] = self.file.to_dict()
 
         return data
 

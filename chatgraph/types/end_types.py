@@ -21,24 +21,25 @@ class EndChatResponse:
     Representa uma resposta que indica o fim do chatbot.
 
     Atributos:
-        tabulation_id (str): O ID da tabulação do chatbot.
+        end_chat_id (str): O ID do fim do chatbot.
+        end_chat_name (str): O nome da ação de encerramento.
         observations (str): As observações finais do chatbot.
     """
 
     def __init__(
         self,
-        tabulation_id: str,
-        tabulation_name: str | None = None,
-        observations: str | None = None,
+        end_chat_id: str,
+        end_chat_name: str = '',
+        observations: str = '',
     ) -> None:
         """
         Finzaliza e tabula as informações do chatbot.
         """
-        if not tabulation_id and not tabulation_name:
-            raise ValueError("tabulation_id or tabulation_name must be provided.")
+        if not end_chat_id and not end_chat_name:
+            raise ValueError('end_chat_id or end_chat_name must be provided.')
 
-        self.tabulation_id = tabulation_id
-        self.tabulation_name = tabulation_name
+        self.end_chat_id = end_chat_id
+        self.end_chat_name = end_chat_name
         self.observations = observations
 
 

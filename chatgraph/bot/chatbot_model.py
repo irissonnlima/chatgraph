@@ -1,17 +1,17 @@
+import asyncio
 import inspect
+import re
 from functools import wraps
 from logging import debug, error
-import asyncio
-import re
+from typing import Optional, Callable
 
 from ..error.chatbot_error import ChatbotMessageError
 from ..messages.message_consumer import MessageConsumer
+from ..models.message import MessageTypes, Message, File
 from ..types.usercall import UserCall
-from ..types.message_types import Message, Button
 from ..types.end_types import (
     RedirectResponse,
     EndChatResponse,
-    TransferToHuman,
     TransferToMenu,
 )
 from ..types.route import Route
@@ -19,8 +19,8 @@ from .chatbot_router import ChatbotRouter
 from ..types.background_task import BackgroundTask
 from .default_functions import voltar
 
-DEFAULT_FUNCTION: dict[str, callable] = {
-    r"^\s*(voltar)\s*$": voltar,
+DEFAULT_FUNCTION: dict[str, Callable] = {
+    r'^\s*(voltar)\s*$': voltar,
 }
 
 
@@ -31,8 +31,8 @@ class ChatbotApp:
 
     def __init__(
         self,
-        message_consumer: MessageConsumer = None,
-        default_functions: dict[str, callable] = DEFAULT_FUNCTION,
+        message_consumer: Optional[MessageConsumer] = None,
+        default_functions: dict[str, Callable] = DEFAULT_FUNCTION,
     ):
         """
         Inicializa a classe ChatbotApp com um estado de usuário e um consumidor de mensagens.
@@ -48,7 +48,7 @@ class ChatbotApp:
         self.__message_consumer = message_consumer
         self.__routes = {}
 
-    def include_router(self, router: ChatbotRouter):
+    def include_router(self, router: ChatbotRouter) -> None:
         """
         Inclui um roteador de chatbot com um prefixo nas rotas da aplicação.
 
@@ -57,7 +57,7 @@ class ChatbotApp:
         """
         self.__routes.update(router.routes)
 
-    def route(self, route_name: str):
+    def route(self, route_name: str) -> Callable:
         """
         Decorador para adicionar uma função como uma rota na aplicação do chatbot.
 
@@ -78,15 +78,15 @@ class ChatbotApp:
                 param_type = (
                     param.annotation
                     if param.annotation != inspect.Parameter.empty
-                    else "Any"
+                    else 'Any'
                 )
                 params[param_type] = name
-                debug(f"Parameter: {name}, Type: {param_type}")
+                debug(f'Parameter: {name}, Type: {param_type}')
 
             self.__routes[route_name] = {
-                "function": func,
-                "params": params,
-                "return": output_param,
+                'function': func,
+                'params': params,
+                'return': output_param,
             }
 
             @wraps(func)
@@ -99,34 +99,41 @@ class ChatbotApp:
 
     def start(self):
         """
-        Inicia o consumo de mensagens pelo chatbot, processando cada mensagem recebida.
+        Inicia o consumo de mensagens pelo chatbot,
+        processando cada mensagem recebida.
         """
         self.__message_consumer.reprer()
-        asyncio.run(self.__message_consumer.start_consume(self.process_message))
+        asyncio.run(
+            self.__message_consumer.start_consume(self.process_message)
+        )
 
-    async def process_message(self, userCall: UserCall):
+    async def process_message(self, usercall: UserCall) -> None:
         """
-        Processa uma mensagem recebida, identificando a rota correspondente e executando a função associada.
+        Processa uma mensagem recebida, identificando a rota correspondente
+        e executando a função associada.
 
         Args:
-            userCall (UserCall): A mensagem a ser processada.
+            usercall (UserCall): A mensagem a ser processada.
 
         Raises:
-            ChatbotMessageError: Se nenhuma rota for encontrada para o menu atual do usuário.
+            ChatbotMessageError: Se nenhuma rota for encontrada para
+            o menu atual do usuário.
         """
-        user_id = userCall.user_id
-        route = userCall.route.lower()
-        route_handler = route.split(".")[-1]
+        user_id = usercall.user_id
+        route = usercall.route.lower()
+        route_handler = route.split('.')[-1]
 
         matchDefault = False
 
         for regex, func in self.default_functions.items():
-            if re.match(regex, userCall.content_message):
+            if re.match(regex, usercall.content_message):
                 matchDefault = True
-                debug(f"Função padrão encontrada: {func.__name__} para a rota {route}")
+                debug(
+                    f'Função padrão encontrada: {func.__name__} para a rota {route}'
+                )
                 handler = {
-                    "function": func,
-                    "params": {UserCall: "userCall", Route: "route"},
+                    'function': func,
+                    'params': {UserCall: 'usercall', Route: 'route'},
                 }
                 break
 
@@ -134,104 +141,98 @@ class ChatbotApp:
             handler = self.__routes.get(route_handler, None)
 
         if not handler:
-            raise ChatbotMessageError(user_id, f"Rota não encontrada para {route}!")
+            raise ChatbotMessageError(
+                user_id, f'Rota não encontrada para {route}!'
+            )
 
-        func = handler["function"]
-        userCall_name = handler["params"].get(UserCall, None)
-        route_state_name = handler["params"].get(Route, None)
+        func = handler['function']
+        usercall_name = handler['params'].get(UserCall, None)
+        route_state_name = handler['params'].get(Route, None)
 
         kwargs = {}
-        if userCall_name:
-            kwargs[userCall_name] = userCall
+        if usercall_name:
+            kwargs[usercall_name] = usercall
         if route_state_name:
             kwargs[route_state_name] = Route(route, list(self.__routes.keys()))
 
         if asyncio.iscoroutinefunction(func):
-            userCall_response = await func(**kwargs)
+            usercall_response = await func(**kwargs)
         else:
             loop = asyncio.get_running_loop()
-            userCall_response = await loop.run_in_executor(None, lambda: func(**kwargs))
+            usercall_response = await loop.run_in_executor(
+                None, lambda: func(**kwargs)
+            )
 
         if matchDefault:
-            userCall.content_message = ""
+            usercall.content_message = ''
 
-        if isinstance(userCall_response, (list, tuple)):
-            for response in userCall_response:
-                await self.__process_func_response(response, userCall, route=route)
+        if isinstance(usercall_response, (list, tuple)):
+            for response in usercall_response:
+                await self.__process_func_response(
+                    response, usercall, route=route
+                )
         else:
-            await self.__process_func_response(userCall_response, userCall, route=route)
+            await self.__process_func_response(
+                usercall_response, usercall, route=route
+            )
 
     async def __process_func_response(
-        self, userCall_response, userCall: UserCall, route: str
-    ):
+        self,
+        usercall_response,
+        usercall: UserCall,
+        route: str,
+    ) -> None:
         """
-        Processa a resposta de uma função associada a uma rota, enviando mensagens ou ajustando estados.
+        Processa a resposta de uma função associada a uma rota,
+        enviando mensagens ou ajustando estados.
 
         Args:
-            userCall_response: A resposta gerada pela função da rota.
-            userCall (UserCall): O objeto UserCall associado à mensagem processada.
-            route (str): O nome da rota atual.
+            usercall_response:
+                A resposta gerada pela função da rota.
+            usercall (UserCall):
+                O objeto UserCall associado à mensagem processada.
+            route (str):
+                O nome da rota atual.
         """
         loop = asyncio.get_running_loop()
 
-        if isinstance(userCall_response, (str, float, int)):
+        if isinstance(usercall_response, (MessageTypes, Message, File)):
             # Envia o resultado como mensagem (executando a chamada síncrona no executor)
-            await loop.run_in_executor(None, userCall.send, Message(userCall_response))
+            await usercall.send(usercall_response)
             return
 
-        elif isinstance(userCall_response, Route):
-            userCall.route = userCall_response.current
+        if isinstance(usercall_response, Route):
+            await usercall.set_route(usercall_response.current)
             return
 
-        elif isinstance(userCall_response, (Message, Button)):
-            # Envia o objeto Message ou Button
-            await loop.run_in_executor(None, userCall.send, userCall_response)
-            return
-
-        elif isinstance(userCall_response, EndChatResponse):
-            await loop.run_in_executor(
-                None,
-                userCall.end_chat,
-                userCall_response.observations,
-                userCall_response.tabulation_id,
-                userCall_response.tabulation_name,
+        if isinstance(usercall_response, EndChatResponse):
+            await usercall.end_chat(
+                usercall_response.end_chat_id,
+                end_action_name=usercall_response.end_chat_name,
             )
             return
 
-        elif isinstance(userCall_response, TransferToHuman):
-            await loop.run_in_executor(
-                None,
-                userCall.transfer_to_human,
-                userCall_response.observations,
-                userCall_response.campaign_id,
-                userCall_response.campaign_name,
+        if isinstance(usercall_response, TransferToMenu):
+            await usercall.transfer_to_menu(
+                usercall_response.menu,
+                usercall_response.user_message,
             )
             return
 
-        elif isinstance(userCall_response, TransferToMenu):
-            await loop.run_in_executor(
-                None,
-                userCall.transfer_to_menu,
-                userCall_response.menu,
-                userCall_response.user_message,
-            )
+        if isinstance(usercall_response, RedirectResponse):
+            await usercall.set_route(usercall_response.route)
+            await self.process_message(usercall)
             return
 
-        elif isinstance(userCall_response, RedirectResponse):
-            route = route + "." + userCall_response.route
-            userCall.route = route
-            usercall.setRoute(userCall_response.route)
-            await self.process_message(userCall)
-
-        elif not userCall_response:
-            route = route + "." + route.split(".")[-1]
-            userCall.route = route
+        if not usercall_response:
+            route = route + '.' + route.split('.')[-1]
+            await usercall.set_route(route)
             return
 
-        elif isinstance(userCall_response, BackgroundTask):
-            response = await userCall_response.run()
-            await self.__process_func_response(response, userCall, route=route)
+        if isinstance(usercall_response, BackgroundTask):
+            response = await usercall_response.run()
+            await self.__process_func_response(response, usercall, route=route)
+            return
 
-        else:
-            error("Tipo de retorno inválido!")
-            return None
+        error('Tipo de retorno inválido!')
+        return None

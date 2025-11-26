@@ -2,8 +2,8 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from ..models.userstate import UserState, ChatID, Menu, User
-from ..models.message import Message, File, Button, TextMessage
+from ..models.userstate import UserState, ChatID
+from ..models.message import Message, File
 from ..models.actions import EndAction
 
 
@@ -79,21 +79,18 @@ class RouterHTTPClient:
         """
         endpoint = '/session/'
 
-        async with self._client as client:
-            response = await client.get(endpoint)
-            response.raise_for_status()
-            response_data = response.json()
-            status = response_data.get('status')
-            message = response_data.get('message')
-            sessions_data = response_data.get('data', [])
+        response = await self._client.get(endpoint)
+        response.raise_for_status()
+        response_data = response.json()
+        status = response_data.get('status')
+        message = response_data.get('message')
+        sessions_data = response_data.get('data', [])
 
-            if not status:
-                raise Exception(f'Erro ao buscar as Sessões: {message}')
+        if not status:
+            raise Exception(f'Erro ao buscar as Sessões: {message}')
 
-            sessions = [UserState.from_dict(item) for item in sessions_data]
-            return sessions
-
-        return []
+        sessions = [UserState.from_dict(item) for item in sessions_data]
+        return sessions
 
     async def get_session_by_chat_id(
         self,
@@ -105,18 +102,17 @@ class RouterHTTPClient:
             'company_id': chat_id.company_id,
         }
 
-        async with self._client as client:
-            response = await client.get(endpoint, params=params)
-            response.raise_for_status()
-            response_data = response.json()
-            status = response_data.get('status')
-            message = response_data.get('message')
-            session_data = response_data.get('data')
+        response = await self._client.get(endpoint, params=params)
+        response.raise_for_status()
+        response_data = response.json()
+        status = response_data.get('status')
+        message = response_data.get('message')
+        session_data = response_data.get('data')
 
-            if not status:
-                raise Exception(f'Erro ao buscar a Sessão: {message}')
+        if not status:
+            raise Exception(f'Erro ao buscar a Sessão: {message}')
 
-            return UserState.from_dict(session_data)
+        return UserState.from_dict(session_data)
 
     async def start_session(self, user_state: UserState) -> Any:
         """
@@ -133,20 +129,95 @@ class RouterHTTPClient:
         """
         endpoint = '/session/start/'
 
-        async with self._client as client:
-            response = await client.post(
-                endpoint,
-                json=user_state.to_dict(),
+        response = await self._client.post(
+            endpoint,
+            json=user_state.to_dict(),
+        )
+        response.raise_for_status()
+        response_data = response.json()
+        status = response_data.get('status')
+        message = response_data.get('message')
+
+        if not status:
+            raise Exception(f'Erro ao iniciar sessão: {message}')
+
+        return response_data
+
+    async def set_session_route(self, chat_id: ChatID, route: str) -> Any:
+        """
+        Atualiza a rota da sessão de chat.
+
+        Args:
+            chat_id: Identificador do chat.
+            route: Nova rota para a sessão.
+
+        Returns:
+            Objeto de resposta com atributo 'status' indicando sucesso/falha.
+
+        Raises:
+            Exception: Se houver erro na comunicação.
+        """
+        endpoint = '/session/route/'
+
+        payload = {
+            'chat_id': chat_id.to_dict(),
+            'route': route,
+        }
+
+        response = await self._client.post(
+            endpoint,
+            json=payload,
+        )
+        response.raise_for_status()
+        response_data = response.json()
+        status = response_data.get('status')
+        message = response_data.get('message')
+
+        if not status:
+            raise Exception(f'Erro ao atualizar rota da sessão: {message}')
+
+        return response_data
+
+    async def update_session_observation(
+        self,
+        chat_id: ChatID,
+        observation: str,
+    ) -> Any:
+        """
+        Atualiza a observação da sessão de chat.
+
+        Args:
+            chat_id: Identificador do chat.
+            observation: Nova observação para a sessão.
+
+        Returns:
+            Objeto de resposta com atributo 'status' indicando sucesso/falha.
+
+        Raises:
+            Exception: Se houver erro na comunicação.
+        """
+        endpoint = '/session/observation/'
+
+        payload = {
+            'chat_id': chat_id.to_dict(),
+            'observation': observation,
+        }
+
+        response = await self._client.post(
+            endpoint,
+            json=payload,
+        )
+        response.raise_for_status()
+        response_data = response.json()
+        status = response_data.get('status')
+        message = response_data.get('message')
+
+        if not status:
+            raise Exception(
+                f'Erro ao atualizar observação da sessão: {message}'
             )
-            response.raise_for_status()
-            response_data = response.json()
-            status = response_data.get('status')
-            message = response_data.get('message')
 
-            if not status:
-                raise Exception(f'Erro ao iniciar sessão: {message}')
-
-            return response_data
+        return response_data
 
     # Messages Methods
     async def send_message(
@@ -171,24 +242,23 @@ class RouterHTTPClient:
         """
         endpoint = '/messages/send/'
 
-        async with self._client as client:
-            payload = {
-                'message': message_data.to_dict(),
-                'user_state': user_state.to_dict(),
-            }
-            response = await client.post(
-                endpoint,
-                json=payload,
-            )
-            response.raise_for_status()
-            response_data = response.json()
-            status = response_data.get('status')
-            message = response_data.get('message')
+        payload = {
+            'message': message_data.to_dict(),
+            'user_state': user_state.to_dict(),
+        }
+        response = await self._client.post(
+            endpoint,
+            json=payload,
+        )
+        response.raise_for_status()
+        response_data = response.json()
+        status = response_data.get('status')
+        message = response_data.get('message')
 
-            if not status:
-                raise Exception(f'Erro ao enviar mensagem: {message}')
+        if not status:
+            raise Exception(f'Erro ao enviar mensagem: {message}')
 
-            return response_data
+        return response_data
 
     # Files Methods
     async def get_file(self, file_id: str) -> File:
@@ -206,20 +276,19 @@ class RouterHTTPClient:
         """
         endpoint = f'/files/{file_id}/'
 
-        async with self._client as client:
-            response = await client.get(endpoint)
-            response.raise_for_status()
-            response_data = response.json()
-            status = response_data.get('status')
-            message = response_data.get('message')
-            file_data = response_data.get('data')
+        response = await self._client.get(endpoint)
+        response.raise_for_status()
+        response_data = response.json()
+        status = response_data.get('status')
+        message = response_data.get('message')
+        file_data = response_data.get('data')
 
-            if not status:
-                raise Exception(f'Erro ao buscar arquivo: {message}')
+        if not status:
+            raise Exception(f'Erro ao buscar arquivo: {message}')
 
-            return File.from_dict(file_data)
+        return File.from_dict(file_data)
 
-    async def upload_file(self, file_data: bytes) -> Any:
+    async def upload_file(self, file_data: bytes) -> File:
         """
         Faz upload de um arquivo (imagem) para o servidor.
 
@@ -238,23 +307,25 @@ class RouterHTTPClient:
             Exception: Se houver erro na comunicação.
         """
         endpoint = '/files/upload/'
-        async with self._client as client:
-            payload = {
-                'content': file_data,
-            }
-            response = await client.post(
-                endpoint,
-                files=payload,
-            )
-            response.raise_for_status()
-            response_data = response.json()
-            status = response_data.get('status')
-            message = response_data.get('message')
 
-            if not status:
-                raise Exception(f'Erro ao fazer upload do arquivo: {message}')
+        payload = {
+            'content': file_data,
+        }
+        response = await self._client.post(
+            endpoint,
+            files=payload,
+        )
+        response.raise_for_status()
+        response_data = response.json()
+        status = response_data.get('status')
+        message = response_data.get('message')
+        response_data = response_data.get('data')
 
-            return response_data
+        if not status:
+            raise Exception(f'Erro ao fazer upload do arquivo: {message}')
+
+        file = File.from_dict(response_data)
+        return file
 
     async def delete_file(self, file_id: str) -> Any:
         """
@@ -271,37 +342,18 @@ class RouterHTTPClient:
         """
         endpoint = f'/files/{file_id}'
 
-        async with self._client as client:
-            response = await client.delete(endpoint)
-            response.raise_for_status()
-            response_data = response.json()
-            status = response_data.get('status')
-            message = response_data.get('message')
+        response = await self._client.delete(endpoint)
+        response.raise_for_status()
+        response_data = response.json()
+        status = response_data.get('status')
+        message = response_data.get('message')
 
-            if not status:
-                raise Exception(f'Erro ao deletar arquivo: {message}')
+        if not status:
+            raise Exception(f'Erro ao deletar arquivo: {message}')
 
-            return response_data
+        return response_data
 
-    # ToDo Methods
-    async def transfer_to_menu(self, transfer_data: Dict[str, Any]) -> Any:
-        """
-        Transfere o chat para outro menu do fluxo.
-
-        Args:
-            transfer_data: Dicionário contendo:
-                - chat_id: ID do chat (user_id, company_id)
-                - menu: Nome do menu de destino
-                - user_message: Mensagem do usuário
-
-        Returns:
-            Objeto de resposta com atributo 'status' indicando sucesso/falha.
-
-        Raises:
-            Exception: Se houver erro na comunicação.
-        """
-        pass
-
+    # EndAction Methods
     async def end_chat(
         self,
         chat_id: ChatID,
@@ -330,17 +382,70 @@ class RouterHTTPClient:
             'origin': origin,
         }
 
-        async with self._client as client:
-            response = await client.post(
-                endpoint,
-                json=payload,
-            )
-            response.raise_for_status()
-            response_data = response.json()
-            status = response_data.get('status')
-            message = response_data.get('message')
+        response = await self._client.post(
+            endpoint,
+            json=payload,
+        )
+        response.raise_for_status()
+        response_data = response.json()
+        status = response_data.get('status')
+        message = response_data.get('message')
 
-            if not status:
-                raise Exception(f'Erro ao encerrar chat: {message}')
+        if not status:
+            raise Exception(f'Erro ao encerrar chat: {message}')
 
-            return response_data
+        return response_data
+
+    async def get_end_action(
+        self,
+        end_action_id: str = '',
+        end_action_name: str = '',
+    ) -> Any:
+        """
+        Obtém uma ação de encerramento pelo ID.
+
+        Args:
+            end_action_id: ID único da ação de encerramento.
+
+        Returns:
+            Objeto de resposta com atributos 'status' e 'end_action'.
+
+        Raises:
+            Exception: Se houver erro na comunicação.
+        """
+        endpoint = '/end_actions/'
+        params = {
+            'id': end_action_id,
+            'name': end_action_name,
+        }
+
+        response = await self._client.get(endpoint, params=params)
+        response.raise_for_status()
+        response_data = response.json()
+        status = response_data.get('status')
+        message = response_data.get('message')
+        end_action_data = response_data.get('data')
+
+        if not status:
+            raise Exception(f'Erro ao buscar ação de encerramento: {message}')
+
+        return EndAction.from_dict(end_action_data)
+
+    # ToDo Methods
+    async def transfer_to_menu(self, transfer_data: Dict[str, Any]) -> Any:
+        """
+        Transfere o chat para outro menu do fluxo.
+
+        Args:
+            transfer_data: Dicionário contendo:
+                - chat_id: ID do chat (user_id, company_id)
+                - menu: Nome do menu de destino
+                - user_message: Mensagem do usuário
+
+        Returns:
+            Objeto de resposta com atributo 'status' indicando sucesso/falha.
+
+        Raises:
+            Exception: Se houver erro na comunicação.
+        """
+        pass

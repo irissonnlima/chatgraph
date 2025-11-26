@@ -1,19 +1,12 @@
 import json
-import os
-import hashlib
-
 from chatgraph.services.router_http_client import RouterHTTPClient
-from chatgraph.models.userstate import UserState, ChatID
+from chatgraph.models.userstate import UserState
 from chatgraph.models.message import (
     Message,
     File,
-    TextMessage,
-    Button,
     MessageTypes,
 )
-from chatgraph.types.image import ImageData, ImageMessage, FileData
 from typing import Optional
-from datetime import datetime
 from rich.console import Console
 
 
@@ -41,6 +34,7 @@ class UserCall:
         self.__message = message
         self.__user_state = user_state
         self.__router_client = router_client
+        self.__content_message = self.__message.text_message.detail
         self.console = Console()
 
     def __str__(self):
@@ -49,50 +43,27 @@ class UserCall:
             f'Message={self.__message})'
         )
 
-    async def send(
-        self,
-        message: MessageTypes | Message | File,
-    ) -> None:
-        """
-        Envia uma mensagem ao cliente.
-
-        Args:
-            message (Message|Button|ListElements): A mensagem a ser enviada.
-        """
-        if isinstance(message, MessageTypes):
-            msg = Message(str(message))
-            await self.__send(msg)
-
-        if isinstance(message, Message):
-            if message.has_file():
-                await self.__check_file_for_send(message.file.name)
-            await self.__send(message)
-
-        if isinstance(message, File):
-            await self.__check_file_for_send(message.name)
-            file_message = Message(file=message)
-            await self.__send(file_message)
-
-        else:
-            raise ValueError('Tipo de mensagem inválido.')
-
     async def __get_file_from_server(self, hash_id: str) -> Optional[File]:
         try:
             file = await self.__router_client.get_file(hash_id)
+            if not file.url:
+                return None
             return file
         except Exception as e:
             self.console.print(f'Erro ao obter arquivo do servidor: {e}')
             return None
 
-    async def __upload_file(self, file_data: bytes) -> tuple[bool, str]:
+    async def __upload_file(
+        self, file_data: bytes
+    ) -> tuple[bool, str, Optional[File]]:
         try:
-            await self.__router_client.upload_file(file_data)
-            return True, 'Upload successful'
+            file = await self.__router_client.upload_file(file_data)
+            return True, 'Upload successful', file
         except Exception as e:
             self.console.print(f'Erro ao enviar arquivo para o servidor: {e}')
-            return False, str(e)
+            return False, str(e), None
 
-    async def __check_file_for_send(self, path_file: str) -> None:
+    async def __check_file_for_send(self, path_file: str) -> File:
         try:
             file = File(name=path_file)
             await file.load_file()
@@ -107,80 +78,130 @@ class UserCall:
 
         existing_file = await self.__get_file_from_server(file.hash_id)
         if existing_file:
-            return
+            return existing_file
 
-        uploaded, msg = await self.__upload_file(file.bytes_data)
-        if not uploaded:
+        status, msg, uploaded = await self.__upload_file(file.bytes_data)
+        if not status or not uploaded:
             raise ValueError('Erro ao enviar arquivo: ' + msg)
 
-    async def __send_image(self, message: ImageMessage) -> None:
-        dict_message = message.to_dict()
-        dict_message['message']['chat_id'] = (
-            self.__user_state.chat_id.to_dict()
-        )
-        response = self.__router_client.send_image(dict_message)
-
-        if (
-            not response.status
-            and response.message != 'arquivo não encontrado'
-        ):
-            raise ValueError('Erro ao enviar imagem.')
-        elif response.message == 'arquivo não encontrado':
-            self.__upload_file(message.image)
-            print('tentando enviar imagem novamente...')
-            self.__send_image(message)
+        return uploaded
 
     async def __send(self, message: Message) -> None:
-        dict_message = message.to_dict()
-        dict_message['chat_id'] = self.__user_state.chatID.to_dict()
-        response = self.__router_client.send_message(dict_message)
+        try:
+            response = await self.__router_client.send_message(
+                message, self.__user_state
+            )
 
-        if not response.status:
-            raise ValueError('Erro ao enviar mensagem de texto.')
+            if response:
+                self.console.print(f'Mensagem enviada com sucesso: {response}')
 
-        if not response.status:
-            raise ValueError('Erro ao enviar mensagem de botões.')
+        except Exception as e:
+            raise Exception(f'Erro ao enviar mensagem: {e}')
 
-    async def end_chat(self, end_action_id: str) -> None:
-        
-
-        response = await self.__router_client.end_chat(
-            self.__user_state.chat_id,
-            end_action_id,
-            'chatgraph',
-        )
-
-        if not response.status:
-            raise ValueError('Erro ao encerrar o chat.')
-
-    async def delete_user_state(self) -> None:
-        response = self.__user_state.delete(self.__grpc_uri)
-
-        if not response.status:
-            raise ValueError('Erro ao deletar estado do usuário.')
-
-    async def update_user_state(
+    async def send(
         self,
-        menu: str,
-        route: str,
-        observation: dict,
+        message: MessageTypes | Message | File,
     ) -> None:
-        self.__user_state.menu = menu
-        self.__user_state.route = route
-        self.__user_state.observation = observation
-        self.__user_state.insert(self.__grpc_uri)
+        """
+        Envia uma mensagem ao cliente.
+
+        Args:
+            message (Message|Button|ListElements): A mensagem a ser enviada.
+        """
+        if isinstance(message, MessageTypes):
+            msg = Message(str(message))
+            await self.__send(msg)
+            return
+
+        if isinstance(message, Message):
+            if message.has_file() and message.file:
+                message.file = await self.__check_file_for_send(
+                    message.file.name
+                )
+            await self.__send(message)
+            return
+
+        if isinstance(message, File):
+            file = await self.__check_file_for_send(message.name)
+            file_message = Message(file=file)
+            await self.__send(file_message)
+            return
+
+        raise ValueError('Tipo de mensagem inválido.')
+
+    async def end_chat(
+        self, end_action_id: str = '', end_action_name: str = ''
+    ) -> None:
+        try:
+            end_action = await self.__router_client.get_end_action(
+                end_action_id,
+                end_action_name,
+            )
+
+            await self.__router_client.end_chat(
+                self.__user_state.chat_id,
+                end_action,
+                'chatgraph',
+            )
+
+        except Exception as e:
+            raise ValueError(
+                'Erro ao realizar ação de encerramento: ' + str(e)
+            )
+
+    async def set_observation(self, observation: str = '') -> None:
+        try:
+            if not observation and self.__user_state.observation:
+                observation = self.__user_state.observation
+
+            await self.__router_client.update_session_observation(
+                self.__user_state.chat_id,
+                observation,
+            )
+        except Exception as e:
+            self.console.print(f'Erro ao atualizar observação: {e}')
+
+    async def add_observation(self, observation: dict) -> None:
+        try:
+            current_observation = self.observation
+            current_observation.update(observation)
+            self.__user_state.observation = json.dumps(current_observation)
+            await self.set_observation()
+        except Exception as e:
+            raise ValueError(f'Erro ao adicionar observação: {e}')
+
+    async def set_route(self, current_route: str):
+        try:
+            if not current_route:
+                raise ValueError('Rota atual não pode ser vazia.')
+
+            if not self.__user_state.route:
+                self.__user_state.route = 'start'
+
+            self.__user_state.route += f'.{current_route}'
+            await self.__router_client.set_session_route(
+                self.__user_state.chat_id,
+                current_route,
+            )
+        except Exception as e:
+            raise ValueError(f'Erro ao atualizar rota: {e}')
+
+    async def transfer_to_menu(self, menu: str, user_message: str) -> None:
+        raise NotImplementedError(
+            'transfer_to_menu method is not implemented yet.'
+        )
 
     @property
     def chatID(self):
-        return self.__user_state.chatID
+        return self.__user_state.chat_id
 
     @property
     def user_id(self):
-        return self.__user_state.chatID.user_id
+        return self.__user_state.chat_id.user_id
 
     @property
     def company_id(self):
-        return self.__user_state.chatID.company_id
+        return self.__user_state.chat_id.company_id
 
     @property
     def menu(self):
@@ -191,42 +212,17 @@ class UserCall:
         return self.__user_state.route
 
     @property
-    def customer_id(self):
-        return self.__user_state.customer_id
-
-    @property
-    def protocol(self):
-        return self.__user_state.protocol
-
-    @property
     def observation(self):
-        return self.__user_state.observation
-
-    @property
-    def type_message(self):
-        return self.__type_message
+        return self.__user_state.observation_dict
 
     @property
     def content_message(self):
         return self.__content_message
 
-    @menu.setter
-    def menu(self, menu):
-        self.update_user_state(
-            menu, self.__user_state.route, self.__user_state.observation
-        )
-
-    @route.setter
-    def route(self, route):
-        self.update_user_state(
-            self.__user_state.menu, route, self.__user_state.observation
-        )
-
     @observation.setter
-    def observation(self, observation):
-        self.update_user_state(
-            self.__user_state.menu, self.__user_state.route, observation
-        )
+    async def observation(self, observation: dict):
+        self.__user_state.observation = json.dumps(observation)
+        await self.set_observation()
 
     @content_message.setter
     def content_message(self, content_message: str):
