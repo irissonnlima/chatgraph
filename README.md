@@ -19,9 +19,29 @@ pip install chatgraph
 
 ## **Configuração**
 
+### **Controle de Logging**
+
+Por padrão, o ChatGraph exibe logs no console. Você pode controlar esse comportamento:
+
+```python
+from chatgraph import configure
+
+# Desabilitar todos os logs
+configure(verbose=False)
+
+# Mostrar apenas erros
+configure(verbose=True, log_level='ERROR')
+
+# Configuração via variável de ambiente
+# CHATGRAPH_VERBOSE=false
+# CHATGRAPH_LOG_LEVEL=INFO
+```
+
+📖 **Documentação completa:** [CONFIGURATION.md](CONFIGURATION.md)
+
 ### **Variáveis de Ambiente**
 
-Crie um arquivo `.env` na raiz do projeto para definir as variáveis necessárias, incluindo detalhes de conexão com RabbitMQ e URI para gRPC. Exemplo:
+Crie um arquivo `.env` na raiz do projeto para definir as variáveis necessárias, incluindo detalhes de conexão com RabbitMQ e URI para HTTP Router. Exemplo:
 
 ```env
 RABBIT_USER=seu_usuario
@@ -30,7 +50,12 @@ RABBIT_URI=amqp://localhost
 RABBIT_QUEUE=chat_queue
 RABBIT_PREFETCH=1
 RABBIT_VHOST=/
-GRPC_URI=grpc://localhost:50051
+ROUTER_URL=https://api.exemplo.com/v1/actions
+ROUTER_TOKEN=seu_token
+
+# Opcional: Controle de logs
+CHATGRAPH_VERBOSE=true
+CHATGRAPH_LOG_LEVEL=INFO
 ```
 
 Aqui está uma descrição mais detalhada de cada um dos objetos mencionados. Esses componentes são fundamentais para a estrutura e funcionalidade do ChatGraph, permitindo gerenciar fluxos de chat, interações e estados do usuário de forma eficiente.

@@ -13,6 +13,7 @@ from .types.end_types import (
 )
 from .types.route import Route
 from .types.background_task import BackgroundTask
+from .config import config, configure
 
 __all__ = [
     "ChatbotApp",
@@ -32,4 +33,6 @@ __all__ = [
     "File",
     "TextMessage",
     "BackgroundTask",
+    "config",
+    "configure",
 ]
