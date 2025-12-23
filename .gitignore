@@ -178,3 +178,6 @@ pyrightconfig.json
 
 README.md
 TESTING_GUIDE.md
+CONFIGURATION.md
+example_logging.py
+ROADMAP.md

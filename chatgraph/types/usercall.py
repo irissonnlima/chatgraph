@@ -1,4 +1,5 @@
 import json
+import asyncio
 from chatgraph.services.router_http_client import RouterHTTPClient
 from chatgraph.models.userstate import UserState
 from chatgraph.models.message import (
@@ -95,6 +96,7 @@ class UserCall:
             if response:
                 self.console.print(f'Mensagem enviada com sucesso: {response}')
 
+            await asyncio.sleep(0.1)
         except Exception as e:
             raise Exception(f'Erro ao enviar mensagem: {e}')
 
@@ -220,9 +222,10 @@ class UserCall:
         return self.__content_message
 
     @observation.setter
-    async def observation(self, observation: dict):
+    def observation(self, observation: dict):
         self.__user_state.observation = json.dumps(observation)
-        await self.set_observation()
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.set_observation())
 
     @content_message.setter
     def content_message(self, content_message: str):
