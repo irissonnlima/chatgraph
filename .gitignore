@@ -176,8 +176,3 @@ pyrightconfig.json
 *.sh
 # End of https://www.toptal.com/developers/gitignore/api/python
 
-# README.md
-TESTING_GUIDE.md
-ROADMAP.md
-CONFIGURATION.md
-example_logging.py
