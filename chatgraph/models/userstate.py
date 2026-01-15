@@ -6,6 +6,8 @@ no sistema de chatbot, incluindo identificação, informações pessoais,
 menu atual e metadados da sessão.
 """
 
+import asyncio
+import concurrent.futures
 import json
 from dataclasses import dataclass, field
 from typing import Optional
@@ -214,12 +216,58 @@ class UserState:
                 return {}
         return {}
 
-    async def insert(self) -> None:
+    def insert(self) -> None:
         """Insere o estado do usuário no sistema via RouterHTTPClient."""
+        try:
+            # Executa a versão assíncrona de forma síncrona
+            asyncio.run(self.insert_async())
+        except RuntimeError:
+            # Se já existe um loop rodando, usa run_in_executor
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(asyncio.run, self.insert_async())
+                    future.result()
+            else:
+                asyncio.run(self.insert_async())
+
+    async def insert_async(self) -> None:
+        """Insere o estado do usuário no sistema via RouterHTTPClient de forma assíncrona."""
         container = Container()
         router_client = container.get_router_client()
         try:
-            await router_client.start_session(self)
+            async with router_client as rc:
+                await rc.start_session(self)
         except Exception as e:
-            print(f'Erro ao inserir UserState: {e}')
+            print(f'Erro ao inserir UserState assíncrono: {e}')
             raise e
+
+    @staticmethod
+    def get_user_state(chat_id: ChatID) -> Optional['UserState']:
+        """Recupera o estado do usuário de forma síncrona."""
+        try:
+            return asyncio.run(UserState.get_user_state_async(chat_id))
+        except RuntimeError:
+            # Se já existe um loop rodando, usa run_in_executor
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(
+                        asyncio.run, UserState.get_user_state_async(chat_id)
+                    )
+                    return future.result()
+            else:
+                return asyncio.run(UserState.get_user_state_async(chat_id))
+
+    @staticmethod
+    async def get_user_state_async(chat_id: ChatID) -> Optional['UserState']:
+        """Recupera o estado do usuário do sistema via RouterHTTPClient."""
+        container = Container()
+        router_client = container.get_router_client()
+        try:
+            async with router_client as rc:
+                user_state = await rc.get_session_by_chat_id(chat_id)
+                return user_state
+        except Exception as e:
+            print(f'Erro ao recuperar UserState: {e}')
+            return None
