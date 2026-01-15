@@ -9,6 +9,7 @@ menu atual e metadados da sessão.
 import json
 from dataclasses import dataclass, field
 from typing import Optional
+from ..container.container import Container
 
 
 @dataclass
@@ -212,3 +213,13 @@ class UserState:
             except json.JSONDecodeError:
                 return {}
         return {}
+
+    async def insert(self) -> None:
+        """Insere o estado do usuário no sistema via RouterHTTPClient."""
+        container = Container()
+        router_client = container.get_router_client()
+        try:
+            await router_client.start_session(self)
+        except Exception as e:
+            print(f'Erro ao inserir UserState: {e}')
+            raise e

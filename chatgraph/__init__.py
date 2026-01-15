@@ -2,7 +2,7 @@ from .auth.credentials import Credential
 from .bot.chatbot_model import ChatbotApp
 from .bot.chatbot_router import ChatbotRouter
 from .messages.message_consumer import MessageConsumer
-from .models.userstate import UserState, Menu
+from .models.userstate import UserState, Menu, ChatID
 from .models.message import Message, Button, File, TextMessage
 from .types.usercall import UserCall
 from .types.end_types import (
@@ -26,6 +26,7 @@ __all__ = [
     "TransferToHuman",
     "TransferToMenu",
     "UserState",
+    "ChatID",
     "Menu",
     "Message",
     "Button",

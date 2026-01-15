@@ -193,6 +193,20 @@ class UserCall:
             'transfer_to_menu method is not implemented yet.'
         )
 
+    async def insert(self, userstate: UserState) -> None:
+        try:
+            response = await self.__router_client.star(
+                message, self.__user_state
+            )
+
+            if response:
+                self.console.print(f'Mensagem enviada com sucesso: {response}')
+
+            await asyncio.sleep(0.1)
+        except Exception as e:
+            raise Exception(f'Erro ao enviar mensagem: {e}')
+ 
+
     @property
     def chatID(self):
         return self.__user_state.chat_id
