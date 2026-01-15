@@ -13,6 +13,7 @@ from .types.end_types import (
 )
 from .types.route import Route
 from .types.background_task import BackgroundTask
+from .logger import logger
 
 __all__ = [
     "ChatbotApp",

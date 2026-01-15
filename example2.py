@@ -1,5 +1,6 @@
 import asyncio
 from chatgraph import UserState, ChatID, Menu
+import logging
 
 
 def example_user_state() -> UserState:
@@ -18,4 +19,7 @@ async def main():
     await us.insert()
 
 
+logging.basicConfig(level=logging.INFO)
+logging.info('Teste')
 asyncio.run(main())
+logging.info('Teste2')
