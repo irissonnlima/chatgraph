@@ -132,13 +132,19 @@ class UserCall:
         raise ValueError('Tipo de mensagem inválido.')
 
     async def end_chat(
-        self, end_action_id: str = '', end_action_name: str = ''
+        self,
+        end_action_id: str = '',
+        end_action_name: str = '',
+        observation: str = '',
     ) -> None:
         try:
             end_action = await self.__router_client.get_end_action(
                 end_action_id,
                 end_action_name,
             )
+
+            if observation:
+                end_action.observation = observation
 
             await self.__router_client.end_chat(
                 self.__user_state.chat_id,
@@ -205,7 +211,6 @@ class UserCall:
             await asyncio.sleep(0.1)
         except Exception as e:
             raise Exception(f'Erro ao enviar mensagem: {e}')
- 
 
     @property
     def chatID(self):

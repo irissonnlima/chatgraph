@@ -11,8 +11,6 @@ from chatgraph import (
     UserState,
 )
 from dotenv import load_dotenv
-from datetime import datetime
-import asyncio
 
 load_dotenv()
 app = ChatbotApp()
@@ -21,13 +19,12 @@ app = ChatbotApp()
 # Rota inicial com emojis
 @app.route('start')
 async def start(rota: Route, usercall: UserCall):
-    await usercall.send('Essa é uma mensagem de teste!')
+    welcome_message = Message(
+        'Bem-vindo ao nosso chatbot! 😊🚀\nEscolha uma opção para continuar:',
+    )
 
-    msg = Message('Me responsta para ir para a próxima rota!')
-    await usercall.send('Essa é uma mensagem de teste!')
-    await usercall.send(msg)
-
-    return Route('choice_start')
+    await usercall.send(welcome_message)
+    return RedirectResponse('choice_start')
 
 
 @app.route('choice_start')

@@ -13,6 +13,7 @@ from .types.end_types import (
 )
 from .types.route import Route
 from .types.background_task import BackgroundTask
+from .container.container import Container
 from .logger import logger
 
 __all__ = [
@@ -34,4 +35,5 @@ __all__ = [
     "File",
     "TextMessage",
     "BackgroundTask",
+    "Container",
 ]

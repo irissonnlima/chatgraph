@@ -29,6 +29,7 @@ class Container:
                 base_url=self.__router_url,
                 username='chatgraph',
                 password=self.__router_token,
+                timeout=60,
             )
         return self.__router_client
 

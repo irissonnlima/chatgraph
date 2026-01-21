@@ -1,26 +1,31 @@
-import asyncio
 from chatgraph import UserState, ChatID, Menu
-import logging
+import json
 
 
-def example_user_state() -> UserState:
+def create_userstate(id) -> UserState:
     user_state = UserState(
-        chat_id=ChatID('chat_123', 'prevencao-palavra'),
+        chat_id=ChatID(id, 'prevencao-palavra'),
         menu=Menu(name='prevencao-palavra'),
         platform='voll',
-        observation='{"key": "value"}',
-        route='start.foo'
+        observation=json.dumps({'key': 'value'}),
+        route='start.foo',
     )
 
     return user_state
 
 
-logging.info('Teste')
-us = example_user_state()
-us.insert()
-us_existente = UserState.get_user_state(ChatID('chat_123', 'prevencao-palavra'))
-print(us_existente.to_dict() if us_existente else 'No user state found')
+def get_user_state(id) -> UserState | None:
+    chat_id = ChatID(id, 'prevencao-palavra')
+    user_state = UserState.get_user_state(chat_id)
+    if not user_state:
+        return None
+    return user_state
 
 
-logging.basicConfig(level=logging.INFO)
-logging.info('Teste2')
+def create_multiples_userstates():
+    for i in range(100):
+        print('Inserting user state for chat_id:', i)
+        user_state = create_userstate(i)
+        user_state.insert()
+        print('Inserted user state: ')
+        print(user_state.to_dict())

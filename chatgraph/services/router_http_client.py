@@ -80,7 +80,6 @@ class RouterHTTPClient:
         endpoint = '/session/'
 
         response = await self._client.get(endpoint)
-        response.raise_for_status()
         response_data = response.json()
         status = response_data.get('status')
         message = response_data.get('message')
@@ -103,7 +102,6 @@ class RouterHTTPClient:
         }
 
         response = await self._client.get(endpoint, params=params)
-        response.raise_for_status()
         response_data = response.json()
         status = response_data.get('status')
         message = response_data.get('message')
@@ -133,7 +131,6 @@ class RouterHTTPClient:
             endpoint,
             json=user_state.to_dict(),
         )
-        response.raise_for_status()
         response_data = response.json()
         status = response_data.get('status')
         message = response_data.get('message')
@@ -168,7 +165,6 @@ class RouterHTTPClient:
             endpoint,
             json=payload,
         )
-        response.raise_for_status()
         response_data = response.json()
         status = response_data.get('status')
         message = response_data.get('message')
@@ -207,7 +203,6 @@ class RouterHTTPClient:
             endpoint,
             json=payload,
         )
-        response.raise_for_status()
         response_data = response.json()
         status = response_data.get('status')
         message = response_data.get('message')
@@ -250,7 +245,6 @@ class RouterHTTPClient:
             endpoint,
             json=payload,
         )
-        response.raise_for_status()
         response_data = response.json()
         status = response_data.get('status')
         message = response_data.get('message')
@@ -277,7 +271,6 @@ class RouterHTTPClient:
         endpoint = f'/files/{file_id}/'
 
         response = await self._client.get(endpoint)
-        response.raise_for_status()
         response_data = response.json()
         status = response_data.get('status')
         message = response_data.get('message')
@@ -315,7 +308,6 @@ class RouterHTTPClient:
             endpoint,
             files=payload,
         )
-        response.raise_for_status()
         response_data = response.json()
         status = response_data.get('status')
         message = response_data.get('message')
@@ -343,7 +335,6 @@ class RouterHTTPClient:
         endpoint = f'/files/{file_id}'
 
         response = await self._client.delete(endpoint)
-        response.raise_for_status()
         response_data = response.json()
         status = response_data.get('status')
         message = response_data.get('message')
@@ -386,7 +377,6 @@ class RouterHTTPClient:
             endpoint,
             json=payload,
         )
-        response.raise_for_status()
         response_data = response.json()
         status = response_data.get('status')
         message = response_data.get('message')
@@ -420,7 +410,6 @@ class RouterHTTPClient:
         }
 
         response = await self._client.get(endpoint, params=params)
-        response.raise_for_status()
         response_data = response.json()
         status = response_data.get('status')
         message = response_data.get('message')

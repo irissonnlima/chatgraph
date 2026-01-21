@@ -209,6 +209,7 @@ class ChatbotApp:
             await usercall.end_chat(
                 usercall_response.end_chat_id,
                 end_action_name=usercall_response.end_chat_name,
+                observation=usercall_response.observations,
             )
             return
 
