@@ -1,5 +1,6 @@
 import json
 import asyncio
+import concurrent.futures
 from chatgraph.services.router_http_client import RouterHTTPClient
 from chatgraph.models.userstate import UserState
 from chatgraph.models.message import (
@@ -199,19 +200,6 @@ class UserCall:
             'transfer_to_menu method is not implemented yet.'
         )
 
-    async def insert(self, userstate: UserState) -> None:
-        try:
-            response = await self.__router_client.star(
-                message, self.__user_state
-            )
-
-            if response:
-                self.console.print(f'Mensagem enviada com sucesso: {response}')
-
-            await asyncio.sleep(0.1)
-        except Exception as e:
-            raise Exception(f'Erro ao enviar mensagem: {e}')
-
     @property
     def chatID(self):
         return self.__user_state.chat_id
@@ -244,7 +232,7 @@ class UserCall:
     def observation(self, observation: dict):
         self.__user_state.observation = json.dumps(observation)
         loop = asyncio.get_event_loop()
-        loop.create_task(self.set_observation())
+        loop.create_task(self.add_observation(observation))
 
     @content_message.setter
     def content_message(self, content_message: str):

@@ -1,6 +1,6 @@
 [project]
 name = "chatgraph"
-version = "1.0.4"
+version = "1.0.5"
 description = "A user-friendly chatbot library"
 authors = [
     {name = "Irisson N. Lima", email = "irisson.lima@verdecard.com.br"}

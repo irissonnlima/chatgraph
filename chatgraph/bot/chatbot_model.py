@@ -202,7 +202,7 @@ class ChatbotApp:
             return
 
         if isinstance(usercall_response, Route):
-            await usercall.set_route(usercall_response.current)
+            await usercall.set_route(usercall_response.current_node)
             return
 
         if isinstance(usercall_response, EndChatResponse):

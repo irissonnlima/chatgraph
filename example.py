@@ -11,9 +11,16 @@ from chatgraph import (
     UserState,
 )
 from dotenv import load_dotenv
+from dataclasses import dataclass
 
 load_dotenv()
 app = ChatbotApp()
+
+
+@dataclass
+class Teste:
+    atributo1: str
+    atributo2: int
 
 
 # Rota inicial com emojis
@@ -22,6 +29,10 @@ async def start(rota: Route, usercall: UserCall):
     welcome_message = Message(
         'Bem-vindo ao nosso chatbot! 😊🚀\nEscolha uma opção para continuar:',
     )
+
+    obs = usercall.observation
+    obs['teste'] = 'iniciado'
+    usercall.observation = obs
 
     await usercall.send(welcome_message)
     return RedirectResponse('choice_start')
@@ -42,7 +53,20 @@ async def choice_start(rota: Route, usercall: UserCall):
     )
     await usercall.send(msg_com_btns)
 
-    return Route('receber_btns')
+    obs = usercall.observation
+    obs['contador'] = obs.get('contador', 0) + 1
+    usercall.observation = obs
+
+    return Route('before_end_chat')
+
+
+@app.route('before_end_chat')
+async def before_end_chat(usercall: UserCall, rota: Route):
+    teste = Teste(atributo1='valor1', atributo2=42)
+    obs = usercall.observation
+    obs['teste_dataclass'] = teste.__dict__
+    usercall.observation = obs
+    return RedirectResponse('receber_btns')
 
 
 @app.route('receber_btns')
