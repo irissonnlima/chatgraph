@@ -3,6 +3,8 @@ import json
 
 
 def create_userstate(id) -> UserState:
+    print('Creating user state for chat_id:', id)
+    # id = str(id)
     user_state = UserState(
         chat_id=ChatID(id, 'prevencao-palavra'),
         menu=Menu(name='prevencao-palavra'),
@@ -15,6 +17,7 @@ def create_userstate(id) -> UserState:
 
 
 def get_user_state(id) -> UserState | None:
+    print('Retrieving user state for chat_id:', id)
     chat_id = ChatID(id, 'prevencao-palavra')
     user_state = UserState.get_user_state(chat_id)
     if not user_state:
@@ -29,3 +32,19 @@ def create_multiples_userstates():
         user_state.insert()
         print('Inserted user state: ')
         print(user_state.to_dict())
+
+
+def delete_userstate(userstate: UserState):
+    userstate.delete()
+
+
+if __name__ == '__main__':
+    user = create_userstate(123)
+    user.insert()
+    retrieved_user = get_user_state(123)
+
+    if not retrieved_user:
+        print('User state not found')
+    else:
+        print(retrieved_user.to_dict())
+        delete_userstate(retrieved_user)

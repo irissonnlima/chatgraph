@@ -248,9 +248,9 @@ class Button:
         """Cria instância a partir de dicionário."""
         button_type = ButtonType.from_string(data.get('type', 'postback'))
         return cls(
-            type=button_type,
             title=data.get('title', ''),
             detail=data.get('detail', ''),
+            type=button_type,
         )
 
 

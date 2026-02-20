@@ -27,6 +27,10 @@ class ChatID:
     user_id: str
     company_id: str
 
+    def __post_init__(self):
+        self.user_id = str(self.user_id)
+        self.company_id = str(self.company_id)
+
     def to_dict(self) -> dict:
         """Converte para dicionário."""
         return {
@@ -268,6 +272,35 @@ class UserState:
             async with router_client as rc:
                 user_state = await rc.get_session_by_chat_id(chat_id)
                 return user_state
+        except Exception as e:
+            print(f'Erro ao recuperar UserState: {e}')
+            return None
+
+    def delete(self) -> Optional['UserState']:
+        """Recupera o estado do usuário de forma síncrona."""
+        try:
+            return asyncio.run(self.delete_async())
+        except RuntimeError:
+            # Se já existe um loop rodando, usa run_in_executor
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(asyncio.run, self.delete_async())
+                    return future.result()
+            else:
+                return asyncio.run(self.delete_async())
+
+    async def delete_async(self) -> Optional['UserState']:
+        """Recupera o estado do usuário do sistema via RouterHTTPClient."""
+        container = Container()
+        router_client = container.get_router_client()
+        try:
+            async with router_client as rc:
+                end_action = await rc.get_end_action('voll_ended')
+                result = await rc.end_chat(
+                    self.chat_id, end_action, 'chatgraph-userstate'
+                )
+                return result
         except Exception as e:
             print(f'Erro ao recuperar UserState: {e}')
             return None
