@@ -140,6 +140,7 @@ class File:
                 self.bytes_data = await self.__deal_with_url()
             else:
                 self.bytes_data = await self.__deal_with_path()
+
             if not self.hash_id and self.bytes_data:
                 self.hash_id = await self.__make_file_hash()
 

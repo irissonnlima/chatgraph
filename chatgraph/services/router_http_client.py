@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional
 
 import httpx
 
+from ..models.http_responses import RouterResponses
 from ..models.userstate import UserState, ChatID
 from ..models.message import Message, File
 from ..models.actions import EndAction
@@ -80,15 +81,17 @@ class RouterHTTPClient:
         endpoint = '/session/'
 
         response = await self._client.get(endpoint)
-        response_data = response.json()
-        status = response_data.get('status')
-        message = response_data.get('message')
-        sessions_data = response_data.get('data', [])
+        response_data = RouterResponses.from_dict(response.json())
 
-        if not status:
-            raise Exception(f'Erro ao buscar as Sessões: {message}')
+        if not response_data.status:
+            raise Exception(
+                f'Erro ao buscar as Sessões: {response_data.message}'
+            )
 
-        sessions = [UserState.from_dict(item) for item in sessions_data]
+        if not isinstance(response_data.data, list):
+            raise Exception('Resposta de sessões mal formatada.')
+
+        sessions = [UserState.from_dict(item) for item in response_data.data]
         return sessions
 
     async def get_session_by_chat_id(
@@ -102,15 +105,17 @@ class RouterHTTPClient:
         }
 
         response = await self._client.get(endpoint, params=params)
-        response_data = response.json()
-        status = response_data.get('status')
-        message = response_data.get('message')
-        session_data = response_data.get('data')
+        response_data = RouterResponses.from_dict(response.json())
 
-        if not status:
-            raise Exception(f'Erro ao buscar a Sessão: {message}')
+        if not response_data.status:
+            raise Exception(
+                f'Erro ao buscar a Sessão: {response_data.message}'
+            )
 
-        return UserState.from_dict(session_data)
+        if not isinstance(response_data.data, dict):
+            return None
+
+        return UserState.from_dict(response_data.data)
 
     async def start_session(self, user_state: UserState) -> Any:
         """
@@ -131,12 +136,10 @@ class RouterHTTPClient:
             endpoint,
             json=user_state.to_dict(),
         )
-        response_data = response.json()
-        status = response_data.get('status')
-        message = response_data.get('message')
+        response_data = RouterResponses.from_dict(response.json())
 
-        if not status:
-            raise Exception(f'Erro ao iniciar sessão: {message}')
+        if not response_data.status:
+            raise Exception(f'Erro ao iniciar sessão: {response_data.message}')
 
         return response_data
 
@@ -165,12 +168,12 @@ class RouterHTTPClient:
             endpoint,
             json=payload,
         )
-        response_data = response.json()
-        status = response_data.get('status')
-        message = response_data.get('message')
+        response_data = RouterResponses.from_dict(response.json())
 
-        if not status:
-            raise Exception(f'Erro ao atualizar rota da sessão: {message}')
+        if not response_data.status:
+            raise Exception(
+                f'Erro ao atualizar rota da sessão: {response_data.message}'
+            )
 
         return response_data
 
@@ -203,13 +206,12 @@ class RouterHTTPClient:
             endpoint,
             json=payload,
         )
-        response_data = response.json()
-        status = response_data.get('status')
-        message = response_data.get('message')
+        response_data = RouterResponses.from_dict(response.json())
 
-        if not status:
+        if not response_data.status:
             raise Exception(
-                f'Erro ao atualizar observação da sessão: {message}'
+                f'Erro ao atualizar observação da sessão: '
+                f'{response_data.message}'
             )
 
         return response_data
@@ -245,12 +247,12 @@ class RouterHTTPClient:
             endpoint,
             json=payload,
         )
-        response_data = response.json()
-        status = response_data.get('status')
-        message = response_data.get('message')
+        response_data = RouterResponses.from_dict(response.json())
 
-        if not status:
-            raise Exception(f'Erro ao enviar mensagem: {message}')
+        if not response_data.status:
+            raise Exception(
+                f'Erro ao enviar mensagem: {response_data.message}'
+            )
 
         return response_data
 
@@ -271,53 +273,80 @@ class RouterHTTPClient:
         endpoint = f'/files/{file_id}/'
 
         response = await self._client.get(endpoint)
-        response_data = response.json()
-        status = response_data.get('status')
-        message = response_data.get('message')
-        file_data = response_data.get('data')
+        response_data = RouterResponses.from_dict(response.json())
 
-        if not status:
-            raise Exception(f'Erro ao buscar arquivo: {message}')
+        if not response_data.status:
+            raise Exception(f'Erro ao buscar arquivo: {response_data.message}')
 
-        return File.from_dict(file_data)
+        if not isinstance(response_data.data, dict):
+            raise Exception('Resposta de arquivo mal formatada.')
 
-    async def upload_file(self, file_data: bytes) -> File:
+        return File.from_dict(response_data.data)
+
+    async def upload_file(self, file: File) -> File:
         """
-        Faz upload de um arquivo (imagem) para o servidor.
+        Faz upload de um arquivo para o servidor.
 
         Args:
-            file_data: Dicionário contendo os dados do arquivo:
-                - file_type: Tipo do arquivo ("file" ou "link")
-                - file_content: Bytes do arquivo (se type="file")
-                - file_extension: Extensão do arquivo (se type="file")
-                - file_url: URL do arquivo (se type="link")
-                - expiration: Data de expiração (opcional)
+            file: Instância de File contendo:
+                - name: Nome do arquivo
+                - bytes_data: Bytes do arquivo
+                - mime_type: Tipo MIME (opcional)
+                - expires_after_days: Dias para expiração (opcional)
 
         Returns:
-            Objeto de resposta com atributo 'status' indicando sucesso/falha.
+            Objeto File com dados do upload realizado.
 
         Raises:
             Exception: Se houver erro na comunicação.
         """
         endpoint = '/files/upload/'
 
-        payload = {
-            'content': file_data,
+        if not file.bytes_data:
+            raise ValueError(
+                'Arquivo não carregado. Execute file.load_file() primeiro.'
+            )
+
+        # Extrair nome e extensão do arquivo
+        filename = file.name if file.name else 'arquivo'
+        extension = file.extension() if file.extension() else ''
+
+        # Preparar dados como multipart/form-data
+        files = {
+            'content': (
+                filename,
+                file.bytes_data,
+                file.mime_type or 'application/octet-stream',
+            )
         }
+
+        # Dados adicionais como form data
+        data = {
+            'file_type': 'file',
+            'file_extension': extension,
+            'file_name': filename,
+        }
+
+        if file.expires_after_days > 0:
+            data['expiration'] = str(file.expires_after_days)
+
         response = await self._client.post(
             endpoint,
-            files=payload,
+            files=files,
+            # data=data,
         )
-        response_data = response.json()
-        status = response_data.get('status')
-        message = response_data.get('message')
-        response_data = response_data.get('data')
+        response_data = RouterResponses.from_dict(response.json())
 
-        if not status:
-            raise Exception(f'Erro ao fazer upload do arquivo: {message}')
+        if not response_data.status:
+            raise Exception(
+                f'Erro ao fazer upload do arquivo: {response_data.message}'
+            )
 
-        file = File.from_dict(response_data)
-        return file
+        if not isinstance(response_data.data, dict):
+            raise Exception('Resposta de upload de arquivo mal formatada.')
+
+        uploaded_file = File.from_dict(response_data.data)
+        return uploaded_file
 
     async def delete_file(self, file_id: str) -> Any:
         """
@@ -335,12 +364,12 @@ class RouterHTTPClient:
         endpoint = f'/files/{file_id}'
 
         response = await self._client.delete(endpoint)
-        response_data = response.json()
-        status = response_data.get('status')
-        message = response_data.get('message')
+        response_data = RouterResponses.from_dict(response.json())
 
-        if not status:
-            raise Exception(f'Erro ao deletar arquivo: {message}')
+        if not response_data.status:
+            raise Exception(
+                f'Erro ao deletar arquivo: {response_data.message}'
+            )
 
         return response_data
 
@@ -377,12 +406,10 @@ class RouterHTTPClient:
             endpoint,
             json=payload,
         )
-        response_data = response.json()
-        status = response_data.get('status')
-        message = response_data.get('message')
+        response_data = RouterResponses.from_dict(response.json())
 
-        if not status:
-            raise Exception(f'Erro ao encerrar chat: {message}')
+        if not response_data.status:
+            raise Exception(f'Erro ao encerrar chat: {response_data.message}')
 
         return response_data
 
@@ -410,15 +437,17 @@ class RouterHTTPClient:
         }
 
         response = await self._client.get(endpoint, params=params)
-        response_data = response.json()
-        status = response_data.get('status')
-        message = response_data.get('message')
-        end_action_data = response_data.get('data')
+        response_data = RouterResponses.from_dict(response.json())
 
-        if not status:
-            raise Exception(f'Erro ao buscar ação de encerramento: {message}')
+        if not response_data.status:
+            raise Exception(
+                f'Erro ao buscar ação de encerramento: {response_data.message}'
+            )
 
-        return EndAction.from_dict(end_action_data)
+        if not isinstance(response_data.data, dict):
+            raise Exception('Resposta de ação de encerramento mal formatada.')
+
+        return EndAction.from_dict(response_data.data)
 
     # ToDo Methods
     async def transfer_to_menu(self, transfer_data: Dict[str, Any]) -> Any:

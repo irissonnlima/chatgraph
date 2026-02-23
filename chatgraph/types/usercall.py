@@ -52,22 +52,24 @@ class UserCall:
                 return None
             return file
         except Exception as e:
-            self.console.print(f'Erro ao obter arquivo do servidor: {e}')
+            # self.console.print(f'Erro ao obter arquivo do servidor: {e}')
             return None
 
     async def __upload_file(
-        self, file_data: bytes
+        self, file: File
     ) -> tuple[bool, str, Optional[File]]:
         try:
-            file = await self.__router_client.upload_file(file_data)
-            return True, 'Upload successful', file
+            uploaded_file = await self.__router_client.upload_file(file)
+            return True, 'Upload successful', uploaded_file
         except Exception as e:
             self.console.print(f'Erro ao enviar arquivo para o servidor: {e}')
             return False, str(e), None
 
-    async def __check_file_for_send(self, path_file: str) -> File:
+    async def __check_file_for_send(self, file: str | File) -> File:
         try:
-            file = File(name=path_file)
+            if isinstance(file, str):
+                file = File(name=file)
+
             await file.load_file()
         except Exception as e:
             raise ValueError('Erro ao criar File: ' + str(e))
@@ -82,7 +84,7 @@ class UserCall:
         if existing_file:
             return existing_file
 
-        status, msg, uploaded = await self.__upload_file(file.bytes_data)
+        status, msg, uploaded = await self.__upload_file(file)
         if not status or not uploaded:
             raise ValueError('Erro ao enviar arquivo: ' + msg)
 

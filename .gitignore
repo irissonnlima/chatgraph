@@ -181,3 +181,7 @@ TESTING_GUIDE.md
 CONFIGURATION.md
 example_logging.py
 ROADMAP.md
+*.pdf
+*jpg
+*.jpeg
+*.png
