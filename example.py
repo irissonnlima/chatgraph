@@ -9,6 +9,7 @@ from chatgraph import (
     Button,
     TextMessage,
     UserState,
+    TransferToMenu,
 )
 from dotenv import load_dotenv
 from dataclasses import dataclass
@@ -30,12 +31,11 @@ async def start(rota: Route, usercall: UserCall):
         'Bem-vindo ao nosso chatbot! 😊🚀\nEscolha uma opção para continuar:',
     )
 
-    obs = usercall.observation
-    obs['teste'] = 'iniciado'
-    usercall.observation = obs
-
     await usercall.send(welcome_message)
-    return RedirectResponse('choice_start')
+    return TransferToMenu(
+        'default',
+        'Olá, estou transferindo para o novo menu!',
+    )
 
 
 @app.route('choice_start')

@@ -1,3 +1,4 @@
+import sys
 from chatgraph import UserState, ChatID, Menu
 import json
 
@@ -38,6 +39,10 @@ def delete_userstate(userstate: UserState):
     userstate.delete()
 
 
+def transfer_to_menu(usercall, menu_name: str, user_message: str):
+    usercall.transfer_to_menu(menu_name, user_message)
+
+
 if __name__ == '__main__':
     user = create_userstate(123)
     user.insert()
@@ -45,6 +50,10 @@ if __name__ == '__main__':
 
     if not retrieved_user:
         print('User state not found')
-    else:
-        print(retrieved_user.to_dict())
-        delete_userstate(retrieved_user)
+        sys.exit(0)
+
+    print(retrieved_user.to_dict())
+    transfer_to_menu(
+        None, 'default', 'Olá, estou transferindo para o novo menu!'
+    )
+    # delete_userstate(retrieved_user)

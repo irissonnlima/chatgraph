@@ -155,10 +155,12 @@ class ButtonType(Enum):
     Attributes:
         POSTBACK: Botão que envia dados de volta ao sistema
         URL: Botão que abre um link externo
+        UNKNOWN: Tipo de botão desconhecido
     """
 
     POSTBACK = 'postback'
     URL = 'url'
+    UNKNOWN = 'unknown'
 
     @classmethod
     def from_string(cls, value: str) -> 'ButtonType':

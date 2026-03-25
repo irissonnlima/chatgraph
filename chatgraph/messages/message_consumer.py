@@ -108,10 +108,13 @@ class MessageConsumer:
                 await channel.set_qos(prefetch_count=self.__prefetch_count)
 
                 try:
-                    queue = await channel.get_queue(
-                        self.__queue_consume, ensure=True
+                    queue = await channel.declare_queue(
+                        self.__queue_consume, passive=True
                     )
                 except aio_pika.exceptions.ChannelNotFoundEntity:
+                    # O broker fecha o canal após erro AMQP 404 — reabrir antes de declarar
+                    channel = await connection.channel()
+                    await channel.set_qos(prefetch_count=self.__prefetch_count)
                     arguments = {
                         'x-dead-letter-exchange': 'log_error',  # Dead Letter Exchange
                         'x-expires': 86400000,  # Expiração da fila (em milissegundos)
@@ -121,6 +124,11 @@ class MessageConsumer:
                         self.__queue_consume,
                         durable=True,
                         arguments=arguments,
+                    )
+                    routing_key = f'chatbot.{self.__queue_consume}'
+                    await queue.bind(
+                        exchange=self.__virtual_host,
+                        routing_key=routing_key,
                     )
 
                 info('[x] Server inicializado! Aguardando solicitações RPC')

@@ -2,7 +2,7 @@ import json
 import asyncio
 import concurrent.futures
 from chatgraph.services.router_http_client import RouterHTTPClient
-from chatgraph.models.userstate import UserState
+from chatgraph.models.userstate import Menu, UserState
 from chatgraph.models.message import (
     Message,
     File,
@@ -197,10 +197,25 @@ class UserCall:
         except Exception as e:
             raise ValueError(f'Erro ao atualizar rota: {e}')
 
-    async def transfer_to_menu(self, menu: str, user_message: str) -> None:
-        raise NotImplementedError(
-            'transfer_to_menu method is not implemented yet.'
-        )
+    async def transfer_to_menu(
+        self,
+        menu_name: str,
+        user_message: str,
+    ) -> None:
+        try:
+            if not menu_name:
+                raise ValueError('Menu de destino não pode ser vazio.')
+
+            menu = Menu.from_name(menu_name)
+            message = Message(text_message=user_message)
+
+            await self.__router_client.transfer_to_menu(
+                self.__user_state.chat_id,
+                menu,
+                message,
+            )
+        except Exception as e:
+            raise ValueError(f'Erro ao transferir para menu: {e}')
 
     @property
     def chatID(self):

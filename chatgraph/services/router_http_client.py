@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 import httpx
 
 from ..models.http_responses import RouterResponses
-from ..models.userstate import UserState, ChatID
+from ..models.userstate import UserState, ChatID, Menu
 from ..models.message import Message, File
 from ..models.actions import EndAction
 
@@ -450,7 +450,9 @@ class RouterHTTPClient:
         return EndAction.from_dict(response_data.data)
 
     # ToDo Methods
-    async def transfer_to_menu(self, transfer_data: Dict[str, Any]) -> Any:
+    async def transfer_to_menu(
+        self, chat_id: ChatID, menu: Menu, mensagem: Message
+    ) -> Any:
         """
         Transfere o chat para outro menu do fluxo.
 
@@ -466,4 +468,23 @@ class RouterHTTPClient:
         Raises:
             Exception: Se houver erro na comunicação.
         """
-        pass
+        endpoint = 'messages/transfer_to_menu'
+
+        payload = {
+            'chat_id': chat_id.to_dict(),
+            'menu': menu.to_dict(),
+            'mensagem': mensagem.to_dict(),
+        }
+
+        response = await self._client.post(
+            endpoint,
+            json=payload,
+        )
+        response_data = RouterResponses.from_dict(response.json())
+
+        if not response_data.status:
+            raise Exception(
+                f'Erro ao transferir para o menu: {response_data.message}'
+            )
+
+        return response_data

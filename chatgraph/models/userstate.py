@@ -133,6 +133,11 @@ class Menu:
             active=data.get('active'),
         )
 
+    @classmethod
+    def from_name(cls, name: str) -> 'Menu':
+        """Cria instância a partir do nome do Menu."""
+        return cls(name=name)
+
 
 @dataclass
 class UserState:
