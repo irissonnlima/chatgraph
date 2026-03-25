@@ -480,6 +480,7 @@ class RouterHTTPClient:
             endpoint,
             json=payload,
         )
+        print(f'Status: {response.status_code} | Body: {response.text!r}')
         response_data = RouterResponses.from_dict(response.json())
 
         if not response_data.status:

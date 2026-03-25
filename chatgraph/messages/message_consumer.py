@@ -157,8 +157,9 @@ class MessageConsumer:
     async def __transform_message(self, message: dict) -> UserCall:
         user_state = message.get('user_state', {})
         message_data = message.get('message', {})
-        observation = user_state.get('observation', {})
+        observation = user_state.get('observation', "{}")
 
+        print(observation)
         if isinstance(observation, str):
             observation = json.loads(observation)
 
