@@ -96,6 +96,7 @@ class TestEndAction:
         assert result == {
             'id': 'end123',
             'name': 'Finalizado',
+            'description': '',
             'department_id': 10,
             'observation': 'OK',
             'last_update': '2025-11-14T10:00:00',
@@ -117,6 +118,25 @@ class TestEndAction:
         assert action.department_id == 10
         assert action.observation == 'OK'
         assert action.last_update == '2025-11-14T10:00:00'
+
+    def test_endaction_description_default(self):
+        action = EndAction()
+        assert action.description == ''
+
+    def test_endaction_from_dict_with_description(self):
+        data = {'id': 'e1', 'name': 'Encerrado', 'description': 'Atendimento concluído'}
+        action = EndAction.from_dict(data)
+        assert action.description == 'Atendimento concluído'
+
+    def test_endaction_to_dict_includes_description(self):
+        action = EndAction(id='e1', name='Encerrado', description='Atendimento concluído')
+        result = action.to_dict()
+        assert result['description'] == 'Atendimento concluído'
+
+    def test_endaction_to_dict_description_empty_by_default(self):
+        action = EndAction(id='e1', name='Encerrado')
+        result = action.to_dict()
+        assert result['description'] == ''
 
     def test_empty_end_action_constant(self):
         """Testa constante EMPTY_END_ACTION."""

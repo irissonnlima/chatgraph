@@ -58,6 +58,7 @@ class EndAction:
 
     id: str = ""
     name: str = ""
+    description: str = ""
     department_id: int = 0
     observation: str = ""
     last_update: str = ""
@@ -71,6 +72,7 @@ class EndAction:
         return {
             "id": self.id,
             "name": self.name,
+            "description": self.description,
             "department_id": self.department_id,
             "observation": self.observation,
             "last_update": self.last_update,
@@ -82,6 +84,7 @@ class EndAction:
         return cls(
             id=data.get("id", ""),
             name=data.get("name", ""),
+            description=data.get("description", ""),
             department_id=data.get("department_id", 0),
             observation=data.get("observation", ""),
             last_update=data.get("last_update", ""),
