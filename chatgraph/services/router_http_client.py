@@ -472,8 +472,8 @@ class RouterHTTPClient:
 
         payload = {
             'chat_id': chat_id.to_dict(),
-            'menu': menu.to_dict(),
-            'mensagem': mensagem.to_dict(),
+            'menu_id': menu.name,
+            'message': mensagem.to_dict(),
         }
 
         response = await self._client.post(

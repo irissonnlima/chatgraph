@@ -159,7 +159,6 @@ class MessageConsumer:
         message_data = message.get('message', {})
         observation = user_state.get('observation', "{}")
 
-        print(observation)
         if isinstance(observation, str):
             observation = json.loads(observation)
 
