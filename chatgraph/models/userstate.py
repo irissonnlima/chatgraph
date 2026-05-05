@@ -10,8 +10,29 @@ import asyncio
 import concurrent.futures
 import json
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Optional
 from ..container.container import Container
+
+
+class AuthLevel(Enum):
+    BLOCKED = 'blocked'
+    UNKNOWN = 'unknown'
+    READ = 'read'
+    WRITE = 'write'
+
+    @classmethod
+    def from_value(cls, value) -> 'AuthLevel':
+        """Aceita string ('read', 'write', etc.) ou int (-1, 0, 1, 2)."""
+        _int_map = {-1: cls.BLOCKED, 0: cls.UNKNOWN, 1: cls.READ, 2: cls.WRITE}
+        if isinstance(value, int):
+            return _int_map.get(value, cls.UNKNOWN)
+        if isinstance(value, str):
+            try:
+                return cls(value.lower())
+            except ValueError:
+                return cls.UNKNOWN
+        return cls.UNKNOWN
 
 
 @dataclass
@@ -48,24 +69,15 @@ class ChatID:
 
 
 @dataclass
-class User:
-    """
-    Informações do usuário.
-
-    Attributes:
-        cpf: CPF do usuário (opcional)
-        name: Nome do usuário (opcional)
-        phone: Telefone do usuário (opcional)
-        email: Email do usuário (opcional)
-    """
-
+class UserData:
     cpf: Optional[str] = None
     name: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
+    profile_photo_url: Optional[str] = None
+    nickname: Optional[str] = None
 
     def to_dict(self) -> dict:
-        """Converte para dicionário, omitindo campos None."""
         data = {}
         if self.cpf is not None:
             data['cpf'] = self.cpf
@@ -75,16 +87,126 @@ class User:
             data['phone'] = self.phone
         if self.email is not None:
             data['email'] = self.email
+        if self.profile_photo_url is not None:
+            data['profile_photo_url'] = self.profile_photo_url
+        if self.nickname is not None:
+            data['nickname'] = self.nickname
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'User':
-        """Cria instância a partir de dicionário."""
+    def from_dict(cls, data: dict) -> 'UserData':
         return cls(
             cpf=data.get('cpf'),
             name=data.get('name'),
             phone=data.get('phone'),
             email=data.get('email'),
+            profile_photo_url=data.get('profile_photo_url'),
+            nickname=data.get('nickname'),
+        )
+
+
+@dataclass
+class UserIdentity:
+    cpf: Optional[str] = None
+    device_id: Optional[str] = None
+    hash_authorization: Optional[str] = None
+    active: Optional[bool] = None
+    auth_level: AuthLevel = AuthLevel.UNKNOWN
+    auth_status: Optional[str] = None
+    last_access_at: Optional[str] = None
+    last_validation_at: Optional[str] = None
+    consent_source: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        data: dict = {'auth_level': self.auth_level.value}
+        if self.cpf is not None:
+            data['cpf'] = self.cpf
+        if self.device_id is not None:
+            data['device_id'] = self.device_id
+        if self.hash_authorization is not None:
+            data['hash_authorization'] = self.hash_authorization
+        if self.active is not None:
+            data['active'] = self.active
+        if self.auth_status is not None:
+            data['auth_status'] = self.auth_status
+        if self.last_access_at is not None:
+            data['last_access_at'] = self.last_access_at
+        if self.last_validation_at is not None:
+            data['last_validation_at'] = self.last_validation_at
+        if self.consent_source is not None:
+            data['consent_source'] = self.consent_source
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'UserIdentity':
+        return cls(
+            cpf=data.get('cpf'),
+            device_id=data.get('device_id'),
+            hash_authorization=data.get('hash_authorization'),
+            active=data.get('active'),
+            auth_level=AuthLevel.from_value(data.get('auth_level', 'unknown')),
+            auth_status=data.get('auth_status'),
+            last_access_at=data.get('last_access_at'),
+            last_validation_at=data.get('last_validation_at'),
+            consent_source=data.get('consent_source'),
+        )
+
+
+@dataclass
+class UserInternal:
+    matricula: Optional[str] = None
+    cargo: Optional[str] = None
+    filial: Optional[str] = None
+    empresa: Optional[str] = None
+    data_admissao: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        data = {}
+        if self.matricula is not None:
+            data['matricula'] = self.matricula
+        if self.cargo is not None:
+            data['cargo'] = self.cargo
+        if self.filial is not None:
+            data['filial'] = self.filial
+        if self.empresa is not None:
+            data['empresa'] = self.empresa
+        if self.data_admissao is not None:
+            data['data_admissao'] = self.data_admissao
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'UserInternal':
+        return cls(
+            matricula=data.get('matricula'),
+            cargo=data.get('cargo'),
+            filial=data.get('filial'),
+            empresa=data.get('empresa'),
+            data_admissao=data.get('data_admissao'),
+        )
+
+
+@dataclass
+class User:
+    data: UserData = field(default_factory=UserData)
+    identity: UserIdentity = field(default_factory=UserIdentity)
+    internal: Optional[UserInternal] = None
+
+    def to_dict(self) -> dict:
+        result = {
+            'data': self.data.to_dict(),
+            'identity': self.identity.to_dict(),
+        }
+        if self.internal is not None:
+            result['internal'] = self.internal.to_dict()
+        return result
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'User':
+        internal_data = data.get('internal')
+        return cls(
+            data=UserData.from_dict(data.get('data', {})),
+            identity=UserIdentity.from_dict(data.get('identity', {})),
+            internal=UserInternal.from_dict(internal_data) if internal_data else None,
         )
 
 
@@ -106,6 +228,7 @@ class Menu:
     name: Optional[str] = None
     description: Optional[str] = None
     active: Optional[bool] = None
+    protection_level: Optional[AuthLevel] = None
 
     def to_dict(self) -> dict:
         """Converte para dicionário, omitindo campos None."""
@@ -120,6 +243,8 @@ class Menu:
             data['description'] = self.description
         if self.active is not None:
             data['active'] = self.active
+        if self.protection_level is not None:
+            data['protection_level'] = self.protection_level.value
         return data
 
     @classmethod
@@ -131,6 +256,7 @@ class Menu:
             name=data.get('name'),
             description=data.get('description'),
             active=data.get('active'),
+            protection_level=AuthLevel.from_value(data['protection_level']) if data.get('protection_level') is not None else None,
         )
 
     @classmethod
