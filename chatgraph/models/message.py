@@ -16,6 +16,21 @@ import hashlib
 MessageTypes = Union[str, float, int]
 
 
+class SendType(Enum):
+    IMAGE = 'IMAGE'
+    VIDEO = 'VIDEO'
+    AUDIO = 'AUDIO'
+    FILE = 'FILE'
+    UNKNOWN = 'UNKNOWN'
+
+    @classmethod
+    def from_string(cls, value: str) -> 'SendType':
+        try:
+            return cls(value.upper())
+        except ValueError:
+            return cls.UNKNOWN
+
+
 @dataclass
 class File:
     """
@@ -44,6 +59,7 @@ class File:
     actualized_at: str = ''
     bytes_data: Optional[bytes] = None
     hash_id: Optional[str] = ''
+    send_type: SendType = SendType.UNKNOWN
 
     def is_empty(self) -> bool:
         """Verifica se o arquivo está vazio."""
@@ -72,6 +88,7 @@ class File:
             'created_at': self.created_at,
             'expires_after_days': self.expires_after_days,
             'actualized_at': self.actualized_at,
+            'send_type': self.send_type.value,
         }
 
         return data
@@ -90,6 +107,7 @@ class File:
             created_at=data.get('created_at', ''),
             expires_after_days=data.get('expires_after_days', 0),
             actualized_at=data.get('actualized_at', ''),
+            send_type=SendType.from_string(data.get('send_type') or 'UNKNOWN'),
         )
 
     @classmethod
@@ -200,6 +218,7 @@ class TextMessage:
     detail: str = ''
     caption: str = ''
     mentioned_ids: List[str] = field(default_factory=list)
+    timestamp: int = 0
 
     def to_dict(self) -> dict:
         """Converte para dicionário."""
@@ -209,6 +228,7 @@ class TextMessage:
             'detail': self.detail,
             'caption': self.caption,
             'mentioned_ids': self.mentioned_ids,
+            'timestamp': self.timestamp,
         }
 
     @classmethod
@@ -220,6 +240,7 @@ class TextMessage:
             detail=data.get('detail', ''),
             caption=data.get('caption', ''),
             mentioned_ids=data.get('mentioned_ids', []),
+            timestamp=data.get('timestamp', 0),
         )
 
 

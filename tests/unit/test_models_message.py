@@ -13,7 +13,31 @@ from chatgraph.models.message import (
     TextMessage,
     Button,
     Message,
+    SendType,
 )
+
+
+@pytest.mark.unit
+class TestSendType:
+    """Testes para o enum SendType."""
+
+    def test_sendtype_from_string_valid(self):
+        assert SendType.from_string('IMAGE') == SendType.IMAGE
+        assert SendType.from_string('VIDEO') == SendType.VIDEO
+        assert SendType.from_string('AUDIO') == SendType.AUDIO
+        assert SendType.from_string('FILE') == SendType.FILE
+
+    def test_sendtype_from_string_lowercase(self):
+        assert SendType.from_string('image') == SendType.IMAGE
+        assert SendType.from_string('video') == SendType.VIDEO
+
+    def test_sendtype_from_string_invalid(self):
+        assert SendType.from_string('invalid') == SendType.UNKNOWN
+        assert SendType.from_string('') == SendType.UNKNOWN
+
+    def test_sendtype_values(self):
+        assert SendType.IMAGE.value == 'IMAGE'
+        assert SendType.UNKNOWN.value == 'UNKNOWN'
 
 @pytest.mark.unit
 class TestFile:
@@ -108,6 +132,22 @@ class TestFile:
         assert file.url == 'https://example.com/image.jpg'
         assert file.name == 'image.jpg'
         assert file.size == 1024
+        assert file.send_type == SendType.IMAGE
+
+    def test_file_from_dict_with_send_type_none(self):
+        file = File.from_dict({'send_type': None})
+        assert file.send_type == SendType.UNKNOWN
+
+    def test_file_to_dict_includes_send_type(self):
+        file = File(id='file123', send_type=SendType.VIDEO)
+        result = file.to_dict()
+        assert result['send_type'] == 'VIDEO'
+
+    def test_file_send_type_default(self):
+        file = File()
+        assert file.send_type == SendType.UNKNOWN
+        result = file.to_dict()
+        assert result['send_type'] == 'UNKNOWN'
 
 @pytest.mark.unit
 class TestButtonType:
@@ -170,6 +210,7 @@ class TestTextMessage:
             'detail': 'Bem-vindo',
             'caption': '',
             'mentioned_ids': [],
+            'timestamp': 0,
         }
 
     def test_textmessage_from_dict(self):
@@ -186,6 +227,20 @@ class TestTextMessage:
         assert text_msg.title == 'Olá'
         assert text_msg.detail == 'Bem-vindo'
         assert text_msg.mentioned_ids == ['user1']
+
+    def test_textmessage_from_dict_with_timestamp(self):
+        data = {'id': 'msg1', 'timestamp': 1746000000}
+        text_msg = TextMessage.from_dict(data)
+        assert text_msg.timestamp == 1746000000
+
+    def test_textmessage_to_dict_includes_timestamp(self):
+        text_msg = TextMessage(id='msg1', timestamp=1746000000)
+        result = text_msg.to_dict()
+        assert result['timestamp'] == 1746000000
+
+    def test_textmessage_timestamp_default(self):
+        text_msg = TextMessage()
+        assert text_msg.timestamp == 0
 
 @pytest.mark.unit
 class TestButton:
