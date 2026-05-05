@@ -33,7 +33,7 @@ async def start(rota: Route, usercall: UserCall):
 
     await usercall.send(welcome_message)
     return TransferToMenu(
-        'default',
+        'p0299_suporte_ti',
         'Olá, estou transferindo para o novo menu!',
     )
 
