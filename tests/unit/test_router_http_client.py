@@ -9,7 +9,7 @@ import httpx
 import pytest
 
 from chatgraph.services.router_http_client import RouterHTTPClient
-from chatgraph.models.userstate import ChatID, UserState
+from chatgraph.models.userstate import ChatID, UserState, Menu, User, UserData, UserIdentity
 from chatgraph.models.message import Message
 
 @pytest.mark.unit
@@ -331,5 +331,180 @@ class TestRouterHTTPClientFiles:
             assert result['status'] is True
             assert result['message'] == 'File uploaded'
             assert 'file_id' in result
+        finally:
+            await client.close()
+
+
+@pytest.mark.unit
+class TestGetMenus:
+    """Testes para o método get_menus."""
+
+    @pytest.mark.asyncio
+    async def test_get_menus_returns_list(
+        self, http_client_base_url, respx_mock, sample_menu_data
+    ):
+        respx_mock.get(f'{http_client_base_url}/menus/').mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    'status': True,
+                    'message': 'Success',
+                    'data': [sample_menu_data],
+                },
+            )
+        )
+
+        client = RouterHTTPClient(base_url=http_client_base_url)
+
+        try:
+            result = await client.get_menus()
+            assert isinstance(result, list)
+            assert len(result) == 1
+            assert isinstance(result[0], Menu)
+            assert result[0].id == sample_menu_data['id']
+            assert result[0].name == sample_menu_data['name']
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_get_menus_with_filters(
+        self, http_client_base_url, respx_mock, sample_menu_data
+    ):
+        respx_mock.get(f'{http_client_base_url}/menus/?name=test').mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    'status': True,
+                    'message': 'Success',
+                    'data': [sample_menu_data],
+                },
+            )
+        )
+
+        client = RouterHTTPClient(base_url=http_client_base_url)
+
+        try:
+            result = await client.get_menus(name='test')
+            assert isinstance(result, list)
+            assert 'name=test' in str(respx_mock.calls.last.request.url)
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_get_menus_api_error(self, http_client_base_url, respx_mock):
+        respx_mock.get(f'{http_client_base_url}/menus/').mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    'status': False,
+                    'message': 'Database error',
+                    'data': [],
+                },
+            )
+        )
+
+        client = RouterHTTPClient(base_url=http_client_base_url)
+
+        try:
+            with pytest.raises(Exception, match='Erro ao buscar menus: Database error'):
+                await client.get_menus()
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_get_menus_bad_response_format(
+        self, http_client_base_url, respx_mock
+    ):
+        respx_mock.get(f'{http_client_base_url}/menus/').mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    'status': True,
+                    'message': 'Success',
+                    'data': {'id': 1},
+                },
+            )
+        )
+
+        client = RouterHTTPClient(base_url=http_client_base_url)
+
+        try:
+            with pytest.raises(Exception, match='Resposta de menus mal formatada.'):
+                await client.get_menus()
+        finally:
+            await client.close()
+
+
+@pytest.mark.unit
+class TestUpdateUser:
+    """Testes para o método update_user."""
+
+    @pytest.mark.asyncio
+    async def test_update_user_success(self, http_client_base_url, respx_mock):
+        respx_mock.patch(f'{http_client_base_url}/user').mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    'status': True,
+                    'message': 'User updated',
+                },
+            )
+        )
+
+        user = User(data=UserData(name='João'), identity=UserIdentity())
+        client = RouterHTTPClient(base_url=http_client_base_url)
+
+        try:
+            result = await client.update_user(user)
+            assert result.status is True
+            assert result.message == 'User updated'
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_update_user_api_error(
+        self, http_client_base_url, respx_mock
+    ):
+        respx_mock.patch(f'{http_client_base_url}/user').mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    'status': False,
+                    'message': 'Update failed',
+                },
+            )
+        )
+
+        user = User(data=UserData(name='João'), identity=UserIdentity())
+        client = RouterHTTPClient(base_url=http_client_base_url)
+
+        try:
+            with pytest.raises(Exception, match='Erro ao atualizar usuário: Update failed'):
+                await client.update_user(user)
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_update_user_sends_correct_body(
+        self, http_client_base_url, respx_mock
+    ):
+        respx_mock.patch(f'{http_client_base_url}/user').mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    'status': True,
+                    'message': 'User updated',
+                },
+            )
+        )
+
+        user = User(data=UserData(cpf='12345678900', name='João'), identity=UserIdentity())
+        client = RouterHTTPClient(base_url=http_client_base_url)
+
+        try:
+            await client.update_user(user)
+            import json
+            body = json.loads(respx_mock.calls.last.request.content)
+            assert body['data']['cpf'] == '12345678900'
         finally:
             await client.close()
