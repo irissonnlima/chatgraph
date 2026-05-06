@@ -11,10 +11,13 @@ from chatgraph import (
     UserState,
     TransferToMenu,
 )
+from chatgraph.logger import get_system_logger
 from dotenv import load_dotenv
 from dataclasses import dataclass
 
 load_dotenv()
+_logger = get_system_logger()
+_logger.info('Aplicação inicializada')
 app = ChatbotApp()
 
 
@@ -27,19 +30,20 @@ class Teste:
 # Rota inicial com emojis
 @app.route('start')
 async def start(rota: Route, usercall: UserCall):
+    usercall.logger.info('Usuário entrou na rota start')
     welcome_message = Message(
         'Bem-vindo ao nosso chatbot! 😊🚀\nEscolha uma opção para continuar:',
     )
 
     await usercall.send(welcome_message)
-    return TransferToMenu(
-        'p0299_suporte_ti',
-        'Olá, estou transferindo para o novo menu!',
-    )
+    return RedirectResponse('choice_start')
 
 
 @app.route('choice_start')
 async def choice_start(rota: Route, usercall: UserCall):
+    usercall.logger.debug(
+        f'Conteúdo recebido em choice_start: {usercall.content_message}'
+    )
     file = File.from_path('image.png')
     await usercall.send(file)
 
@@ -56,6 +60,7 @@ async def choice_start(rota: Route, usercall: UserCall):
     obs = usercall.observation
     obs['contador'] = obs.get('contador', 0) + 1
     usercall.observation = obs
+    usercall.logger.debug(f'Contador atualizado: {obs["contador"]}')
 
     return Route('before_end_chat')
 
@@ -66,12 +71,14 @@ async def before_end_chat(usercall: UserCall, rota: Route):
     obs = usercall.observation
     obs['teste_dataclass'] = teste.__dict__
     usercall.observation = obs
+    usercall.logger.debug(f'Observação atualizada: {obs}')
     return RedirectResponse('receber_btns')
 
 
 @app.route('receber_btns')
 async def receber_btns(rota: Route, usercall: UserCall):
     resposta = usercall.content_message
+    usercall.logger.info(f'Resposta recebida: {resposta}')
 
     if resposta == 'Voltar':
         return RedirectResponse('start')
@@ -80,6 +87,7 @@ async def receber_btns(rota: Route, usercall: UserCall):
     elif resposta == 'Mandar outra foto':
         return RedirectResponse('choice_start')
     else:
+        usercall.logger.warning(f'Opção inválida recebida: {resposta}')
         await usercall.send('Opção inválida!')
         msg_com_btns = Message(
             'Teste com Botões',
