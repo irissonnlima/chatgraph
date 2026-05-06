@@ -1,18 +1,22 @@
 import json
-from logging import info
 import os
-import aio_pika
 from typing import Callable
+from urllib.parse import quote
+
+import aio_pika
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
+
 from ..auth.credentials import Credential
+from ..logger.user_logger import UserLoggerManager
 from ..models.message import Message
 from ..models.userstate import UserState
 from ..services.router_http_client import RouterHTTPClient
 from ..types.usercall import UserCall
-from rich.console import Console
-from rich.table import Table
-from rich.text import Text
-from rich.panel import Panel
-from urllib.parse import quote
+
+_logger = UserLoggerManager.get_system_logger()
 
 
 class MessageConsumer:
@@ -131,14 +135,14 @@ class MessageConsumer:
                         routing_key=routing_key,
                     )
 
-                info('[x] Server inicializado! Aguardando solicitações RPC')
+                _logger.info('[x] Server inicializado! Aguardando solicitações RPC')
 
                 async for message in queue:
                     async with message.process():
                         await self.on_request(message.body, process_message)
 
         except Exception as e:
-            print(f'Erro durante o consumo de mensagens: {e}')
+            _logger.error(f'Erro durante o consumo de mensagens: {e}')
             # Reiniciar a conexão em caso de falha
             # await self.start_consume(process_message)
         finally:
@@ -152,7 +156,7 @@ class MessageConsumer:
             pure_message = await self.__transform_message(message_json)
             await process_message(pure_message)
         except Exception as e:
-            print(f'Erro ao processar mensagem: {e}')
+            _logger.error(f'Erro ao processar mensagem: {e}')
 
     async def __transform_message(self, message: dict) -> UserCall:
         user_state = message.get('user_state', {})
@@ -181,7 +185,7 @@ class MessageConsumer:
         if self.__router_client:
             await self.__router_client.close()
             self.__router_client = None
-            print('✓ RouterHTTPClient fechado')
+            _logger.info('RouterHTTPClient fechado')
 
     def reprer(self):
         console = Console()

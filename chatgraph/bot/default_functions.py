@@ -18,7 +18,7 @@ async def voltar(route: Route, userCall: UserCall) -> RedirectResponse:
     """
 
     previous = route.get_previous()
-    userCall.console.print(
-        f"Voltando rota. ({route.current}) -> ({previous.current})", style="bold yellow"
+    userCall.logger.info(
+        f"Voltando rota. ({route.current}) -> ({previous.current})"
     )
     return RedirectResponse(previous.current_node)

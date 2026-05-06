@@ -1,9 +1,11 @@
 
 import inspect
 from functools import wraps
-from logging import debug
 
 from ..error.chatbot_error import ChatbotError
+from ..logger.user_logger import UserLoggerManager
+
+_logger = UserLoggerManager.get_system_logger()
 
 
 class ChatbotRouter:
@@ -55,7 +57,7 @@ class ChatbotRouter:
                     else 'Any'
                 )
                 params[param_type] = name
-                debug(f'Parameter: {name}, Type: {param_type}')
+                _logger.debug(f'Parameter: {name}, Type: {param_type}')
 
             self.__routes[route_name] = {
                 'function': func,

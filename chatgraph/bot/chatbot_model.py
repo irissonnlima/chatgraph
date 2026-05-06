@@ -2,22 +2,24 @@ import asyncio
 import inspect
 import re
 from functools import wraps
-from logging import debug, error
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 from ..error.chatbot_error import ChatbotMessageError
+from ..logger.user_logger import UserLoggerManager
 from ..messages.message_consumer import MessageConsumer
-from ..models.message import MessageTypes, Message, File
-from ..types.usercall import UserCall
+from ..models.message import File, Message, MessageTypes
+from ..types.background_task import BackgroundTask
 from ..types.end_types import (
-    RedirectResponse,
     EndChatResponse,
+    RedirectResponse,
     TransferToMenu,
 )
 from ..types.route import Route
+from ..types.usercall import UserCall
 from .chatbot_router import ChatbotRouter
-from ..types.background_task import BackgroundTask
 from .default_functions import voltar
+
+_logger = UserLoggerManager.get_system_logger()
 
 DEFAULT_FUNCTION: dict[str, Callable] = {
     r'^\s*(voltar)\s*$': voltar,
@@ -81,7 +83,7 @@ class ChatbotApp:
                     else 'Any'
                 )
                 params[param_type] = name
-                debug(f'Parameter: {name}, Type: {param_type}')
+                _logger.debug(f'Parameter: {name}, Type: {param_type}')
 
             self.__routes[route_name] = {
                 'function': func,
@@ -128,7 +130,7 @@ class ChatbotApp:
         for regex, func in self.default_functions.items():
             if re.match(regex, usercall.content_message):
                 matchDefault = True
-                debug(
+                usercall.logger.debug(
                     f'Função padrão encontrada: {func.__name__} para a rota {route}'
                 )
                 handler = {
@@ -235,5 +237,5 @@ class ChatbotApp:
             await self.__process_func_response(response, usercall, route=route)
             return
 
-        error('Tipo de retorno inválido!')
+        _logger.error('Tipo de retorno inválido!')
         return None
