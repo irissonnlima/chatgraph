@@ -1,15 +1,17 @@
-import json
 import asyncio
 import concurrent.futures
-from chatgraph.services.router_http_client import RouterHTTPClient
-from chatgraph.models.userstate import Menu, UserState
+import json
+import logging
+from typing import Optional
+
+from chatgraph.logger.user_logger import UserLoggerManager
 from chatgraph.models.message import (
-    Message,
     File,
+    Message,
     MessageTypes,
 )
-from typing import Optional
-from rich.console import Console
+from chatgraph.models.userstate import Menu, User, UserState
+from chatgraph.services.router_http_client import RouterHTTPClient
 
 
 class UserCall:
@@ -37,7 +39,10 @@ class UserCall:
         self.__user_state = user_state
         self.__router_client = router_client
         self.__content_message = self.__message.text_message.detail
-        self.console = Console()
+
+    @property
+    def logger(self) -> logging.Logger:
+        return UserLoggerManager.get_user_logger(self.user_id, self.company_id)
 
     def __str__(self):
         return (
@@ -52,7 +57,7 @@ class UserCall:
                 return None
             return file
         except Exception as e:
-            # self.console.print(f'Erro ao obter arquivo do servidor: {e}')
+            self.logger.error(f'Erro ao obter arquivo do servidor: {e}')
             return None
 
     async def __upload_file(
@@ -62,7 +67,7 @@ class UserCall:
             uploaded_file = await self.__router_client.upload_file(file)
             return True, 'Upload successful', uploaded_file
         except Exception as e:
-            self.console.print(f'Erro ao enviar arquivo para o servidor: {e}')
+            self.logger.error(f'Erro ao enviar arquivo para o servidor: {e}')
             return False, str(e), None
 
     async def __check_file_for_send(self, file: str | File) -> File:
@@ -97,7 +102,7 @@ class UserCall:
             )
 
             if response:
-                self.console.print(f'Mensagem enviada com sucesso: {response}')
+                self.logger.debug(f'Mensagem enviada com sucesso: {response}')
 
             await asyncio.sleep(0.1)
         except Exception as e:
@@ -170,7 +175,7 @@ class UserCall:
                 observation,
             )
         except Exception as e:
-            self.console.print(f'Erro ao atualizar observação: {e}')
+            self.logger.error(f'Erro ao atualizar observação: {e}')
 
     async def add_observation(self, observation: dict) -> None:
         try:
@@ -216,6 +221,29 @@ class UserCall:
             )
         except Exception as e:
             raise ValueError(f'Erro ao transferir para menu: {e}')
+
+    async def update_user_data(self, user: User) -> None:
+        try:
+            await self.__router_client.update_user(user)
+            self.__user_state.user = user
+        except Exception as e:
+            raise ValueError('Erro ao atualizar dados do usuário: ' + str(e))
+
+    async def get_menu(
+        self,
+        name: Optional[str] = None,
+        menu_id: Optional[int] = None,
+        description: Optional[str] = None,
+    ) -> Optional[Menu]:
+        try:
+            menus = await self.__router_client.get_menus(
+                menu_id=menu_id,
+                name=name,
+                description=description,
+            )
+            return menus[0] if menus else None
+        except Exception as e:
+            raise ValueError('Erro ao consultar menu: ' + str(e))
 
     @property
     def chatID(self):

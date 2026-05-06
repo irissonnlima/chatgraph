@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 import httpx
 
 from ..models.http_responses import RouterResponses
-from ..models.userstate import UserState, ChatID, Menu
+from ..models.userstate import UserState, ChatID, Menu, User
 from ..models.message import Message, File
 from ..models.actions import EndAction
 
@@ -448,6 +448,54 @@ class RouterHTTPClient:
             raise Exception('Resposta de ação de encerramento mal formatada.')
 
         return EndAction.from_dict(response_data.data)
+
+    # Menu Methods
+    async def get_menus(
+        self,
+        menu_id: Optional[int] = None,
+        name: Optional[str] = None,
+        department_id: Optional[int] = None,
+        description: Optional[str] = None,
+        active: Optional[bool] = None,
+        protection_level: Optional[str] = None,
+    ) -> list[Menu]:
+        endpoint = '/menus/'
+        params = {}
+        if menu_id is not None:
+            params['id'] = menu_id
+        if name is not None:
+            params['name'] = name
+        if department_id is not None:
+            params['department_id'] = department_id
+        if description is not None:
+            params['description'] = description
+        if active is not None:
+            params['active'] = active
+        if protection_level is not None:
+            params['protection_level'] = protection_level
+
+        response = await self._client.get(endpoint, params=params)
+        response_data = RouterResponses.from_dict(response.json())
+
+        if not response_data.status:
+            raise Exception(f'Erro ao buscar menus: {response_data.message}')
+
+        if not isinstance(response_data.data, list):
+            raise Exception('Resposta de menus mal formatada.')
+
+        return [Menu.from_dict(item) for item in response_data.data]
+
+    # User Methods
+    async def update_user(self, user: User) -> RouterResponses:
+        endpoint = '/user'
+
+        response = await self._client.patch(endpoint, json=user.to_dict())
+        response_data = RouterResponses.from_dict(response.json())
+
+        if not response_data.status:
+            raise Exception(f'Erro ao atualizar usuário: {response_data.message}')
+
+        return response_data
 
     # ToDo Methods
     async def transfer_to_menu(
