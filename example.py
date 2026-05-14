@@ -32,11 +32,27 @@ class Teste:
 async def start(rota: Route, usercall: UserCall):
     usercall.logger.info('Usuário entrou na rota start')
     welcome_message = Message(
-        'Bem-vindo ao nosso chatbot! 😊🚀\nEscolha uma opção para continuar:',
+        'Bem-vindo ao nosso chatbot! 😊🚀\n Vou te redirecionar para uma área restrita',
     )
 
     await usercall.send(welcome_message)
-    return RedirectResponse('choice_start')
+    return RedirectResponse('perguntar_cpf')
+
+
+@app.route('perguntar_cpf')
+async def perguntar_cpf(rota: Route, usercall: UserCall):
+    usercall.logger.info('Usuário entrou na rota perguntar_cpf')
+    await usercall.send('Por favor, informe seu CPF:')
+    return Route('receber_cpf')
+
+
+@app.route('receber_cpf')
+async def receber_cpf(rota: Route, usercall: UserCall):
+    cpf = usercall.content_message
+    usercall.logger.info(f'CPF recebido: {cpf}')
+    await usercall.add_observation({'cpf': cpf})
+    await usercall.send(f'CPF {cpf} recebido com sucesso!')
+    return RedirectResponse('area_restrita')
 
 
 @app.route('choice_start')
@@ -99,6 +115,13 @@ async def receber_btns(rota: Route, usercall: UserCall):
         )
         await usercall.send(msg_com_btns)
         return Route(rota.current)
+
+
+@app.route('area_restrita', auth_level='internal')
+async def area_restrita(usercall: UserCall):
+    usercall.logger.info('Usuário acessou área restrita')
+    await usercall.send('Você está em uma área protegida. Acesso autorizado!')
+    return RedirectResponse('choice_start')
 
 
 app.start()
