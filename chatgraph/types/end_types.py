@@ -67,9 +67,10 @@ class TransferToMenu:
     Representa uma transferencia para outro Menu.
     """
 
-    def __init__(self, menu: str, user_message: str) -> None:
+    def __init__(self, menu: str, user_message: str, route: str = '') -> None:
         """
         Finzaliza e tabula as informações do chatbot.
         """
         self.menu = menu.lower()
         self.user_message = user_message
+        self.route = route

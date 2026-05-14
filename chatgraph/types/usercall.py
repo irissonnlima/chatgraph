@@ -52,9 +52,12 @@ class UserCall:
 
     async def __get_file_from_server(self, hash_id: str) -> Optional[File]:
         try:
+            self.logger.debug(f"Buscando arquivo no servidor | hash={hash_id}")
             file = await self.__router_client.get_file(hash_id)
             if not file.url:
+                self.logger.debug(f"Arquivo não encontrado no servidor | hash={hash_id}")
                 return None
+            self.logger.debug(f"Arquivo encontrado | hash={hash_id} | url={file.url}")
             return file
         except Exception as e:
             self.logger.error(f'Erro ao obter arquivo do servidor: {e}')
@@ -64,13 +67,16 @@ class UserCall:
         self, file: File
     ) -> tuple[bool, str, Optional[File]]:
         try:
+            self.logger.debug(f"Iniciando upload | arquivo={file.name}")
             uploaded_file = await self.__router_client.upload_file(file)
+            self.logger.info(f"Upload concluído | arquivo={file.name}")
             return True, 'Upload successful', uploaded_file
         except Exception as e:
             self.logger.error(f'Erro ao enviar arquivo para o servidor: {e}')
             return False, str(e), None
 
     async def __check_file_for_send(self, file: str | File) -> File:
+        self.logger.debug(f"Verificando arquivo para envio | arquivo={file.name if isinstance(file, File) else file}")
         try:
             if isinstance(file, str):
                 file = File(name=file)
@@ -87,8 +93,10 @@ class UserCall:
 
         existing_file = await self.__get_file_from_server(file.hash_id)
         if existing_file:
+            self.logger.debug(f"Arquivo já existente no servidor | hash={file.hash_id}")
             return existing_file
 
+        self.logger.debug(f"Arquivo não encontrado no servidor, iniciando upload | hash={file.hash_id}")
         status, msg, uploaded = await self.__upload_file(file)
         if not status or not uploaded:
             raise ValueError('Erro ao enviar arquivo: ' + msg)
@@ -97,12 +105,13 @@ class UserCall:
 
     async def __send(self, message: Message) -> None:
         try:
+            self.logger.debug(f"Enviando mensagem | user={self.user_id} | company={self.company_id} | tipo={message.type if hasattr(message, 'type') else 'N/A'}")
             response = await self.__router_client.send_message(
                 message, self.__user_state
             )
 
             if response:
-                self.logger.debug(f'Mensagem enviada com sucesso: {response}')
+                self.logger.debug(f"Mensagem enviada com sucesso | user={self.user_id}")
 
             await asyncio.sleep(0.1)
         except Exception as e:
@@ -118,6 +127,7 @@ class UserCall:
         Args:
             message (Message|Button|ListElements): A mensagem a ser enviada.
         """
+        self.logger.debug(f"send() chamado | tipo={type(message).__name__}")
         if isinstance(message, MessageTypes):
             msg = Message(str(message))
             await self.__send(msg)
@@ -146,6 +156,7 @@ class UserCall:
         observation: str = '',
     ) -> None:
         try:
+            self.logger.info(f"Encerrando chat | user={self.user_id} | company={self.company_id} | end_action_id='{end_action_id}' | end_action_name='{end_action_name}'")
             end_action = await self.__router_client.get_end_action(
                 end_action_id,
                 end_action_name,
@@ -159,7 +170,7 @@ class UserCall:
                 end_action,
                 'chatgraph',
             )
-
+            self.logger.info(f"Chat encerrado com sucesso | user={self.user_id}")
         except Exception as e:
             raise ValueError(
                 'Erro ao realizar ação de encerramento: ' + str(e)
@@ -167,6 +178,7 @@ class UserCall:
 
     async def set_observation(self, observation: str = '') -> None:
         try:
+            self.logger.debug(f"Atualizando observação da sessão | user={self.user_id}")
             if not observation and self.__user_state.observation:
                 observation = self.__user_state.observation
 
@@ -179,6 +191,7 @@ class UserCall:
 
     async def add_observation(self, observation: dict) -> None:
         try:
+            self.logger.debug(f"Adicionando observação | user={self.user_id} | chaves={list(observation.keys())}")
             current_observation = self.observation
             current_observation.update(observation)
             self.__user_state.observation = json.dumps(current_observation)
@@ -188,6 +201,7 @@ class UserCall:
 
     async def set_route(self, current_route: str):
         try:
+            self.logger.debug(f"Atualizando rota | user={self.user_id} | nova_rota='{current_route}'")
             if not current_route:
                 raise ValueError('Rota atual não pode ser vazia.')
 
@@ -199,6 +213,7 @@ class UserCall:
                 self.__user_state.chat_id,
                 current_route,
             )
+            self.logger.info(f"Rota atualizada | user={self.user_id} | rota='{self.__user_state.route}'")
         except Exception as e:
             raise ValueError(f'Erro ao atualizar rota: {e}')
 
@@ -206,8 +221,10 @@ class UserCall:
         self,
         menu_name: str,
         user_message: str,
+        route: str = '',
     ) -> None:
         try:
+            self.logger.info(f"Transferindo para menu | user={self.user_id} | menu='{menu_name}'")
             if not menu_name:
                 raise ValueError('Menu de destino não pode ser vazio.')
 
@@ -218,14 +235,17 @@ class UserCall:
                 self.__user_state.chat_id,
                 menu,
                 message,
+                route,
             )
         except Exception as e:
             raise ValueError(f'Erro ao transferir para menu: {e}')
 
     async def update_user_data(self, user: User) -> None:
         try:
+            self.logger.debug(f"Atualizando dados do usuário | user={self.user_id}")
             await self.__router_client.update_user(user)
             self.__user_state.user = user
+            self.logger.info(f"Dados do usuário atualizados | user={self.user_id}")
         except Exception as e:
             raise ValueError('Erro ao atualizar dados do usuário: ' + str(e))
 
@@ -236,6 +256,7 @@ class UserCall:
         description: Optional[str] = None,
     ) -> Optional[Menu]:
         try:
+            self.logger.debug(f"Consultando menu | name={name!r} | id={menu_id}")
             menus = await self.__router_client.get_menus(
                 menu_id=menu_id,
                 name=name,
@@ -264,6 +285,13 @@ class UserCall:
     @property
     def route(self):
         return self.__user_state.route
+
+    @property
+    def user(self) -> User:
+        if not self.__user_state.user:
+            return User()
+
+        return self.__user_state.user
 
     @property
     def observation(self):

@@ -18,6 +18,7 @@ from ..types.route import Route
 from ..types.usercall import UserCall
 from .chatbot_router import ChatbotRouter
 from .default_functions import voltar
+from .default_guard import default_guard as _default_guard
 
 _logger = UserLoggerManager.get_system_logger()
 
@@ -35,6 +36,8 @@ class ChatbotApp:
         self,
         message_consumer: Optional[MessageConsumer] = None,
         default_functions: dict[str, Callable] = DEFAULT_FUNCTION,
+        log_level: int | str | None = None,
+        guard: Callable = _default_guard,
     ):
         """
         Inicializa a classe ChatbotApp com um estado de usuário e um consumidor de mensagens.
@@ -43,12 +46,16 @@ class ChatbotApp:
             message_consumer (MessageConsumer): O consumidor de mensagens que lida com a entrada de mensagens no sistema.
             default_functions (dict[str, callable]): Dicionário de funções padrão que podem ser usadas antes das rotas.
         """
+        if log_level is not None:
+            UserLoggerManager.set_level(log_level)
+
         if not message_consumer:
             message_consumer = MessageConsumer.load_dotenv()
 
         self.default_functions = default_functions
         self.__message_consumer = message_consumer
         self.__routes = {}
+        self.__guard = guard
 
     def include_router(self, router: ChatbotRouter) -> None:
         """
@@ -59,7 +66,7 @@ class ChatbotApp:
         """
         self.__routes.update(router.routes)
 
-    def route(self, route_name: str) -> Callable:
+    def route(self, route_name: str, auth_level: str | None = None) -> Callable:
         """
         Decorador para adicionar uma função como uma rota na aplicação do chatbot.
 
@@ -89,6 +96,7 @@ class ChatbotApp:
                 'function': func,
                 'params': params,
                 'return': output_param,
+                'auth_level': auth_level,
             }
 
             @wraps(func)
@@ -146,6 +154,18 @@ class ChatbotApp:
             raise ChatbotMessageError(
                 user_id, f'Rota não encontrada para {route}!'
             )
+
+        auth_level = handler.get('auth_level')
+        if not matchDefault and auth_level and self.__guard:
+            if asyncio.iscoroutinefunction(self.__guard):
+                guard_response = await self.__guard(usercall, auth_level)
+            else:
+                loop = asyncio.get_running_loop()
+                guard_response = await loop.run_in_executor(None, lambda: self.__guard(usercall, auth_level))
+
+            if guard_response is not None:
+                await self.__process_func_response(guard_response, usercall, route=route)
+                return
 
         func = handler['function']
         usercall_name = handler['params'].get(UserCall, None)
@@ -219,6 +239,7 @@ class ChatbotApp:
             await usercall.transfer_to_menu(
                 usercall_response.menu,
                 usercall_response.user_message,
+                usercall_response.route,
             )
             return
 
