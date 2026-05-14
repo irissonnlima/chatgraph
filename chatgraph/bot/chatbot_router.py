@@ -32,7 +32,7 @@ class ChatbotRouter:
         """
         return self.__routes
 
-    def route(self, route_name: str):
+    def route(self, route_name: str, auth_level: str | None = None):
         """
         Decorador para adicionar uma função como uma rota no roteador do chatbot.
 
@@ -63,6 +63,7 @@ class ChatbotRouter:
                 'function': func,
                 'params': params,
                 'return': output_param,
+                'auth_level': auth_level,
             }
 
             @wraps(func)
