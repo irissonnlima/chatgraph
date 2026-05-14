@@ -508,3 +508,72 @@ class TestUpdateUser:
             assert body['data']['cpf'] == '12345678900'
         finally:
             await client.close()
+
+
+@pytest.mark.unit
+class TestTransferToMenu:
+    """Testes para o método transfer_to_menu."""
+
+    @pytest.mark.asyncio
+    async def test_transfer_to_menu_without_route_does_not_include_route_in_payload(
+        self, http_client_base_url, respx_mock, sample_chat_id_data
+    ):
+        """Testa que route='' não inclui chave 'route' no payload."""
+        respx_mock.post(
+            f'{http_client_base_url}/messages/transfer_to_menu'
+        ).mock(
+            return_value=httpx.Response(
+                200,
+                json={'status': True, 'message': 'Transferred'},
+            )
+        )
+
+        from chatgraph.models.userstate import ChatID, Menu
+        from chatgraph.models.message import Message
+
+        chat_id = ChatID.from_dict(sample_chat_id_data)
+        menu = Menu.from_name('main_menu')
+        message = Message(text_message='olá')
+
+        client = RouterHTTPClient(base_url=http_client_base_url)
+
+        try:
+            await client.transfer_to_menu(chat_id, menu, message)
+            import json
+            body = json.loads(respx_mock.calls.last.request.content)
+            assert 'route' not in body
+            assert body['menu_id'] == 'main_menu'
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_transfer_to_menu_with_route_includes_route_in_payload(
+        self, http_client_base_url, respx_mock, sample_chat_id_data
+    ):
+        """Testa que route='start.choice' inclui 'route' no payload."""
+        respx_mock.post(
+            f'{http_client_base_url}/messages/transfer_to_menu'
+        ).mock(
+            return_value=httpx.Response(
+                200,
+                json={'status': True, 'message': 'Transferred'},
+            )
+        )
+
+        from chatgraph.models.userstate import ChatID, Menu
+        from chatgraph.models.message import Message
+
+        chat_id = ChatID.from_dict(sample_chat_id_data)
+        menu = Menu.from_name('main_menu')
+        message = Message(text_message='olá')
+
+        client = RouterHTTPClient(base_url=http_client_base_url)
+
+        try:
+            await client.transfer_to_menu(chat_id, menu, message, route='start.choice')
+            import json
+            body = json.loads(respx_mock.calls.last.request.content)
+            assert body['route'] == 'start.choice'
+            assert body['menu_id'] == 'main_menu'
+        finally:
+            await client.close()
