@@ -1,22 +1,32 @@
 from .auth.credentials import Credential
 from .bot.chatbot_model import ChatbotApp
 from .bot.chatbot_router import ChatbotRouter
+from .bot.default_guard import default_guard
+from .container.container import Container
+from .logger import logger, set_level
 from .messages.message_consumer import MessageConsumer
-from .models.userstate import UserState, Menu, ChatID, AuthLevel, UserData, UserIdentity, UserInternal
-from .models.message import Message, Button, File, TextMessage, SendType
-from .types.usercall import UserCall
+from .models.message import Button, File, Message, SendType, TextMessage
+from .models.userstate import (
+    AuthLevel,
+    ChatID,
+    Menu,
+    UserData,
+    UserIdentity,
+    UserInternal,
+    UserState,
+)
+from .types.background_task import BackgroundTask
 from .types.end_types import (
-    RedirectResponse,
     EndChatResponse,
+    RedirectResponse,
     TransferToHuman,
     TransferToMenu,
 )
 from .types.route import Route
-from .types.background_task import BackgroundTask
-from .container.container import Container
-from .logger import logger
+from .types.usercall import UserCall
 
 __all__ = [
+    "set_level",
     "ChatbotApp",
     "Credential",
     "UserCall",
@@ -40,5 +50,6 @@ __all__ = [
     "TextMessage",
     "SendType",
     "BackgroundTask",
-    "Container",
+    "Container", "logger",
+    "default_guard",
 ]

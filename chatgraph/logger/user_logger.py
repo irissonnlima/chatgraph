@@ -4,9 +4,26 @@ import os
 LOG_DIR = "chatgraph_logs"
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(message)s | %(funcName)s | %(name)s"
 
+_ENV_LEVEL = os.getenv("CHATGRAPH_LOG_LEVEL", "").upper()
+_DEFAULT_LEVEL: int = getattr(logging, _ENV_LEVEL, logging.INFO)
+
 
 class UserLoggerManager:
     _loggers: dict[str, logging.Logger] = {}
+    _level: int = _DEFAULT_LEVEL
+
+    @classmethod
+    def set_level(cls, level: int | str) -> None:
+        if isinstance(level, str):
+            numeric = getattr(logging, level.upper(), None)
+            if numeric is None:
+                raise ValueError(f"Nível de log inválido: '{level}'")
+            level = numeric
+        cls._level = level
+        for logger in cls._loggers.values():
+            logger.setLevel(level)
+            for handler in logger.handlers:
+                handler.setLevel(level)
 
     @classmethod
     def get_user_logger(cls, user_id: str, company_id: str) -> logging.Logger:
@@ -17,13 +34,13 @@ class UserLoggerManager:
         os.makedirs(LOG_DIR, exist_ok=True)
 
         logger = logging.getLogger(key)
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(cls._level)
 
         if not logger.handlers:
             handler = logging.FileHandler(
                 os.path.join(LOG_DIR, f"{key}.log"), encoding="utf-8"
             )
-            handler.setLevel(logging.DEBUG)
+            handler.setLevel(cls._level)
             handler.setFormatter(logging.Formatter(LOG_FORMAT))
             logger.addHandler(handler)
 
@@ -39,13 +56,13 @@ class UserLoggerManager:
         os.makedirs(LOG_DIR, exist_ok=True)
 
         logger = logging.getLogger(key)
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(cls._level)
 
         if not logger.handlers:
             handler = logging.FileHandler(
                 os.path.join(LOG_DIR, "system.log"), encoding="utf-8"
             )
-            handler.setLevel(logging.DEBUG)
+            handler.setLevel(cls._level)
             handler.setFormatter(logging.Formatter(LOG_FORMAT))
             logger.addHandler(handler)
 

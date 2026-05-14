@@ -1,12 +1,20 @@
 import logging
 import os
 import sys
+from unittest.mock import patch, MagicMock
 
 import pytest
 
 from chatgraph.logger.user_logger import UserLoggerManager
 
 user_logger_module = sys.modules["chatgraph.logger.user_logger"]
+
+
+@pytest.fixture(autouse=True)
+def restore_log_level():
+    original = UserLoggerManager._level
+    yield
+    UserLoggerManager._level = original
 
 
 @pytest.mark.unit
@@ -70,3 +78,35 @@ class TestUserLoggerManager:
         logger = UserLoggerManager.get_user_logger("user1", "company1")
         handler = logger.handlers[0]
         assert handler.formatter._fmt == "%(asctime)s | %(levelname)s | %(message)s | %(funcName)s | %(name)s"
+
+    def test_set_level_string_info(self):
+        UserLoggerManager.set_level("INFO")
+        assert UserLoggerManager._level == logging.INFO
+
+    def test_set_level_int_warning(self):
+        UserLoggerManager.set_level(logging.WARNING)
+        assert UserLoggerManager._level == logging.WARNING
+
+    def test_set_level_invalid_string_raises(self):
+        with pytest.raises(ValueError):
+            UserLoggerManager.set_level("invalido")
+
+    def test_set_level_updates_existing_loggers(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(user_logger_module, "LOG_DIR", str(tmp_path))
+        logger = UserLoggerManager.get_user_logger("user_existing", "company1")
+        UserLoggerManager.set_level(logging.WARNING)
+        assert logger.level == logging.WARNING
+        assert all(h.level == logging.WARNING for h in logger.handlers)
+
+    def test_set_level_applies_to_new_loggers(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(user_logger_module, "LOG_DIR", str(tmp_path))
+        UserLoggerManager.set_level(logging.WARNING)
+        logger = UserLoggerManager.get_user_logger("user_new", "company1")
+        assert logger.level == logging.WARNING
+        assert all(h.level == logging.WARNING for h in logger.handlers)
+
+    def test_chatbot_app_log_level_param(self):
+        mock_consumer = MagicMock()
+        from chatgraph.bot.chatbot_model import ChatbotApp
+        ChatbotApp(message_consumer=mock_consumer, log_level="ERROR")
+        assert UserLoggerManager._level == logging.ERROR
