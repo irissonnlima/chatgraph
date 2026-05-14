@@ -74,3 +74,16 @@ tests/
 - **Framework**: pytest + pytest-asyncio + respx
 - **Estilo**: Classes agrupadas por classe testada com `@pytest.mark.unit` / `@pytest.mark.integration`; fixtures em `conftest.py`
 - **Alvo principal**: `pytest tests/`
+
+## Convenções de Commit
+
+- **Idioma**: Todas as mensagens de commit devem ser escritas em **português do Brasil (pt-br)**
+- **Formato**: Conventional Commits — `tipo(escopo): descrição curta` seguido de corpo opcional
+- **Tipos**: `feat`, `fix`, `chore`, `refactor`, `test`, `docs`, `style`, `perf`
+- **Exemplo**:
+  ```
+  feat(models): adiciona operadores de comparação ao AuthLevel
+
+  Implementa __lt__, __eq__ e __hash__ via @total_ordering para permitir
+  comparações diretas entre níveis de acesso.
+  ```
