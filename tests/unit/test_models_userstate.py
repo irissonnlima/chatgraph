@@ -75,6 +75,24 @@ class TestAuthLevel:
     def test_authlevel_from_value_none(self):
         assert AuthLevel.from_value(None) == AuthLevel.UNKNOWN
 
+    def test_authlevel_ordering_unknown_lt_read(self):
+        assert AuthLevel.UNKNOWN < AuthLevel.READ
+
+    def test_authlevel_ordering_read_lt_write(self):
+        assert AuthLevel.READ < AuthLevel.WRITE
+
+    def test_authlevel_ordering_blocked_lt_unknown(self):
+        assert AuthLevel.BLOCKED < AuthLevel.UNKNOWN
+
+    def test_authlevel_ordering_write_gt_read(self):
+        assert AuthLevel.WRITE > AuthLevel.READ
+
+    def test_authlevel_ordering_read_eq_read(self):
+        assert AuthLevel.READ == AuthLevel.READ
+
+    def test_authlevel_ordering_write_ge_write(self):
+        assert AuthLevel.WRITE >= AuthLevel.WRITE
+
 
 @pytest.mark.unit
 class TestUserData:

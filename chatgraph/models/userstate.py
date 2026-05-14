@@ -11,15 +11,33 @@ import concurrent.futures
 import json
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import total_ordering
 from typing import Optional
+
 from ..container.container import Container
 
+_AUTH_LEVEL_ORDER = {'blocked': -1, 'unknown': 0, 'read': 1, 'write': 2}
 
+
+@total_ordering
 class AuthLevel(Enum):
     BLOCKED = 'blocked'
     UNKNOWN = 'unknown'
     READ = 'read'
     WRITE = 'write'
+
+    def __lt__(self, other: 'AuthLevel') -> bool:
+        if not isinstance(other, AuthLevel):
+            return NotImplemented
+        return _AUTH_LEVEL_ORDER[self.value] < _AUTH_LEVEL_ORDER[other.value]
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, AuthLevel):
+            return NotImplemented
+        return self.value == other.value
+
+    def __hash__(self) -> int:
+        return hash(self.value)
 
     @classmethod
     def from_value(cls, value) -> 'AuthLevel':
@@ -76,6 +94,8 @@ class UserData:
     email: Optional[str] = None
     profile_photo_url: Optional[str] = None
     nickname: Optional[str] = None
+    account: Optional[str] = None
+    birth_date: Optional[str] = None
 
     def to_dict(self) -> dict:
         data = {}
@@ -91,6 +111,10 @@ class UserData:
             data['profile_photo_url'] = self.profile_photo_url
         if self.nickname is not None:
             data['nickname'] = self.nickname
+        if self.account is not None:
+            data['account'] = self.account
+        if self.birth_date is not None:
+            data['birth_date'] = self.birth_date
         return data
 
     @classmethod
@@ -102,6 +126,8 @@ class UserData:
             email=data.get('email'),
             profile_photo_url=data.get('profile_photo_url'),
             nickname=data.get('nickname'),
+            account=data.get('account'),
+            birth_date=data.get('birth_date'),
         )
 
 
@@ -229,6 +255,7 @@ class Menu:
     description: Optional[str] = None
     active: Optional[bool] = None
     protection_level: Optional[AuthLevel] = None
+    internal: Optional[bool] = None
 
     def to_dict(self) -> dict:
         """Converte para dicionário, omitindo campos None."""
@@ -245,6 +272,8 @@ class Menu:
             data['active'] = self.active
         if self.protection_level is not None:
             data['protection_level'] = self.protection_level.value
+        if self.internal is not None:
+            data['internal'] = self.internal
         return data
 
     @classmethod
@@ -257,6 +286,7 @@ class Menu:
             description=data.get('description'),
             active=data.get('active'),
             protection_level=AuthLevel.from_value(data['protection_level']) if data.get('protection_level') is not None else None,
+            internal=data.get('internal'),
         )
 
     @classmethod
