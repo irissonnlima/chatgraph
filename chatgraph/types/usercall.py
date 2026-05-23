@@ -10,11 +10,11 @@ from chatgraph.models.message import (
     Message,
     MessageTypes,
 )
-from chatgraph.models.userstate import Menu, User, UserState
+from chatgraph.models.userstate import Menu, User, UserIdentity, UserState
 from chatgraph.services.router_http_client import RouterHTTPClient
 
 
-class UserCall:
+class UserCall:  # noqa: PLR0904
     """
     Representa uma mensagem recebida ou enviada pelo chatbot.
 
@@ -52,12 +52,16 @@ class UserCall:
 
     async def __get_file_from_server(self, hash_id: str) -> Optional[File]:
         try:
-            self.logger.debug(f"Buscando arquivo no servidor | hash={hash_id}")
+            self.logger.debug(f'Buscando arquivo no servidor | hash={hash_id}')
             file = await self.__router_client.get_file(hash_id)
             if not file.url:
-                self.logger.debug(f"Arquivo não encontrado no servidor | hash={hash_id}")
+                self.logger.debug(
+                    f'Arquivo não encontrado no servidor | hash={hash_id}'
+                )
                 return None
-            self.logger.debug(f"Arquivo encontrado | hash={hash_id} | url={file.url}")
+            self.logger.debug(
+                f'Arquivo encontrado | hash={hash_id} | url={file.url}'
+            )
             return file
         except Exception as e:
             self.logger.error(f'Erro ao obter arquivo do servidor: {e}')
@@ -67,16 +71,18 @@ class UserCall:
         self, file: File
     ) -> tuple[bool, str, Optional[File]]:
         try:
-            self.logger.debug(f"Iniciando upload | arquivo={file.name}")
+            self.logger.debug(f'Iniciando upload | arquivo={file.name}')
             uploaded_file = await self.__router_client.upload_file(file)
-            self.logger.info(f"Upload concluído | arquivo={file.name}")
+            self.logger.info(f'Upload concluído | arquivo={file.name}')
             return True, 'Upload successful', uploaded_file
         except Exception as e:
             self.logger.error(f'Erro ao enviar arquivo para o servidor: {e}')
             return False, str(e), None
 
     async def __check_file_for_send(self, file: str | File) -> File:
-        self.logger.debug(f"Verificando arquivo para envio | arquivo={file.name if isinstance(file, File) else file}")
+        self.logger.debug(
+            f'Verificando arquivo para envio | arquivo={file.name if isinstance(file, File) else file}'
+        )
         try:
             if isinstance(file, str):
                 file = File(name=file)
@@ -93,10 +99,14 @@ class UserCall:
 
         existing_file = await self.__get_file_from_server(file.hash_id)
         if existing_file:
-            self.logger.debug(f"Arquivo já existente no servidor | hash={file.hash_id}")
+            self.logger.debug(
+                f'Arquivo já existente no servidor | hash={file.hash_id}'
+            )
             return existing_file
 
-        self.logger.debug(f"Arquivo não encontrado no servidor, iniciando upload | hash={file.hash_id}")
+        self.logger.debug(
+            f'Arquivo não encontrado no servidor, iniciando upload | hash={file.hash_id}'
+        )
         status, msg, uploaded = await self.__upload_file(file)
         if not status or not uploaded:
             raise ValueError('Erro ao enviar arquivo: ' + msg)
@@ -105,13 +115,17 @@ class UserCall:
 
     async def __send(self, message: Message) -> None:
         try:
-            self.logger.debug(f"Enviando mensagem | user={self.user_id} | company={self.company_id} | tipo={message.type if hasattr(message, 'type') else 'N/A'}")
+            self.logger.debug(
+                f'Enviando mensagem | user={self.user_id} | company={self.company_id} | tipo={message.type if hasattr(message, "type") else "N/A"}'
+            )
             response = await self.__router_client.send_message(
                 message, self.__user_state
             )
 
             if response:
-                self.logger.debug(f"Mensagem enviada com sucesso | user={self.user_id}")
+                self.logger.debug(
+                    f'Mensagem enviada com sucesso | user={self.user_id}'
+                )
 
             await asyncio.sleep(0.1)
         except Exception as e:
@@ -127,7 +141,7 @@ class UserCall:
         Args:
             message (Message|Button|ListElements): A mensagem a ser enviada.
         """
-        self.logger.debug(f"send() chamado | tipo={type(message).__name__}")
+        self.logger.debug(f'send() chamado | tipo={type(message).__name__}')
         if isinstance(message, MessageTypes):
             msg = Message(str(message))
             await self.__send(msg)
@@ -156,7 +170,9 @@ class UserCall:
         observation: str = '',
     ) -> None:
         try:
-            self.logger.info(f"Encerrando chat | user={self.user_id} | company={self.company_id} | end_action_id='{end_action_id}' | end_action_name='{end_action_name}'")
+            self.logger.info(
+                f"Encerrando chat | user={self.user_id} | company={self.company_id} | end_action_id='{end_action_id}' | end_action_name='{end_action_name}'"
+            )
             end_action = await self.__router_client.get_end_action(
                 end_action_id,
                 end_action_name,
@@ -170,7 +186,9 @@ class UserCall:
                 end_action,
                 'chatgraph',
             )
-            self.logger.info(f"Chat encerrado com sucesso | user={self.user_id}")
+            self.logger.info(
+                f'Chat encerrado com sucesso | user={self.user_id}'
+            )
         except Exception as e:
             raise ValueError(
                 'Erro ao realizar ação de encerramento: ' + str(e)
@@ -178,7 +196,9 @@ class UserCall:
 
     async def set_observation(self, observation: str = '') -> None:
         try:
-            self.logger.debug(f"Atualizando observação da sessão | user={self.user_id}")
+            self.logger.debug(
+                f'Atualizando observação da sessão | user={self.user_id}'
+            )
             if not observation and self.__user_state.observation:
                 observation = self.__user_state.observation
 
@@ -191,17 +211,34 @@ class UserCall:
 
     async def add_observation(self, observation: dict) -> None:
         try:
-            self.logger.debug(f"Adicionando observação | user={self.user_id} | chaves={list(observation.keys())}")
+            self.logger.debug(
+                f'Adicionando observação | user={self.user_id} | chaves={list(observation.keys())}'
+            )
             current_observation = self.observation
             current_observation.update(observation)
             self.__user_state.observation = json.dumps(current_observation)
             await self.set_observation()
+            if 'cpf' in observation:
+                cpf_novo = observation['cpf']
+                cpf_atual = self.user.identity.cpf
+                if cpf_novo != cpf_atual:
+                    source = (
+                        self.menu.name
+                        if self.menu is not None and self.menu.name is not None
+                        else 'chatbot'
+                    )
+                    phone = self.company_id
+                    await self.associate_cpf(
+                        cpf=cpf_novo, source=source, phone=phone
+                    )
         except Exception as e:
             raise ValueError(f'Erro ao adicionar observação: {e}')
 
     async def set_route(self, current_route: str):
         try:
-            self.logger.debug(f"Atualizando rota | user={self.user_id} | nova_rota='{current_route}'")
+            self.logger.debug(
+                f"Atualizando rota | user={self.user_id} | nova_rota='{current_route}'"
+            )
             if not current_route:
                 raise ValueError('Rota atual não pode ser vazia.')
 
@@ -213,7 +250,9 @@ class UserCall:
                 self.__user_state.chat_id,
                 current_route,
             )
-            self.logger.info(f"Rota atualizada | user={self.user_id} | rota='{self.__user_state.route}'")
+            self.logger.info(
+                f"Rota atualizada | user={self.user_id} | rota='{self.__user_state.route}'"
+            )
         except Exception as e:
             raise ValueError(f'Erro ao atualizar rota: {e}')
 
@@ -224,7 +263,9 @@ class UserCall:
         route: str = '',
     ) -> None:
         try:
-            self.logger.info(f"Transferindo para menu | user={self.user_id} | menu='{menu_name}'")
+            self.logger.info(
+                f"Transferindo para menu | user={self.user_id} | menu='{menu_name}'"
+            )
             if not menu_name:
                 raise ValueError('Menu de destino não pode ser vazio.')
 
@@ -242,12 +283,72 @@ class UserCall:
 
     async def update_user_data(self, user: User) -> None:
         try:
-            self.logger.debug(f"Atualizando dados do usuário | user={self.user_id}")
+            self.logger.debug(
+                f'Atualizando dados do usuário | user={self.user_id}'
+            )
             await self.__router_client.update_user(user)
             self.__user_state.user = user
-            self.logger.info(f"Dados do usuário atualizados | user={self.user_id}")
+            self.logger.info(
+                f'Dados do usuário atualizados | user={self.user_id}'
+            )
         except Exception as e:
             raise ValueError('Erro ao atualizar dados do usuário: ' + str(e))
+
+    async def associate_cpf(
+        self,
+        cpf: str,
+        source: str,
+        phone: str = '',
+        device_id: str = '',
+    ) -> None:
+        try:
+            self.logger.info(
+                f'Associando CPF | user={self.user_id} | cpf={cpf[:3]}***'
+            )
+            await self.__router_client.associate_cpf(
+                self.__user_state.chat_id,
+                cpf=cpf,
+                source=source,
+                phone=phone,
+                device_id=device_id,
+            )
+            self.logger.info(
+                f'CPF associado com sucesso | user={self.user_id}'
+            )
+        except Exception as e:
+            raise ValueError('Erro ao associar CPF: ' + str(e))
+
+    async def load_identity(self, cpf: Optional[str] = None) -> UserIdentity:
+        try:
+            self.logger.debug(f'Consultando identidade | user={self.user_id}')
+            identity = await self.__router_client.get_identity(self.user_id, cpf=cpf)
+            if self.__user_state.user is None:
+                self.__user_state.user = User()
+            self.__user_state.user.identity = identity
+            self.logger.info(
+                f'Identidade carregada | user={self.user_id} | auth_level={identity.auth_level}'
+            )
+            return identity
+        except Exception as e:
+            self.logger.error(f'Erro ao carregar identidade: {e}')
+            raise ValueError('Erro ao carregar identidade: ' + str(e))
+
+    async def load_userstate(self) -> UserState:
+        try:
+            self.logger.debug(f'Carregando userstate | user={self.user_id}')
+            resultado = await self.__router_client.get_session_by_chat_id(self.__user_state.chat_id)
+            if resultado is None:
+                raise ValueError('Sessão não encontrada para o chat_id informado.')
+            self.__user_state = resultado
+            self.logger.info(
+                f'Userstate carregado | user={self.user_id} | route={self.__user_state.route}'
+            )
+            return self.__user_state
+        except ValueError:
+            raise
+        except Exception as e:
+            self.logger.error(f'Erro ao carregar userstate: {e}')
+            raise ValueError('Erro ao carregar userstate: ' + str(e))
 
     async def get_menu(
         self,
@@ -256,7 +357,9 @@ class UserCall:
         description: Optional[str] = None,
     ) -> Optional[Menu]:
         try:
-            self.logger.debug(f"Consultando menu | name={name!r} | id={menu_id}")
+            self.logger.debug(
+                f'Consultando menu | name={name!r} | id={menu_id}'
+            )
             menus = await self.__router_client.get_menus(
                 menu_id=menu_id,
                 name=name,
