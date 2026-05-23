@@ -14,6 +14,7 @@ from .models.userstate import (
     UserIdentity,
     UserInternal,
     UserState,
+    User,
 )
 from .types.background_task import BackgroundTask
 from .types.end_types import (
@@ -41,6 +42,7 @@ __all__ = [
     "ChatID",
     "Menu",
     "AuthLevel",
+    "User",
     "UserData",
     "UserIdentity",
     "UserInternal",

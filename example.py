@@ -7,6 +7,10 @@ from chatgraph import (
     Message,
     File,
     Button,
+    User,
+    UserIdentity,
+    UserData,
+    UserInternal,
     TextMessage,
     UserState,
     TransferToMenu,
@@ -14,6 +18,7 @@ from chatgraph import (
 from chatgraph.logger import get_system_logger
 from dotenv import load_dotenv
 from dataclasses import dataclass
+
 
 load_dotenv()
 _logger = get_system_logger()
