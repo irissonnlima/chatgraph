@@ -3,7 +3,10 @@ from ..types.end_types import TransferToMenu
 from ..types.usercall import UserCall
 
 
-async def default_guard(usercall: UserCall, auth_level: str) -> TransferToMenu | None:
+async def default_guard(
+    usercall: UserCall, auth_level: str
+) -> TransferToMenu | None:
+    await usercall.load_userstate()
     user = usercall.user
     last_route = usercall.route.split('.')[-1] if usercall.route else 'start'
     usercall.logger.debug(
@@ -12,6 +15,12 @@ async def default_guard(usercall: UserCall, auth_level: str) -> TransferToMenu |
 
     if not user:
         raise ValueError('Usuário não encontrado no UserCall!')
+
+    if usercall.user.identity.auth_level == AuthLevel.BLOCKED:
+        usercall.logger.info(
+            f"default_guard | acesso negado (usuário bloqueado) | rota='{last_route}'"
+        )
+        return TransferToMenu('menu_id_positiva', '')
 
     obs = {
         'pending_menu': usercall.menu.name if usercall.menu else None,
