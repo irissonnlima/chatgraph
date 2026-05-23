@@ -159,9 +159,12 @@ await usercall.update_user_data(user)
 # Encerramento
 await usercall.end_chat(end_action_id='id', end_action_name='nome', observation='...')
 await usercall.transfer_to_menu('nome_menu', 'mensagem_usuario')
+await usercall.transfer_to_menu('nome_menu', 'mensagem_usuario', route='rota_inicial')  # com rota de entrada
 
 # Consulta
-menu = await usercall.get_menu(name='nome_menu')
+menu = await usercall.get_menu(name='nome_menu')           # por nome
+menu = await usercall.get_menu(menu_id=42)                 # por ID
+menu = await usercall.get_menu(description='Suporte TI')   # por descrição
 
 # Setters diretos (síncronos — não persistem imediatamente, usam loop existente)
 usercall.observation = {'chave': 'valor'}  # dict — substitui toda a observação
@@ -190,9 +193,10 @@ return EndChatResponse('voll_ended')
 return EndChatResponse('', end_chat_name='Encerrado pelo usuário', observations='motivo')
 ```
 
-### `TransferToMenu(menu, user_message)` — Transfere para outro menu
+### `TransferToMenu(menu, user_message, route?)` — Transfere para outro menu
 ```python
 return TransferToMenu('p0299_suporte_ti', 'Transferindo...')
+return TransferToMenu('p0299_suporte_ti', 'Transferindo...', route='etapa_inicial')  # inicia em rota específica
 ```
 
 ### `TransferToHuman(campaign_id?, campaign_name?, observations?)` — Transfere para humano
@@ -252,6 +256,7 @@ await usercall.send(msg_com_arquivo)
 ### `Button` — campos
 ```python
 from chatgraph import Button
+from chatgraph.models.message import ButtonType  # não exportado no __init__ top-level
 
 Button(
     title='Texto do botão',   # exibido para o usuário
@@ -350,9 +355,60 @@ app.start()
 
 > Não há prefixo automático — o nome de cada `@router.route('nome')` é o nome final da rota.
 
+`ChatbotRouter` também pode absorver outro `ChatbotRouter` com `include_router()`:
+
+```python
+# rotas/geral.py
+from chatgraph import ChatbotRouter
+from rotas.suporte import router as suporte_router
+from rotas.vendas import router as vendas_router
+
+router = ChatbotRouter()
+router.include_router(suporte_router)
+router.include_router(vendas_router)
+```
+
 ---
 
-## 10. Fluxo de Navegação
+## 10. Funções Padrão (`default_functions`)
+
+O `ChatbotApp` intercepta mensagens **antes** de despachar para a rota quando o texto corresponder a um padrão regex registrado em `default_functions`. Após a execução da função padrão, `content_message` é zerado.
+
+### Comportamento embutido — `voltar`
+
+Por padrão, qualquer mensagem que corresponda a `^\s*(voltar)\s*$` (case-insensitive) é interceptada e executa `voltar()`, que redireciona para o nó anterior via `route.get_previous()`.
+
+```python
+# Comportamento automático — nenhuma rota necessária
+# Usuário digita "voltar" → retorna para a rota anterior
+```
+
+### Customizar ou desabilitar as funções padrão
+
+```python
+from chatgraph import ChatbotApp
+
+# Desabilitar o voltar
+app = ChatbotApp(default_functions={})
+
+# Adicionar função customizada
+from chatgraph import UserCall, Route, RedirectResponse
+
+async def ajuda(route: Route, usercall: UserCall):
+    await usercall.send('Comandos disponíveis: voltar, sair')
+    return RedirectResponse(route.current_node)
+
+app = ChatbotApp(default_functions={
+    r'^\s*(voltar)\s*$': voltar,    # manter o padrão
+    r'^\s*(ajuda|help)\s*$': ajuda, # adicionar novo
+})
+```
+
+> As funções padrão recebem `(route: Route, usercall: UserCall)` e têm acesso às mesmas respostas de rota. `auth_level` não é verificado para funções padrão.
+
+---
+
+## 11. Fluxo de Navegação
 
 - Rota inicial obrigatória: `start`
 - Sub-rotas usam notação de ponto internamente: `start.choice.confirm`
@@ -364,7 +420,7 @@ app.start()
 
 ---
 
-## 11. Controle de Acesso — `auth_level` e `guard`
+## 12. Controle de Acesso — `auth_level` e `guard`
 
 Cada rota pode declarar um `auth_level` que é validado pelo guard antes de executar a função.
 
@@ -405,7 +461,7 @@ app = ChatbotApp(guard=meu_guard)
 
 ---
 
-## 12. Exemplo Completo
+## 13. Exemplo Completo
 
 ```python
 from chatgraph import (
