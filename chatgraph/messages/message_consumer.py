@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from typing import Callable
@@ -29,7 +30,13 @@ class MessageConsumer:
         queue_consume: str,
         prefetch_count: int = 1,
         virtual_host: str = '/',
+        heartbeat: int = 60,
+        reconnect_interval: float = 5.0,
     ) -> None:
+        if heartbeat < 0:
+            raise ValueError('heartbeat must be >= 0')
+        if reconnect_interval < 0:
+            raise ValueError('reconnect_interval must be >= 0')
         self.__virtual_host = virtual_host
         self.__prefetch_count = prefetch_count
         self.__queue_consume = queue_consume
@@ -38,6 +45,8 @@ class MessageConsumer:
         self.__router_token = router_token
         self.__credentials = credential
         self.__router_client = None
+        self.__heartbeat = heartbeat
+        self.__reconnect_interval = reconnect_interval
 
     @classmethod
     def load_dotenv(
@@ -50,6 +59,8 @@ class MessageConsumer:
         vhost_env: str = 'RABBIT_VHOST',
         router_env: str = 'ROUTER_URL',
         router_token_env: str = 'ROUTER_TOKEN',
+        heartbeat_env: str = 'RABBIT_HEARTBEAT',
+        reconnect_interval_env: str = 'RABBIT_RECONNECT_INTERVAL',
     ) -> 'MessageConsumer':
         username = os.getenv(user_env)
         password = os.getenv(pass_env)
@@ -59,6 +70,8 @@ class MessageConsumer:
         vhost = os.getenv(vhost_env, '/')
         router_url = os.getenv(router_env)
         router_token = os.getenv(router_token_env)
+        heartbeat = os.getenv(heartbeat_env, '60')
+        reconnect_interval = os.getenv(reconnect_interval_env, '5.0')
 
         envs_essentials = {
             username: user_env,
@@ -83,6 +96,8 @@ class MessageConsumer:
             virtual_host=vhost,
             router_url=router_url,
             router_token=router_token,
+            heartbeat=int(heartbeat),
+            reconnect_interval=float(reconnect_interval),
         )
 
     async def __initialize_router(self) -> RouterHTTPClient:
@@ -95,58 +110,68 @@ class MessageConsumer:
             )
         return self.__router_client
 
-    async def start_consume(self, process_message: Callable):
+    def __build_amqp_url(self) -> str:
+        user = quote(self.__credentials.username)
+        pwd = quote(self.__credentials.password)
+        vhost = quote(self.__virtual_host, safe='')
+        return f'amqp://{user}:{pwd}@{self.__amqp_url}/{vhost}'
+
+    async def __declare_queue(self, channel) -> aio_pika.abc.AbstractQueue:
         try:
-            # Inicializar cliente HTTP uma única vez
-            await self.__initialize_router()
+            return await channel.declare_queue(
+                self.__queue_consume, passive=True
+            )
+        except aio_pika.exceptions.ChannelNotFoundEntity:
+            channel = await channel.connection.channel()
+            await channel.set_qos(prefetch_count=self.__prefetch_count)
+            arguments = {
+                'x-dead-letter-exchange': 'log_error',
+                'x-expires': 86400000,
+                'x-message-ttl': 300000,
+            }
+            queue = await channel.declare_queue(
+                self.__queue_consume,
+                durable=True,
+                arguments=arguments,
+            )
+            routing_key = f'chatbot.{self.__queue_consume}'
+            await queue.bind(
+                exchange=self.__virtual_host,
+                routing_key=routing_key,
+            )
+            return queue
 
-            user = quote(self.__credentials.username)
-            pwd = quote(self.__credentials.password)
-            vhost = quote(self.__virtual_host)
-            uri = self.__amqp_url
-            amqp_url = f'amqp://{user}:{pwd}@{uri}/{vhost}'
-            connection = await aio_pika.connect_robust(amqp_url)
+    async def __connect_and_consume(
+        self, amqp_url: str, process_message: Callable
+    ) -> None:
+        connection = await aio_pika.connect_robust(
+            amqp_url, heartbeat=self.__heartbeat
+        )
+        async with connection:
+            channel = await connection.channel()
+            await channel.set_qos(prefetch_count=self.__prefetch_count)
+            queue = await self.__declare_queue(channel)
+            _logger.info('[x] Server inicializado! Aguardando solicitações RPC')
+            async for message in queue:
+                async with message.process():
+                    await self.on_request(message.body, process_message)
 
-            async with connection:
-                channel = await connection.channel()
-                await channel.set_qos(prefetch_count=self.__prefetch_count)
-
+    async def start_consume(self, process_message: Callable) -> None:
+        await self.__initialize_router()
+        amqp_url = self.__build_amqp_url()
+        try:
+            while True:
                 try:
-                    queue = await channel.declare_queue(
-                        self.__queue_consume, passive=True
+                    await self.__connect_and_consume(amqp_url, process_message)
+                except asyncio.CancelledError:
+                    raise
+                except Exception as e:
+                    _logger.error(
+                        f'Erro no consumer: {e}. '
+                        f'Reconectando em {self.__reconnect_interval}s...'
                     )
-                except aio_pika.exceptions.ChannelNotFoundEntity:
-                    # O broker fecha o canal após erro AMQP 404 — reabrir antes de declarar
-                    channel = await connection.channel()
-                    await channel.set_qos(prefetch_count=self.__prefetch_count)
-                    arguments = {
-                        'x-dead-letter-exchange': 'log_error',  # Dead Letter Exchange
-                        'x-expires': 86400000,  # Expiração da fila (em milissegundos)
-                        'x-message-ttl': 300000,  # Tempo de vida das mensagens (em milissegundos)
-                    }
-                    queue = await channel.declare_queue(
-                        self.__queue_consume,
-                        durable=True,
-                        arguments=arguments,
-                    )
-                    routing_key = f'chatbot.{self.__queue_consume}'
-                    await queue.bind(
-                        exchange=self.__virtual_host,
-                        routing_key=routing_key,
-                    )
-
-                _logger.info('[x] Server inicializado! Aguardando solicitações RPC')
-
-                async for message in queue:
-                    async with message.process():
-                        await self.on_request(message.body, process_message)
-
-        except Exception as e:
-            _logger.error(f'Erro durante o consumo de mensagens: {e}')
-            # Reiniciar a conexão em caso de falha
-            # await self.start_consume(process_message)
+                    await asyncio.sleep(self.__reconnect_interval)
         finally:
-            # Fechar cliente HTTP quando o consumer parar
             await self.cleanup()
 
     async def on_request(self, body: bytes, process_message: Callable):
