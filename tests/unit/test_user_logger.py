@@ -49,7 +49,7 @@ class TestUserLoggerManager:
         UserLoggerManager.get_user_logger("user1", "company1")
         UserLoggerManager._loggers.clear()
         logger = UserLoggerManager.get_user_logger("user1", "company1")
-        assert len(logger.handlers) == 1
+        assert len(logger.handlers) == 2
 
     def test_get_system_logger_returns_logger(self, tmp_path, monkeypatch):
         monkeypatch.setattr(user_logger_module, "LOG_DIR", str(tmp_path))

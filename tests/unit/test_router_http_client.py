@@ -22,7 +22,7 @@ class TestRouterHTTPClientInit:
 
         assert client.base_url == http_client_base_url
         assert client.timeout == 30.0
-        assert isinstance(client._client, httpx.AsyncClient)
+        assert isinstance(client._actions_client, httpx.AsyncClient)
 
     def test_init_with_trailing_slash(self, http_client_base_url):
         """Testa que trailing slash é removido da base_url."""
@@ -40,8 +40,8 @@ class TestRouterHTTPClientInit:
         )
 
         assert client.base_url == http_client_config['base_url']
-        assert client._client.auth is not None
-        assert isinstance(client._client.auth, httpx.BasicAuth)
+        assert client._actions_client.auth is not None
+        assert isinstance(client._actions_client.auth, httpx.BasicAuth)
 
     def test_init_with_custom_timeout(self, http_client_base_url):
         """Testa inicialização com timeout customizado."""
@@ -56,7 +56,7 @@ class TestRouterHTTPClientInit:
         """Testa que o cliente tem os headers corretos."""
         client = RouterHTTPClient(base_url=http_client_base_url)
 
-        headers = client._client.headers
+        headers = client._actions_client.headers
         assert headers['Accept'] == 'application/json'
 
     def test_client_base_url_is_set(self, http_client_base_url):
@@ -65,7 +65,7 @@ class TestRouterHTTPClientInit:
 
         # httpx adiciona automaticamente uma barra final à base_url
         expected_url = http_client_base_url.rstrip('/') + '/'
-        assert str(client._client.base_url) == expected_url
+        assert str(client._actions_client.base_url) == expected_url
 
 @pytest.mark.unit
 class TestRouterHTTPClientContextManager:
@@ -76,18 +76,20 @@ class TestRouterHTTPClientContextManager:
         """Testa uso como context manager."""
         async with RouterHTTPClient(base_url=http_client_base_url) as client:
             assert isinstance(client, RouterHTTPClient)
-            assert isinstance(client._client, httpx.AsyncClient)
+            assert isinstance(client._actions_client, httpx.AsyncClient)
 
     @pytest.mark.asyncio
     async def test_close_method(self, http_client_base_url):
         """Testa método close."""
         client = RouterHTTPClient(base_url=http_client_base_url)
 
-        assert not client._client.is_closed
+        assert not client._actions_client.is_closed
+        assert not client._id_positiva_client.is_closed
 
         await client.close()
 
-        assert client._client.is_closed
+        assert client._actions_client.is_closed
+        assert client._id_positiva_client.is_closed
 
 @pytest.mark.unit
 class TestRouterHTTPClientSessions:
@@ -190,7 +192,7 @@ class TestRouterHTTPClientSessions:
                 json={
                     'status': True,
                     'message': 'Userstate retrieved successfully',
-                    'data': {
+                    'data': [{
                         'session_id': 22,
                         'chat_id': sample_chat_id_data,
                         'platform': 'whatsapp',
@@ -200,7 +202,7 @@ class TestRouterHTTPClientSessions:
                         'observation': '{}',
                         'last_update': '2025-11-16T07:42:47-03:00',
                         'dt_created': '2025-11-07T19:57:54-03:00',
-                    },
+                    }],
                 },
             )
         )
@@ -575,5 +577,202 @@ class TestTransferToMenu:
             body = json.loads(respx_mock.calls.last.request.content)
             assert body['route'] == 'start.choice'
             assert body['menu_id'] == 'main_menu'
+        finally:
+            await client.close()
+
+
+@pytest.mark.unit
+class TestAssociateCpf:
+    """Testes para o método associate_cpf."""
+
+    def test_id_positiva_client_uses_correct_base(self, http_client_base_url):
+        """Testa que _id_positiva_client aponta para /v1/id-positiva/."""
+        client = RouterHTTPClient(base_url=http_client_base_url)
+        assert str(client._id_positiva_client.base_url) == 'http://localhost:8080/v1/id-positiva/'
+
+    def test_url_normalization_strips_actions(self):
+        """Testa que ROUTER_URL sem /actions gera a mesma estrutura."""
+        client_with = RouterHTTPClient(base_url='http://localhost:8080/v1/actions')
+        client_without = RouterHTTPClient(base_url='http://localhost:8080/v1/')
+        assert str(client_with._actions_client.base_url) == str(client_without._actions_client.base_url)
+        assert str(client_with._id_positiva_client.base_url) == str(client_without._id_positiva_client.base_url)
+
+    @pytest.mark.asyncio
+    async def test_associate_cpf_uses_host_url_not_base_url(
+        self, http_client_base_url, respx_mock, sample_chat_id_data
+    ):
+        """Garante que a URL usada é /v1/id-positiva/associate-cpf (host raiz),
+        não /v1/actions/v1/id-positiva/associate-cpf."""
+        expected_url = 'http://localhost:8080/v1/id-positiva/associate-cpf'
+        respx_mock.post(expected_url).mock(
+            return_value=httpx.Response(
+                200, json={'status': True, 'message': 'CPF associado'}
+            )
+        )
+        chat_id = ChatID.from_dict(sample_chat_id_data)
+        client = RouterHTTPClient(base_url=http_client_base_url)
+        try:
+            await client.associate_cpf(chat_id, cpf='12345678900', source='chatbot')
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_associate_cpf_raises_on_failure(
+        self, http_client_base_url, respx_mock, sample_chat_id_data
+    ):
+        """Testa que status=False lança Exception com mensagem correta."""
+        expected_url = 'http://localhost:8080/v1/id-positiva/associate-cpf'
+        respx_mock.post(expected_url).mock(
+            return_value=httpx.Response(
+                200, json={'status': False, 'message': 'CPF inválido'}
+            )
+        )
+        chat_id = ChatID.from_dict(sample_chat_id_data)
+        client = RouterHTTPClient(base_url=http_client_base_url)
+        try:
+            with pytest.raises(Exception, match='Erro ao associar CPF: CPF inválido'):
+                await client.associate_cpf(chat_id, cpf='00000000000', source='chatbot')
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_associate_cpf_sends_bearer_token(
+        self, http_client_config, respx_mock, sample_chat_id_data
+    ):
+        """Testa que o header Authorization usa Bearer token."""
+        expected_url = 'http://localhost:8080/v1/id-positiva/associate-cpf'
+        respx_mock.post(expected_url).mock(
+            return_value=httpx.Response(
+                200, json={'status': True, 'message': 'ok'}
+            )
+        )
+        chat_id = ChatID.from_dict(sample_chat_id_data)
+        client = RouterHTTPClient(
+            base_url=http_client_config['base_url'],
+            username=http_client_config['username'],
+            password=http_client_config['password'],
+        )
+        try:
+            await client.associate_cpf(chat_id, cpf='12345678900', source='chatbot')
+            auth_header = respx_mock.calls.last.request.headers.get('Authorization', '')
+            assert auth_header.startswith('Bearer ')
+        finally:
+            await client.close()
+
+
+@pytest.mark.unit
+class TestGetIdentity:
+    """Testes para o método get_identity."""
+
+    @pytest.mark.asyncio
+    async def test_get_identity_returns_user_identity(
+        self, http_client_base_url, respx_mock
+    ):
+        """Testa que get_identity retorna UserIdentity corretamente."""
+        expected_url = 'http://localhost:8080/v1/id-positiva/identity'
+        respx_mock.get(expected_url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    'status': True,
+                    'message': 'ok',
+                    'data': {
+                        'cpf': '12345678900',
+                        'auth_level': 'read',
+                        'active': True,
+                    },
+                },
+            )
+        )
+        from chatgraph.models.userstate import UserIdentity
+        client = RouterHTTPClient(base_url=http_client_base_url)
+        try:
+            result = await client.get_identity(user_id='user123')
+            assert isinstance(result, UserIdentity)
+            assert result.cpf == '12345678900'
+            assert result.active is True
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_get_identity_sends_user_id_param(
+        self, http_client_base_url, respx_mock
+    ):
+        """Testa que user_id é enviado como query param."""
+        expected_url = 'http://localhost:8080/v1/id-positiva/identity'
+        respx_mock.get(expected_url).mock(
+            return_value=httpx.Response(
+                200,
+                json={'status': True, 'message': 'ok', 'data': {'auth_level': 'unknown'}},
+            )
+        )
+        client = RouterHTTPClient(base_url=http_client_base_url)
+        try:
+            await client.get_identity(user_id='user123')
+            assert 'user_id=user123' in str(respx_mock.calls.last.request.url)
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_get_identity_with_cpf_sends_cpf_param(
+        self, http_client_base_url, respx_mock
+    ):
+        """Testa que cpf opcional é enviado quando fornecido."""
+        expected_url = 'http://localhost:8080/v1/id-positiva/identity'
+        respx_mock.get(expected_url).mock(
+            return_value=httpx.Response(
+                200,
+                json={'status': True, 'message': 'ok', 'data': {'auth_level': 'unknown'}},
+            )
+        )
+        client = RouterHTTPClient(base_url=http_client_base_url)
+        try:
+            await client.get_identity(user_id='user123', cpf='12345678900')
+            url_str = str(respx_mock.calls.last.request.url)
+            assert 'user_id=user123' in url_str
+            assert 'cpf=12345678900' in url_str
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_get_identity_raises_on_failure(
+        self, http_client_base_url, respx_mock
+    ):
+        """Testa que status=False lança Exception com mensagem correta."""
+        expected_url = 'http://localhost:8080/v1/id-positiva/identity'
+        respx_mock.get(expected_url).mock(
+            return_value=httpx.Response(
+                200,
+                json={'status': False, 'message': 'Usuário não encontrado'},
+            )
+        )
+        client = RouterHTTPClient(base_url=http_client_base_url)
+        try:
+            with pytest.raises(Exception, match='Erro ao consultar identidade: Usuário não encontrado'):
+                await client.get_identity(user_id='user_inexistente')
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_get_identity_uses_bearer_auth(
+        self, http_client_config, respx_mock
+    ):
+        """Testa que o header Authorization usa Bearer token."""
+        expected_url = 'http://localhost:8080/v1/id-positiva/identity'
+        respx_mock.get(expected_url).mock(
+            return_value=httpx.Response(
+                200,
+                json={'status': True, 'message': 'ok', 'data': {'auth_level': 'unknown'}},
+            )
+        )
+        client = RouterHTTPClient(
+            base_url=http_client_config['base_url'],
+            username=http_client_config['username'],
+            password=http_client_config['password'],
+        )
+        try:
+            await client.get_identity(user_id='user123')
+            auth_header = respx_mock.calls.last.request.headers.get('Authorization', '')
+            assert auth_header.startswith('Bearer ')
         finally:
             await client.close()
