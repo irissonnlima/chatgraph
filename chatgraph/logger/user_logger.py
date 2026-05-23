@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 
 LOG_DIR = "chatgraph_logs"
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(message)s | %(funcName)s | %(name)s"
@@ -43,6 +44,10 @@ class UserLoggerManager:
             handler.setLevel(cls._level)
             handler.setFormatter(logging.Formatter(LOG_FORMAT))
             logger.addHandler(handler)
+            stream_handler = logging.StreamHandler(sys.stdout)
+            stream_handler.setLevel(cls._level)
+            stream_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+            logger.addHandler(stream_handler)
 
         cls._loggers[key] = logger
         return logger
@@ -65,6 +70,10 @@ class UserLoggerManager:
             handler.setLevel(cls._level)
             handler.setFormatter(logging.Formatter(LOG_FORMAT))
             logger.addHandler(handler)
+            stream_handler = logging.StreamHandler(sys.stdout)
+            stream_handler.setLevel(cls._level)
+            stream_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+            logger.addHandler(stream_handler)
 
         cls._loggers[key] = logger
         return logger
