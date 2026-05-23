@@ -4,7 +4,7 @@ import httpx
 
 from ..logger.user_logger import UserLoggerManager
 from ..models.http_responses import RouterResponses
-from ..models.userstate import UserState, ChatID, Menu, User
+from ..models.userstate import UserState, ChatID, Menu, User, UserIdentity
 from ..models.message import Message, File
 from ..models.actions import EndAction
 
@@ -38,29 +38,48 @@ class RouterHTTPClient:
         """
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
+        self._bearer_token: str = password or ''
+
+        # Normaliza para a raiz /v1, removendo /actions se presente
+        _v1_base = self.base_url
+        if _v1_base.endswith('/actions'):
+            _v1_base = _v1_base[:-len('/actions')]
+        self._v1_base: str = _v1_base
 
         # Configurar autenticação básica se fornecida
-        auth = None
+        _auth = None
         if username and password:
-            auth = httpx.BasicAuth(username, password)
+            _auth = httpx.BasicAuth(username, password)
 
-        # Criar cliente assíncrono
-        self._client = httpx.AsyncClient(
-            base_url=self.base_url,
-            auth=auth,
+        _shared_kwargs = dict(
             timeout=httpx.Timeout(timeout),
-            headers={
-                'Accept': 'application/json',
-                # 'Content-Type': 'application/json',
-            },
             verify=False,
             trust_env=True,
             follow_redirects=True,
         )
 
+        # Cliente para endpoints /v1/actions/* — usa Basic Auth
+        self._actions_client = httpx.AsyncClient(
+            base_url=f'{self._v1_base}/actions',
+            auth=_auth,
+            headers={'Accept': 'application/json'},
+            **_shared_kwargs,
+        )
+
+        # Cliente para endpoints /v1/id-positiva/* — usa Bearer Token
+        self._id_positiva_client = httpx.AsyncClient(
+            base_url=f'{self._v1_base}/id-positiva',
+            headers={
+                'Accept': 'application/json',
+                'Authorization': f'Bearer {self._bearer_token}',
+            },
+            **_shared_kwargs,
+        )
+
     async def close(self):
         """Fecha a conexão do cliente HTTP."""
-        await self._client.aclose()
+        await self._actions_client.aclose()
+        await self._id_positiva_client.aclose()
 
     async def __aenter__(self):
         """Context manager entry."""
@@ -84,7 +103,7 @@ class RouterHTTPClient:
         endpoint = '/session/'
 
         _logger.debug(f"[get_all_sessions] GET {endpoint}")
-        response = await self._client.get(endpoint)
+        response = await self._actions_client.get(endpoint)
         response_data = RouterResponses.from_dict(response.json())
         _logger.debug(f"[get_all_sessions] Resposta: status_code={response.status_code} | ok={response_data.status}")
 
@@ -111,7 +130,7 @@ class RouterHTTPClient:
         }
 
         _logger.debug(f"[get_session_by_chat_id] GET {endpoint} | user={chat_id.user_id} | company={chat_id.company_id}")
-        response = await self._client.get(endpoint, params=params)
+        response = await self._actions_client.get(endpoint, params=params)
         response_data = RouterResponses.from_dict(response.json())
         _logger.debug(f"[get_session_by_chat_id] Resposta: status_code={response.status_code} | ok={response_data.status}")
 
@@ -121,10 +140,10 @@ class RouterHTTPClient:
                 f'Erro ao buscar a Sessão: {response_data.message}'
             )
 
-        if not isinstance(response_data.data, dict):
+        if not isinstance(response_data.data, list) or not response_data.data:
             return None
 
-        return UserState.from_dict(response_data.data)
+        return UserState.from_dict(response_data.data[0])
 
     async def start_session(self, user_state: UserState) -> Any:
         """
@@ -142,7 +161,7 @@ class RouterHTTPClient:
         endpoint = '/session/start/'
 
         _logger.debug(f"[start_session] POST {endpoint}")
-        response = await self._client.post(
+        response = await self._actions_client.post(
             endpoint,
             json=user_state.to_dict(),
         )
@@ -177,7 +196,7 @@ class RouterHTTPClient:
         }
 
         _logger.debug(f"[set_session_route] POST {endpoint} | route={route}")
-        response = await self._client.post(
+        response = await self._actions_client.post(
             endpoint,
             json=payload,
         )
@@ -218,7 +237,7 @@ class RouterHTTPClient:
         }
 
         _logger.debug(f"[update_session_observation] POST {endpoint}")
-        response = await self._client.post(
+        response = await self._actions_client.post(
             endpoint,
             json=payload,
         )
@@ -262,7 +281,7 @@ class RouterHTTPClient:
             'user_state': user_state.to_dict(),
         }
         _logger.debug(f"[send_message] POST {endpoint}")
-        response = await self._client.post(
+        response = await self._actions_client.post(
             endpoint,
             json=payload,
         )
@@ -294,7 +313,7 @@ class RouterHTTPClient:
         endpoint = f'/files/{file_id}/'
 
         _logger.debug(f"[get_file] GET {endpoint}")
-        response = await self._client.get(endpoint)
+        response = await self._actions_client.get(endpoint)
         response_data = RouterResponses.from_dict(response.json())
         _logger.debug(f"[get_file] Resposta: status_code={response.status_code} | ok={response_data.status}")
 
@@ -355,7 +374,7 @@ class RouterHTTPClient:
             data['expiration'] = str(file.expires_after_days)
 
         _logger.debug(f"[upload_file] POST {endpoint} | arquivo={filename}")
-        response = await self._client.post(
+        response = await self._actions_client.post(
             endpoint,
             files=files,
             # data=data,
@@ -391,7 +410,7 @@ class RouterHTTPClient:
         endpoint = f'/files/{file_id}'
 
         _logger.debug(f"[delete_file] DELETE {endpoint}")
-        response = await self._client.delete(endpoint)
+        response = await self._actions_client.delete(endpoint)
         response_data = RouterResponses.from_dict(response.json())
         _logger.debug(f"[delete_file] Resposta: status_code={response.status_code} | ok={response_data.status}")
 
@@ -433,7 +452,7 @@ class RouterHTTPClient:
         }
 
         _logger.debug(f"[end_chat] POST {endpoint}")
-        response = await self._client.post(
+        response = await self._actions_client.post(
             endpoint,
             json=payload,
         )
@@ -470,7 +489,7 @@ class RouterHTTPClient:
         }
 
         _logger.debug(f"[get_end_action] GET {endpoint} | id={end_action_id} | name={end_action_name}")
-        response = await self._client.get(endpoint, params=params)
+        response = await self._actions_client.get(endpoint, params=params)
         response_data = RouterResponses.from_dict(response.json())
         _logger.debug(f"[get_end_action] Resposta: status_code={response.status_code} | ok={response_data.status}")
 
@@ -511,7 +530,7 @@ class RouterHTTPClient:
             params['protection_level'] = protection_level
 
         _logger.debug(f"[get_menus] GET {endpoint} | params={params}")
-        response = await self._client.get(endpoint, params=params)
+        response = await self._actions_client.get(endpoint, params=params)
         response_data = RouterResponses.from_dict(response.json())
         _logger.debug(f"[get_menus] Resposta: status_code={response.status_code} | ok={response_data.status}")
 
@@ -529,7 +548,7 @@ class RouterHTTPClient:
         endpoint = '/user'
 
         _logger.debug(f"[update_user] PATCH {endpoint}")
-        response = await self._client.patch(endpoint, json=user.to_dict())
+        response = await self._actions_client.patch(endpoint, json=user.to_dict())
         response_data = RouterResponses.from_dict(response.json())
         _logger.debug(f"[update_user] Resposta: status_code={response.status_code} | ok={response_data.status}")
 
@@ -573,7 +592,7 @@ class RouterHTTPClient:
             payload['route'] = route
 
         _logger.debug(f"[transfer_to_menu] POST {endpoint} | menu={menu.name} | route={route or 'N/A'}")
-        response = await self._client.post(
+        response = await self._actions_client.post(
             endpoint,
             json=payload,
         )
@@ -587,3 +606,62 @@ class RouterHTTPClient:
             )
 
         return response_data
+
+    # Id Positiva Methods
+    async def associate_cpf(
+        self,
+        chat_id: ChatID,
+        cpf: str,
+        source: str,
+        phone: str = '',
+        device_id: str = '',
+    ) -> RouterResponses:
+        endpoint = 'associate-cpf'
+
+        payload: Dict[str, Any] = {
+            'chat_id': chat_id.to_dict(),
+            'cpf': cpf,
+            'source': source,
+        }
+        if phone:
+            payload['phone'] = phone
+        if device_id:
+            payload['device_id'] = device_id
+
+        _logger.debug(f"[associate_cpf] POST {endpoint} | cpf={cpf[:3]}*** | source={source}")
+        response = await self._id_positiva_client.post(
+            endpoint,
+            json=payload,
+        )
+        response_data = RouterResponses.from_dict(response.json())
+        _logger.debug(f"[associate_cpf] Resposta: status_code={response.status_code} | ok={response_data.status}")
+
+        if not response_data.status:
+            _logger.error(f"[associate_cpf] Erro: {response_data.message}")
+            raise Exception(f'Erro ao associar CPF: {response_data.message}')
+
+        return response_data
+
+    async def get_identity(
+        self,
+        user_id: str,
+        cpf: Optional[str] = None,
+    ) -> UserIdentity:
+        endpoint = 'identity'
+        params: Dict[str, Any] = {'user_id': user_id}
+        if cpf:
+            params['cpf'] = cpf
+
+        _logger.debug(f"[get_identity] GET {endpoint} | user_id={user_id}")
+        response = await self._id_positiva_client.get(endpoint, params=params)
+        response_data = RouterResponses.from_dict(response.json())
+        _logger.debug(f"[get_identity] Resposta: status_code={response.status_code} | ok={response_data.status}")
+
+        if not response_data.status:
+            _logger.error(f"[get_identity] Erro: {response_data.message}")
+            raise Exception(f'Erro ao consultar identidade: {response_data.message}')
+
+        if not isinstance(response_data.data, dict):
+            raise Exception('Resposta de identidade mal formatada.')
+
+        return UserIdentity.from_dict(response_data.data)
