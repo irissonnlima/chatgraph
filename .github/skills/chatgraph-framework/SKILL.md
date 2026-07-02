@@ -169,6 +169,19 @@ menu = await usercall.get_menu(description='Suporte TI')   # por descrição
 # Setters diretos (síncronos — não persistem imediatamente, usam loop existente)
 usercall.observation = {'chave': 'valor'}  # dict — substitui toda a observação
 usercall.content_message = 'nova mensagem'  # str — sobrescreve o texto recebido
+
+# Carga/atualização de dados remotos
+identity = await usercall.load_identity()            # recarrega UserIdentity da API
+identity = await usercall.load_identity(cpf='cpf')   # força busca por CPF específico
+userstate = await usercall.load_userstate()          # recarrega UserState completo da API
+
+# Associação de CPF
+await usercall.associate_cpf(
+    cpf='00000000000',
+    source='nome_do_menu',   # origem da associação (ex: nome do menu)
+    phone='',                # telefone da empresa (opcional)
+    device_id='',            # ID do dispositivo (opcional)
+)
 ```
 
 ---
@@ -295,10 +308,13 @@ file.send_type = SendType.VIDEO
 | Fora de rota (startup, módulo) | `_logger = get_system_logger()` | `chatgraph_logs/system.log` |
 
 ```python
-from chatgraph.logger import get_system_logger, set_level
+from chatgraph.logger import get_system_logger, get_user_logger, set_level
 
 _logger = get_system_logger()
 _logger.info('App iniciada')
+
+# Logger de usuário fora de uma rota (raramente necessário — prefira usercall.logger dentro de rotas)
+user_log = get_user_logger('user123', 'empresa456')
 
 # Alterar nível de log em runtime (afeta todos os loggers existentes)
 set_level('DEBUG')   # ou logging.DEBUG
@@ -339,6 +355,12 @@ async def suporte(usercall: UserCall):
 @router.route('aguardar_resposta_suporte')
 async def aguardar(usercall: UserCall):
     await usercall.send(f'Você disse: {usercall.content_message}')
+    return RedirectResponse('start')
+
+# auth_level também pode ser definido em rotas de router
+@router.route('area_rh', auth_level='internal')
+async def area_rh(usercall: UserCall):
+    await usercall.send(f'Olá, {usercall.user.internal.cargo}!')
     return RedirectResponse('start')
 ```
 
