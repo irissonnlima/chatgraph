@@ -43,8 +43,13 @@ class UserCall:  # noqa: PLR0904
         self.__content_message = self.__message.text_message.detail
 
     @property
-    def logger(self) -> logging.Logger:
-        return UserLoggerManager.get_user_logger(self.user_id, self.company_id)
+    def logger(self) -> logging.LoggerAdapter:
+        base_logger = UserLoggerManager.get_user_logger(
+            self.user_id, self.company_id
+        )
+        return logging.LoggerAdapter(
+            base_logger, {'chat_id': str(self.__user_state.chat_id)}
+        )
 
     def __str__(self):
         return (
@@ -117,7 +122,7 @@ class UserCall:  # noqa: PLR0904
 
     async def __send(self, message: Message) -> None:
         try:
-            self.logger.debug(
+            self.logger.info(
                 f'Enviando mensagem | user={self.user_id} | company={self.company_id} | tipo={message.type if hasattr(message, "type") else "N/A"}'
             )
             response = await self.__router_client.send_message(
@@ -125,13 +130,15 @@ class UserCall:  # noqa: PLR0904
             )
 
             if response:
-                self.logger.debug(
+                self.logger.info(
                     f'Mensagem enviada com sucesso | user={self.user_id}'
                 )
 
             await asyncio.sleep(0.1)
         except Exception as e:
-            raise Exception(f'Erro ao enviar mensagem: {e}')
+            raise Exception(
+                f'[ChatID: {self.__user_state.chat_id}] - Erro ao enviar mensagem: {e}'
+            )
 
     async def send(
         self,
@@ -323,7 +330,9 @@ class UserCall:  # noqa: PLR0904
     async def load_identity(self, cpf: Optional[str] = None) -> UserIdentity:
         try:
             self.logger.debug(f'Consultando identidade | user={self.user_id}')
-            identity = await self.__router_client.get_identity(self.user_id, cpf=cpf)
+            identity = await self.__router_client.get_identity(
+                self.user_id, cpf=cpf
+            )
             if self.__user_state.user is None:
                 self.__user_state.user = User()
             self.__user_state.user.identity = identity
@@ -338,9 +347,13 @@ class UserCall:  # noqa: PLR0904
     async def load_userstate(self) -> UserState:
         try:
             self.logger.debug(f'Carregando userstate | user={self.user_id}')
-            resultado = await self.__router_client.get_session_by_chat_id(self.__user_state.chat_id)
+            resultado = await self.__router_client.get_session_by_chat_id(
+                self.__user_state.chat_id
+            )
             if resultado is None:
-                raise ValueError('Sessão não encontrada para o chat_id informado.')
+                raise ValueError(
+                    'Sessão não encontrada para o chat_id informado.'
+                )
             self.__user_state = resultado
             self.logger.info(
                 f'Userstate carregado | user={self.user_id} | route={self.__user_state.route}'

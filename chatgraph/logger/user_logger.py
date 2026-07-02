@@ -9,6 +9,14 @@ _ENV_LEVEL = os.getenv("CHATGRAPH_LOG_LEVEL", "").upper()
 _DEFAULT_LEVEL: int = getattr(logging, _ENV_LEVEL, logging.INFO)
 
 
+class ChatIDFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        chat_id = getattr(record, 'chat_id', None)
+        if chat_id:
+            record.msg = f'[ChatID: {chat_id}] - {record.msg}'
+        return True
+
+
 class UserLoggerManager:
     _loggers: dict[str, logging.Logger] = {}
     _level: int = _DEFAULT_LEVEL
@@ -48,6 +56,7 @@ class UserLoggerManager:
             stream_handler.setLevel(cls._level)
             stream_handler.setFormatter(logging.Formatter(LOG_FORMAT))
             logger.addHandler(stream_handler)
+            logger.addFilter(ChatIDFilter())
 
         cls._loggers[key] = logger
         return logger
