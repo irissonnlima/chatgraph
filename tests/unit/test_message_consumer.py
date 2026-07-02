@@ -147,56 +147,77 @@ class TestStartConsume:
 @pytest.mark.unit
 class TestDeclareQueue:
     @pytest.mark.asyncio
-    async def test_passive_declare_success(self):
+    async def test_declares_queue_with_durable_and_arguments(self):
         consumer = make_consumer(queue_consume='my_queue')
         mock_queue = MagicMock()
+        mock_queue.bind = AsyncMock()
         mock_channel = AsyncMock()
         mock_channel.declare_queue = AsyncMock(return_value=mock_queue)
 
         result = await consumer._MessageConsumer__declare_queue(mock_channel)
 
         mock_channel.declare_queue.assert_called_once_with(
-            'my_queue', passive=True
+            'my_queue',
+            durable=True,
+            arguments={
+                'x-dead-letter-exchange': 'log_error',
+                'x-expires': 86400000,
+                'x-message-ttl': 3600000,
+            },
         )
         assert result is mock_queue
 
     @pytest.mark.asyncio
-    async def test_fallback_on_not_found(self):
-        import aio_pika
+    async def test_declares_queue_with_custom_ttl_arguments(self):
+        consumer = make_consumer(
+            queue_consume='my_queue', x_expires=60000, x_message_ttl=10000
+        )
+        mock_queue = MagicMock()
+        mock_queue.bind = AsyncMock()
+        mock_channel = AsyncMock()
+        mock_channel.declare_queue = AsyncMock(return_value=mock_queue)
 
+        await consumer._MessageConsumer__declare_queue(mock_channel)
+
+        mock_channel.declare_queue.assert_called_once_with(
+            'my_queue',
+            durable=True,
+            arguments={
+                'x-dead-letter-exchange': 'log_error',
+                'x-expires': 60000,
+                'x-message-ttl': 10000,
+            },
+        )
+
+    @pytest.mark.asyncio
+    async def test_binds_queue_with_expected_exchange_and_routing_key(self):
         consumer = make_consumer(
             queue_consume='my_queue', virtual_host='vhost'
         )
 
         mock_queue = MagicMock()
         mock_queue.bind = AsyncMock()
-
-        new_channel = AsyncMock()
-        new_channel.declare_queue = AsyncMock(return_value=mock_queue)
-
         mock_channel = AsyncMock()
-        mock_channel.declare_queue = AsyncMock(
-            side_effect=aio_pika.exceptions.ChannelNotFoundEntity('not found')
-        )
-        mock_channel.connection = AsyncMock()
-        mock_channel.connection.channel = AsyncMock(return_value=new_channel)
+        mock_channel.declare_queue = AsyncMock(return_value=mock_queue)
 
         result = await consumer._MessageConsumer__declare_queue(mock_channel)
 
-        new_channel.declare_queue.assert_called_once_with(
-            'my_queue',
-            durable=True,
-            arguments={
-                'x-dead-letter-exchange': 'log_error',
-                'x-expires': 86400000,
-                'x-message-ttl': 300000,
-            },
-        )
         mock_queue.bind.assert_called_once_with(
             exchange='vhost',
             routing_key='chatbot.my_queue',
         )
         assert result is mock_queue
+
+    @pytest.mark.asyncio
+    async def test_declare_queue_exception_is_not_masked(self):
+        consumer = make_consumer(queue_consume='my_queue')
+        mock_channel = AsyncMock()
+        mock_channel.declare_queue = AsyncMock(
+            side_effect=RuntimeError('precondition failed')
+        )
+
+        with pytest.raises(RuntimeError, match='precondition failed'):
+            await consumer._MessageConsumer__declare_queue(mock_channel)
 
 
 @pytest.mark.unit
@@ -363,3 +384,20 @@ class TestLoadDotenv:
 
         assert consumer._MessageConsumer__heartbeat == 60
         assert consumer._MessageConsumer__reconnect_interval == 5.0
+        assert consumer._MessageConsumer__x_expires == 86400000
+        assert consumer._MessageConsumer__x_message_ttl == 3600000
+
+    def test_loads_custom_ttl_from_env(self, monkeypatch):
+        monkeypatch.setenv('RABBIT_USER', 'user')
+        monkeypatch.setenv('RABBIT_PASS', 'pass')
+        monkeypatch.setenv('RABBIT_URI', 'rabbitmq.example.com:5672')
+        monkeypatch.setenv('RABBIT_QUEUE', 'test_queue')
+        monkeypatch.setenv('ROUTER_URL', 'http://router')
+        monkeypatch.setenv('ROUTER_TOKEN', 'token')
+        monkeypatch.setenv('RABBIT_X_EXPIRES', '60000')
+        monkeypatch.setenv('RABBIT_X_MESSAGE_TTL', '10000')
+
+        consumer = MessageConsumer.load_dotenv()
+
+        assert consumer._MessageConsumer__x_expires == 60000
+        assert consumer._MessageConsumer__x_message_ttl == 10000

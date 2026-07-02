@@ -33,6 +33,8 @@ class MessageConsumer:
         virtual_host: str = '/',
         heartbeat: int = 60,
         reconnect_interval: float = 5.0,
+        x_expires: int = 86400000,
+        x_message_ttl: int = 3600000,
     ) -> None:
         if heartbeat < 0:
             raise ValueError('heartbeat must be >= 0')
@@ -40,6 +42,8 @@ class MessageConsumer:
             raise ValueError('reconnect_interval must be >= 0')
         self.__virtual_host = virtual_host
         self.__prefetch_count = prefetch_count
+        self.__x_expires = x_expires
+        self.__x_message_ttl = x_message_ttl
         self.__queue_consume = queue_consume
         self.__amqp_url = amqp_url
         self.__router_url = router_url
@@ -62,6 +66,8 @@ class MessageConsumer:
         router_token_env: str = 'ROUTER_TOKEN',
         heartbeat_env: str = 'RABBIT_HEARTBEAT',
         reconnect_interval_env: str = 'RABBIT_RECONNECT_INTERVAL',
+        x_expires_env: str = 'RABBIT_X_EXPIRES',
+        x_message_ttl_env: str = 'RABBIT_X_MESSAGE_TTL',
     ) -> 'MessageConsumer':
         username = os.getenv(user_env)
         password = os.getenv(pass_env)
@@ -73,6 +79,8 @@ class MessageConsumer:
         router_token = os.getenv(router_token_env)
         heartbeat = os.getenv(heartbeat_env, '60')
         reconnect_interval = os.getenv(reconnect_interval_env, '5.0')
+        x_expires = os.getenv(x_expires_env, '86400000')
+        x_message_ttl = os.getenv(x_message_ttl_env, '3600000')
 
         envs_essentials = {
             username: user_env,
@@ -99,6 +107,8 @@ class MessageConsumer:
             router_token=router_token,
             heartbeat=int(heartbeat),
             reconnect_interval=float(reconnect_interval),
+            x_expires=int(x_expires),
+            x_message_ttl=int(x_message_ttl),
         )
 
     async def __initialize_router(self) -> RouterHTTPClient:
@@ -118,29 +128,22 @@ class MessageConsumer:
         return f'amqp://{user}:{pwd}@{self.__amqp_url}/{vhost}'
 
     async def __declare_queue(self, channel) -> aio_pika.abc.AbstractQueue:
-        try:
-            return await channel.declare_queue(
-                self.__queue_consume, passive=True
-            )
-        except aio_pika.exceptions.ChannelNotFoundEntity:
-            channel = await channel.connection.channel()
-            await channel.set_qos(prefetch_count=self.__prefetch_count)
-            arguments = {
-                'x-dead-letter-exchange': 'log_error',
-                'x-expires': 86400000,
-                'x-message-ttl': 300000,
-            }
-            queue = await channel.declare_queue(
-                self.__queue_consume,
-                durable=True,
-                arguments=arguments,
-            )
-            routing_key = f'chatbot.{self.__queue_consume}'
-            await queue.bind(
-                exchange=self.__virtual_host,
-                routing_key=routing_key,
-            )
-            return queue
+        arguments = {
+            'x-dead-letter-exchange': 'log_error',
+            'x-expires': self.__x_expires,
+            'x-message-ttl': self.__x_message_ttl,
+        }
+        queue = await channel.declare_queue(
+            self.__queue_consume,
+            durable=True,
+            arguments=arguments,
+        )
+        routing_key = f'chatbot.{self.__queue_consume}'
+        await queue.bind(
+            exchange=self.__virtual_host,
+            routing_key=routing_key,
+        )
+        return queue
 
     async def __connect_and_consume(
         self, amqp_url: str, process_message: Callable
