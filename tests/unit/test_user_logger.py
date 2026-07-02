@@ -98,6 +98,40 @@ class TestUserLoggerManager:
         assert logger.level == logging.WARNING
         assert all(h.level == logging.WARNING for h in logger.handlers)
 
+    def test_remove_user_logger_closes_handlers(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(user_logger_module, "LOG_DIR", str(tmp_path))
+        logger = UserLoggerManager.get_user_logger("user1", "company1")
+        handlers = logger.handlers[:]
+        UserLoggerManager.remove_user_logger("user1", "company1")
+        for handler in handlers:
+            if isinstance(handler, logging.FileHandler):
+                # FileHandler.stream é None após close()
+                assert handler.stream is None
+
+    def test_remove_user_logger_removes_from_dict(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(user_logger_module, "LOG_DIR", str(tmp_path))
+        UserLoggerManager.get_user_logger("user1", "company1")
+        UserLoggerManager.remove_user_logger("user1", "company1")
+        assert "user1_company1" not in UserLoggerManager._loggers
+
+    def test_remove_user_logger_clears_handlers_from_logger(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(user_logger_module, "LOG_DIR", str(tmp_path))
+        logger = UserLoggerManager.get_user_logger("user1", "company1")
+        UserLoggerManager.remove_user_logger("user1", "company1")
+        assert len(logger.handlers) == 0
+
+    def test_remove_user_logger_noop_for_unknown_key(self):
+        # Não deve lançar exceção para chave inexistente
+        UserLoggerManager.remove_user_logger("nonexistent", "company")
+
+    def test_remove_then_get_recreates_logger(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(user_logger_module, "LOG_DIR", str(tmp_path))
+        logger1 = UserLoggerManager.get_user_logger("user1", "company1")
+        UserLoggerManager.remove_user_logger("user1", "company1")
+        logger2 = UserLoggerManager.get_user_logger("user1", "company1")
+        # logger2 deve ter handlers novamente
+        assert len(logger2.handlers) == 2
+
     def test_set_level_applies_to_new_loggers(self, tmp_path, monkeypatch):
         monkeypatch.setattr(user_logger_module, "LOG_DIR", str(tmp_path))
         UserLoggerManager.set_level(logging.WARNING)

@@ -155,7 +155,9 @@ class MessageConsumer:
             channel = await connection.channel()
             await channel.set_qos(prefetch_count=self.__prefetch_count)
             queue = await self.__declare_queue(channel)
-            _logger.info('[x] Server inicializado! Aguardando solicitações RPC')
+            _logger.info(
+                '[x] Server inicializado! Aguardando solicitações RPC'
+            )
             async for message in queue:
                 async with message.process():
                     await self.on_request(message.body, process_message)
@@ -179,6 +181,7 @@ class MessageConsumer:
             await self.cleanup()
 
     async def on_request(self, body: bytes, process_message: Callable):
+        pure_message = None
         try:
             message = body.decode()
             message_json = json.loads(message)
@@ -186,11 +189,16 @@ class MessageConsumer:
             await process_message(pure_message)
         except Exception as e:
             _logger.error(f'Erro ao processar mensagem: {e}')
+        finally:
+            if pure_message is not None:
+                UserLoggerManager.remove_user_logger(
+                    pure_message.user_id, pure_message.company_id
+                )
 
     async def __transform_message(self, message: dict) -> UserCall:
         user_state = message.get('user_state', {})
         message_data = message.get('message', {})
-        observation = user_state.get('observation', "{}")
+        observation = user_state.get('observation', '{}')
 
         if isinstance(observation, str):
             observation = json.loads(observation)

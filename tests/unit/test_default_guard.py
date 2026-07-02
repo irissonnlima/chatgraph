@@ -13,6 +13,7 @@ def _make_usercall(user: User) -> MagicMock:
     usercall.menu = None
     usercall.route = 'test_route'
     usercall.add_observation = AsyncMock()
+    usercall.load_userstate = AsyncMock()
     usercall.logger = MagicMock()
     return usercall
 

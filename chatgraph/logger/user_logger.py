@@ -53,6 +53,15 @@ class UserLoggerManager:
         return logger
 
     @classmethod
+    def remove_user_logger(cls, user_id: str, company_id: str) -> None:
+        key = f"{user_id}_{company_id}"
+        logger = cls._loggers.pop(key, None)
+        if logger:
+            for handler in logger.handlers[:]:
+                handler.close()
+                logger.removeHandler(handler)
+
+    @classmethod
     def get_system_logger(cls) -> logging.Logger:
         key = "chatgraph.system"
         if key in cls._loggers:
