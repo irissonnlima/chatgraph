@@ -1,5 +1,4 @@
 import asyncio
-import concurrent.futures
 import json
 import logging
 from typing import Optional
@@ -10,6 +9,7 @@ from chatgraph.models.message import (
     Message,
     MessageTypes,
 )
+from chatgraph.models.platform_state import PlatformState
 from chatgraph.models.userstate import Menu, User, UserIdentity, UserState
 from chatgraph.services.router_http_client import RouterHTTPClient
 
@@ -33,11 +33,13 @@ class UserCall:  # noqa: PLR0904
         user_state: UserState,
         message: Message,
         router_client: RouterHTTPClient,
+        platform_state: PlatformState = PlatformState(),
     ) -> None:
         self.type = type
         self.__message = message
         self.__user_state = user_state
         self.__router_client = router_client
+        self.__platform_state = platform_state
         self.__content_message = self.__message.text_message.detail
 
     @property
@@ -119,7 +121,7 @@ class UserCall:  # noqa: PLR0904
                 f'Enviando mensagem | user={self.user_id} | company={self.company_id} | tipo={message.type if hasattr(message, "type") else "N/A"}'
             )
             response = await self.__router_client.send_message(
-                message, self.__user_state
+                message, self.__user_state, self.__platform_state
             )
 
             if response:
@@ -399,6 +401,10 @@ class UserCall:  # noqa: PLR0904
     @property
     def observation(self):
         return self.__user_state.observation_dict
+
+    @property
+    def platform_state(self) -> PlatformState:
+        return self.__platform_state
 
     @property
     def content_message(self):

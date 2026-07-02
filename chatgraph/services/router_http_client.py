@@ -3,10 +3,11 @@ from typing import Any, Dict, Optional
 import httpx
 
 from ..logger.user_logger import UserLoggerManager
-from ..models.http_responses import RouterResponses
-from ..models.userstate import UserState, ChatID, Menu, User, UserIdentity
-from ..models.message import Message, File
 from ..models.actions import EndAction
+from ..models.http_responses import RouterResponses
+from ..models.message import File, Message
+from ..models.platform_state import PlatformState
+from ..models.userstate import ChatID, Menu, User, UserIdentity, UserState
 
 _logger = UserLoggerManager.get_system_logger()
 
@@ -258,6 +259,7 @@ class RouterHTTPClient:
         self,
         message_data: Message,
         user_state: UserState,
+        platform_state: PlatformState = PlatformState(),
     ) -> Any:
         """
         Envia uma mensagem de texto ao usuário.
@@ -267,6 +269,7 @@ class RouterHTTPClient:
                 - chat_id: ID do chat (user_id, company_id)
                 - type: Tipo da mensagem
                 - detail: Conteúdo da mensagem
+            platform_state: Estado específico da plataforma (opcional).
 
         Returns:
             Objeto de resposta com atributo 'status' indicando sucesso/falha.
@@ -280,6 +283,8 @@ class RouterHTTPClient:
             'message': message_data.to_dict(),
             'user_state': user_state.to_dict(),
         }
+        if platform_state:
+            payload['platform_state'] = platform_state.to_dict()
         _logger.debug(f"[send_message] POST {endpoint}")
         response = await self._actions_client.post(
             endpoint,

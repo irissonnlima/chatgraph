@@ -13,6 +13,7 @@ from rich.text import Text
 from ..auth.credentials import Credential
 from ..logger.user_logger import UserLoggerManager
 from ..models.message import Message
+from ..models.platform_state import PlatformState
 from ..models.userstate import UserState
 from ..services.router_http_client import RouterHTTPClient
 from ..types.usercall import UserCall
@@ -194,13 +195,18 @@ class MessageConsumer:
         user_state_models = UserState.from_dict(user_state)
         message_models = Message.from_dict(message_data)
 
-        # Reutilizar o mesmo cliente para todas as mensagens
+        platform_state_data = message.get('platform_state', {})
+        if not isinstance(platform_state_data, dict):
+            platform_state_data = None
+        platform_state = PlatformState.from_dict(platform_state_data)
+
         router_client = await self.__initialize_router()
 
         usercall = UserCall(
             user_state=user_state_models,
             message=message_models,
             router_client=router_client,
+            platform_state=platform_state,
         )
 
         return usercall

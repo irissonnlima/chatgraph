@@ -8,9 +8,18 @@ e funcionamento do cliente HTTP de roteamento.
 import httpx
 import pytest
 
+from chatgraph.models.message import File, Message
+from chatgraph.models.platform_state import PlatformState
+from chatgraph.models.userstate import (
+    ChatID,
+    Menu,
+    User,
+    UserData,
+    UserIdentity,
+    UserState,
+)
 from chatgraph.services.router_http_client import RouterHTTPClient
-from chatgraph.models.userstate import ChatID, UserState, Menu, User, UserData, UserIdentity
-from chatgraph.models.message import Message
+
 
 @pytest.mark.unit
 class TestRouterHTTPClientInit:
@@ -67,6 +76,7 @@ class TestRouterHTTPClientInit:
         expected_url = http_client_base_url.rstrip('/') + '/'
         assert str(client._actions_client.base_url) == expected_url
 
+
 @pytest.mark.unit
 class TestRouterHTTPClientContextManager:
     """Testes para uso como context manager."""
@@ -90,6 +100,7 @@ class TestRouterHTTPClientContextManager:
 
         assert client._actions_client.is_closed
         assert client._id_positiva_client.is_closed
+
 
 @pytest.mark.unit
 class TestRouterHTTPClientSessions:
@@ -239,10 +250,11 @@ class TestRouterHTTPClientSessions:
 
         try:
             result = await client.start_session(user_state)
-            assert result['status'] is True
-            assert result['message'] == 'Session started'
+            assert result.status is True
+            assert result.message == 'Session started'
         finally:
             await client.close()
+
 
 @pytest.mark.unit
 class TestRouterHTTPClientMessages:
@@ -274,10 +286,84 @@ class TestRouterHTTPClientMessages:
 
         try:
             result = await client.send_message(message, user_state)
-            assert result['status'] is True
-            assert result['message'] == 'Message sent'
+            assert result.status is True
+            assert result.message == 'Message sent'
         finally:
             await client.close()
+
+    @pytest.mark.asyncio
+    async def test_send_message_with_platform_state(
+        self,
+        http_client_base_url,
+        respx_mock,
+        sample_message_data,
+        sample_user_state_data,
+    ):
+        message = Message.from_dict(sample_message_data)
+        user_state = UserState.from_dict(sample_user_state_data)
+        ps = PlatformState(data={
+            'session_id': 123,
+            'customer_id': 'CUST001',
+            'platform': 'whatsapp_enterprise',
+            'protocol': 'PROTO001',
+            'campaign': 'CAMPANHA.TESTE',
+        })
+
+        respx_mock.post(f'{http_client_base_url}/messages/send/').mock(
+            return_value=httpx.Response(
+                200,
+                json={'status': True, 'message': 'Message sent'},
+            )
+        )
+
+        client = RouterHTTPClient(base_url=http_client_base_url)
+
+        try:
+            result = await client.send_message(
+                message, user_state, platform_state=ps
+            )
+            assert result.status is True
+
+            import json
+            body = json.loads(respx_mock.calls.last.request.content)
+            assert 'platform_state' in body
+            assert body['platform_state']['session_id'] == 123
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_send_message_without_platform_state(
+        self,
+        http_client_base_url,
+        respx_mock,
+        sample_message_data,
+        sample_user_state_data,
+    ):
+        message = Message.from_dict(sample_message_data)
+        user_state = UserState.from_dict(sample_user_state_data)
+        ps = PlatformState(data={})
+
+        respx_mock.post(f'{http_client_base_url}/messages/send/').mock(
+            return_value=httpx.Response(
+                200,
+                json={'status': True, 'message': 'Message sent'},
+            )
+        )
+
+        client = RouterHTTPClient(base_url=http_client_base_url)
+
+        try:
+            result = await client.send_message(
+                message, user_state, platform_state=ps
+            )
+            assert result.status is True
+
+            import json
+            body = json.loads(respx_mock.calls.last.request.content)
+            assert 'platform_state' not in body
+        finally:
+            await client.close()
+
 
 @pytest.mark.unit
 class TestRouterHTTPClientFiles:
@@ -313,7 +399,7 @@ class TestRouterHTTPClientFiles:
     @pytest.mark.asyncio
     async def test_upload_file(self, http_client_base_url, respx_mock):
         """Testa upload_file."""
-        file_bytes = b'fake file content'
+        file = File(bytes_data=b'fake file content', name='test.txt')
 
         respx_mock.post(f'{http_client_base_url}/files/upload/').mock(
             return_value=httpx.Response(
@@ -321,7 +407,13 @@ class TestRouterHTTPClientFiles:
                 json={
                     'status': True,
                     'message': 'File uploaded',
-                    'file_id': 'file123',
+                    'data': {
+                        'id': 'file123',
+                        'name': 'test.txt',
+                        'url': 'https://example.com/test.txt',
+                        'mime_type': 'application/octet-stream',
+                        'size': 17,
+                    },
                 },
             )
         )
@@ -329,10 +421,9 @@ class TestRouterHTTPClientFiles:
         client = RouterHTTPClient(base_url=http_client_base_url)
 
         try:
-            result = await client.upload_file(file_bytes)
-            assert result['status'] is True
-            assert result['message'] == 'File uploaded'
-            assert 'file_id' in result
+            result = await client.upload_file(file)
+            assert result.id == 'file123'
+            assert result.name == 'test.txt'
         finally:
             await client.close()
 
@@ -530,8 +621,8 @@ class TestTransferToMenu:
             )
         )
 
-        from chatgraph.models.userstate import ChatID, Menu
         from chatgraph.models.message import Message
+        from chatgraph.models.userstate import ChatID, Menu
 
         chat_id = ChatID.from_dict(sample_chat_id_data)
         menu = Menu.from_name('main_menu')
@@ -562,8 +653,8 @@ class TestTransferToMenu:
             )
         )
 
-        from chatgraph.models.userstate import ChatID, Menu
         from chatgraph.models.message import Message
+        from chatgraph.models.userstate import ChatID, Menu
 
         chat_id = ChatID.from_dict(sample_chat_id_data)
         menu = Menu.from_name('main_menu')

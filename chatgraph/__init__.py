@@ -6,15 +6,16 @@ from .container.container import Container
 from .logger import logger, set_level
 from .messages.message_consumer import MessageConsumer
 from .models.message import Button, File, Message, SendType, TextMessage
+from .models.platform_state import PlatformState, VollStateData
 from .models.userstate import (
     AuthLevel,
     ChatID,
     Menu,
+    User,
     UserData,
     UserIdentity,
     UserInternal,
     UserState,
-    User,
 )
 from .types.background_task import BackgroundTask
 from .types.end_types import (
@@ -54,4 +55,6 @@ __all__ = [
     "BackgroundTask",
     "Container", "logger",
     "default_guard",
+    "PlatformState",
+    "VollStateData",
 ]

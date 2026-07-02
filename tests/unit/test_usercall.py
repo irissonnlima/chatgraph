@@ -2,11 +2,12 @@
 Testes para a classe UserCall.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from chatgraph.models.message import Message
+from chatgraph.models.platform_state import PlatformState
 from chatgraph.models.userstate import (
     AuthLevel,
     ChatID,
@@ -398,3 +399,38 @@ class TestLoadUserstate:
         mock_router_client.get_session_by_chat_id.assert_called_once_with(
             sample_user_state.chat_id
         )
+
+
+@pytest.mark.unit
+class TestPlatformState:
+    """Testes para a property platform_state de UserCall."""
+
+    def test_platform_state_returns_injected_object(
+        self, sample_user_state, sample_message, mock_router_client
+    ):
+        ps = PlatformState(data={
+            'session_id': 1,
+            'customer_id': 'CUST001',
+            'platform': 'whatsapp_enterprise',
+            'protocol': 'P001',
+            'campaign': 'C.TEST',
+        })
+        uc = UserCall(
+            user_state=sample_user_state,
+            message=sample_message,
+            router_client=mock_router_client,
+            platform_state=ps,
+        )
+        assert uc.platform_state is ps
+        assert uc.platform_state.data['protocol'] == 'P001'
+
+    def test_platform_state_default_is_empty(
+        self, sample_user_state, sample_message, mock_router_client
+    ):
+        uc = UserCall(
+            user_state=sample_user_state,
+            message=sample_message,
+            router_client=mock_router_client,
+        )
+        assert isinstance(uc.platform_state, PlatformState)
+        assert bool(uc.platform_state) is False
