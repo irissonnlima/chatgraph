@@ -434,3 +434,42 @@ class TestPlatformState:
         )
         assert isinstance(uc.platform_state, PlatformState)
         assert bool(uc.platform_state) is False
+
+
+@pytest.mark.unit
+class TestUserStateProperty:
+    """Testes para a property user_state de UserCall."""
+
+    def test_user_state_returns_injected_object(
+        self, sample_user_state, sample_message, mock_router_client
+    ):
+        uc = UserCall(
+            user_state=sample_user_state,
+            message=sample_message,
+            router_client=mock_router_client,
+        )
+        assert uc.user_state is sample_user_state
+        assert uc.user_state.platform == 'whatsapp'
+        assert uc.user_state.chat_id.user_id == 'user123'
+        assert uc.user_state.chat_id.company_id == 'company456'
+
+    def test_user_state_reflects_mutation(
+        self, sample_user_state, sample_message, mock_router_client
+    ):
+        uc = UserCall(
+            user_state=sample_user_state,
+            message=sample_message,
+            router_client=mock_router_client,
+        )
+        sample_user_state.route = 'menu.vendas'
+        assert uc.user_state.route == 'menu.vendas'
+
+    def test_user_state_returns_none_when_none(
+        self, sample_message, mock_router_client
+    ):
+        uc = UserCall(
+            user_state=None,
+            message=sample_message,
+            router_client=mock_router_client,
+        )
+        assert uc.user_state is None
