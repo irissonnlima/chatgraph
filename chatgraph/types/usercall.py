@@ -1,8 +1,16 @@
 import asyncio
 import json
 import logging
+from datetime import datetime
 from typing import Optional
 
+from chatgraph.history.entry import (
+    HistoryEntry,
+    HistoryEventType,
+    HistoryRole,
+)
+from chatgraph.history.keys import generate_idempotency_key
+from chatgraph.history.store import HistoryStore
 from chatgraph.logger.user_logger import UserLoggerManager
 from chatgraph.models.message import (
     File,
@@ -34,12 +42,14 @@ class UserCall:  # noqa: PLR0904
         message: Message,
         router_client: RouterHTTPClient,
         platform_state: PlatformState = PlatformState(),
+        history_store: Optional[HistoryStore] = None,
     ) -> None:
         self.type = type
         self.__message = message
         self.__user_state = user_state
         self.__router_client = router_client
         self.__platform_state = platform_state
+        self.__history_store = history_store
         self.__content_message = self.__message.text_message.detail
 
     @property
@@ -140,6 +150,17 @@ class UserCall:  # noqa: PLR0904
                 f'[ChatID: {self.__user_state.chat_id}] - Erro ao enviar mensagem: {e}'
             )
 
+        try:
+            await self.__record_history(
+                HistoryRole.BOT,
+                HistoryEventType.MESSAGE_OUT,
+                message=message,
+            )
+        except BaseException as e:
+            self.logger.warning(
+                f'Falha ao registrar histórico (message_out): {e}'
+            )
+
     async def send(
         self,
         message: MessageTypes | Message | File,
@@ -201,6 +222,20 @@ class UserCall:  # noqa: PLR0904
         except Exception as e:
             raise ValueError(
                 'Erro ao realizar ação de encerramento: ' + str(e)
+            )
+
+        try:
+            await self.__record_history(
+                HistoryRole.SYSTEM,
+                HistoryEventType.END_CHAT,
+                metadata={
+                    'end_action_id': end_action_id,
+                    'end_action_name': end_action_name,
+                },
+            )
+        except BaseException as e:
+            self.logger.warning(
+                f'Falha ao registrar histórico (end_chat): {e}'
             )
 
     async def set_observation(self, observation: str = '') -> None:
@@ -265,6 +300,17 @@ class UserCall:  # noqa: PLR0904
         except Exception as e:
             raise ValueError(f'Erro ao atualizar rota: {e}')
 
+        try:
+            await self.__record_history(
+                HistoryRole.SYSTEM,
+                HistoryEventType.ROUTE_CHANGE,
+                metadata={'new_route': self.__user_state.route},
+            )
+        except BaseException as e:
+            self.logger.warning(
+                f'Falha ao registrar histórico (route_change): {e}'
+            )
+
     async def transfer_to_menu(
         self,
         menu_name: str,
@@ -289,6 +335,20 @@ class UserCall:  # noqa: PLR0904
             )
         except Exception as e:
             raise ValueError(f'Erro ao transferir para menu: {e}')
+
+        try:
+            await self.__record_history(
+                HistoryRole.SYSTEM,
+                HistoryEventType.TRANSFER,
+                metadata={
+                    'menu': menu_name,
+                    'user_message': user_message,
+                },
+            )
+        except BaseException as e:
+            self.logger.warning(
+                f'Falha ao registrar histórico (transfer): {e}'
+            )
 
     async def update_user_data(self, user: User) -> None:
         try:
@@ -397,6 +457,57 @@ class UserCall:  # noqa: PLR0904
         return self.__user_state.chat_id.company_id
 
     @property
+    def session_id(self) -> Optional[int]:
+        return self.__user_state.session_id
+
+    @property
+    def history(self) -> Optional[HistoryStore]:
+        return self.__history_store
+
+    @property
+    def message(self) -> Message:
+        return self.__message
+
+    async def __record_history(
+        self,
+        role: HistoryRole,
+        event_type: HistoryEventType,
+        message: Optional[Message] = None,
+        metadata: Optional[dict] = None,
+    ) -> None:
+        if self.__history_store is None:
+            return
+        try:
+            chat_id = f'{self.user_id}:{self.company_id}'
+            message_payload = ''
+            message_dict = None
+            if message is not None:
+                message_dict = message.to_dict()
+                message_payload = json.dumps(message_dict, sort_keys=True)
+            key = generate_idempotency_key(
+                chat_id,
+                self.session_id,
+                role.value,
+                event_type.value,
+                self.route,
+                message_payload,
+            )
+            entry = HistoryEntry(
+                idempotency_key=key,
+                chat_id=chat_id,
+                session_id=self.session_id,
+                role=role,
+                event_type=event_type,
+                timestamp=datetime.now(),
+                route=self.route,
+                message=message_dict,
+                metadata=metadata or {},
+            )
+            await self.__history_store.record(entry)
+        except BaseException as e:
+            self.logger.warning(f'Erro ao registrar histórico: {e}')
+
+    @property
     def menu(self):
         return self.__user_state.menu
 
@@ -418,6 +529,10 @@ class UserCall:  # noqa: PLR0904
     @property
     def platform_state(self) -> PlatformState:
         return self.__platform_state
+
+    @property
+    def user_state(self) -> UserState:
+        return self.__user_state
 
     @property
     def content_message(self):

@@ -1,7 +1,7 @@
 import asyncio
 import json
 import os
-from typing import Callable
+from typing import Callable, Optional
 from urllib.parse import quote
 
 import aio_pika
@@ -11,6 +11,7 @@ from rich.table import Table
 from rich.text import Text
 
 from ..auth.credentials import Credential
+from ..history.store import HistoryStore
 from ..logger.user_logger import UserLoggerManager
 from ..models.message import Message
 from ..models.platform_state import PlatformState
@@ -52,6 +53,14 @@ class MessageConsumer:
         self.__router_client = None
         self.__heartbeat = heartbeat
         self.__reconnect_interval = reconnect_interval
+        self.__history_store: Optional[HistoryStore] = None
+        self.__log_publisher: Optional['LogPublisher'] = None
+
+    def set_history_store(self, store: Optional[HistoryStore]) -> None:
+        self.__history_store = store
+
+    def set_log_publisher(self, publisher: Optional['LogPublisher']) -> None:
+        self.__log_publisher = publisher
 
     @classmethod
     def load_dotenv(
@@ -188,6 +197,63 @@ class MessageConsumer:
             pure_message = await self.__transform_message(message_json)
             await process_message(pure_message)
         except Exception as e:
+            if self.__log_publisher is not None:
+                try:
+                    import traceback
+                    import uuid
+                    from datetime import datetime, timezone
+
+                    from ..models.log_envelope import (
+                        ErrorLogPayload,
+                        EventType,
+                        LogEnvelope,
+                        error_code_from_exception,
+                    )
+
+                    if pure_message is not None:
+                        menu = pure_message.menu
+                        menu_name = (
+                            menu.name if menu and menu.name else 'unknown'
+                        )
+                        user_state = pure_message.user_state
+                        platform = user_state.platform if user_state else ''
+                        envelope = LogEnvelope(
+                            event_id=str(uuid.uuid4()),
+                            event_type=EventType.ERROR,
+                            timestamp=datetime.now(timezone.utc).isoformat(),
+                            request_id='',
+                            session_id=pure_message.session_id or 0,
+                            chat_user_id=pure_message.user_id,
+                            chat_company_id=pure_message.company_id,
+                            platform=platform,
+                            origin=f'chatgraph:{menu_name}',
+                            error=str(e),
+                            payload=ErrorLogPayload(
+                                error_code=error_code_from_exception(e),
+                                error_message=f'{e}\n{traceback.format_exc()}',
+                                context_menu_id=(
+                                    menu.id if menu and menu.id else 0
+                                ),
+                                context_menu_name=menu_name,
+                                context_route=pure_message.route or '',
+                            ).to_dict(),
+                        )
+                    else:
+                        envelope = LogEnvelope(
+                            event_id=str(uuid.uuid4()),
+                            event_type=EventType.ERROR,
+                            timestamp=datetime.now(timezone.utc).isoformat(),
+                            request_id='',
+                            origin='chatgraph:unknown',
+                            error=str(e),
+                            payload=ErrorLogPayload(
+                                error_code=error_code_from_exception(e),
+                                error_message=f'{e}\n{traceback.format_exc()}',
+                            ).to_dict(),
+                        )
+                    await self.__log_publisher.publish_error(envelope)
+                except Exception as pub_err:
+                    _logger.warning(f'Falha ao publicar log_error: {pub_err}')
             _logger.error(f'Erro ao processar mensagem: {e}')
         finally:
             if pure_message is not None:
@@ -218,6 +284,7 @@ class MessageConsumer:
             message=message_models,
             router_client=router_client,
             platform_state=platform_state,
+            history_store=self.__history_store,
         )
 
         return usercall
