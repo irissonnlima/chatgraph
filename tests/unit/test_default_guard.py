@@ -3,7 +3,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from chatgraph.bot.default_guard import default_guard
-from chatgraph.models.userstate import AuthLevel, User, UserIdentity, UserInternal
+from chatgraph.models.userstate import (
+    AuthLevel,
+    User,
+    UserIdentity,
+    UserInternal,
+)
 from chatgraph.types.end_types import TransferToMenu
 
 
@@ -20,10 +25,12 @@ def _make_usercall(user: User) -> MagicMock:
 
 @pytest.mark.unit
 class TestDefaultGuard:
-
     @pytest.mark.asyncio
     async def test_t1_read_level_with_internal_user_returns_none(self):
-        user = User(internal=UserInternal(matricula='12345'), identity=UserIdentity(auth_level=AuthLevel.READ))
+        user = User(
+            internal=UserInternal(matricula='12345'),
+            identity=UserIdentity(auth_level=AuthLevel.READ),
+        )
         usercall = _make_usercall(user)
 
         result = await default_guard(usercall, 'read')

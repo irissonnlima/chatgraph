@@ -203,17 +203,19 @@ class TestRouterHTTPClientSessions:
                 json={
                     'status': True,
                     'message': 'Userstate retrieved successfully',
-                    'data': [{
-                        'session_id': 22,
-                        'chat_id': sample_chat_id_data,
-                        'platform': 'whatsapp',
-                        'menu': {'id': 1, 'name': 'Main'},
-                        'user': {'name': 'Test User'},
-                        'route': 'start',
-                        'observation': '{}',
-                        'last_update': '2025-11-16T07:42:47-03:00',
-                        'dt_created': '2025-11-07T19:57:54-03:00',
-                    }],
+                    'data': [
+                        {
+                            'session_id': 22,
+                            'chat_id': sample_chat_id_data,
+                            'platform': 'whatsapp',
+                            'menu': {'id': 1, 'name': 'Main'},
+                            'user': {'name': 'Test User'},
+                            'route': 'start',
+                            'observation': '{}',
+                            'last_update': '2025-11-16T07:42:47-03:00',
+                            'dt_created': '2025-11-07T19:57:54-03:00',
+                        }
+                    ],
                 },
             )
         )
@@ -301,13 +303,15 @@ class TestRouterHTTPClientMessages:
     ):
         message = Message.from_dict(sample_message_data)
         user_state = UserState.from_dict(sample_user_state_data)
-        ps = PlatformState(data={
-            'session_id': 123,
-            'customer_id': 'CUST001',
-            'platform': 'whatsapp_enterprise',
-            'protocol': 'PROTO001',
-            'campaign': 'CAMPANHA.TESTE',
-        })
+        ps = PlatformState(
+            data={
+                'session_id': 123,
+                'customer_id': 'CUST001',
+                'platform': 'whatsapp_enterprise',
+                'protocol': 'PROTO001',
+                'campaign': 'CAMPANHA.TESTE',
+            }
+        )
 
         respx_mock.post(f'{http_client_base_url}/messages/send/').mock(
             return_value=httpx.Response(
@@ -325,6 +329,7 @@ class TestRouterHTTPClientMessages:
             assert result.status is True
 
             import json
+
             body = json.loads(respx_mock.calls.last.request.content)
             assert 'platform_state' in body
             assert body['platform_state']['session_id'] == 123
@@ -359,6 +364,7 @@ class TestRouterHTTPClientMessages:
             assert result.status is True
 
             import json
+
             body = json.loads(respx_mock.calls.last.request.content)
             assert 'platform_state' not in body
         finally:
@@ -499,7 +505,9 @@ class TestGetMenus:
         client = RouterHTTPClient(base_url=http_client_base_url)
 
         try:
-            with pytest.raises(Exception, match='Erro ao buscar menus: Database error'):
+            with pytest.raises(
+                Exception, match='Erro ao buscar menus: Database error'
+            ):
                 await client.get_menus()
         finally:
             await client.close()
@@ -522,7 +530,9 @@ class TestGetMenus:
         client = RouterHTTPClient(base_url=http_client_base_url)
 
         try:
-            with pytest.raises(Exception, match='Resposta de menus mal formatada.'):
+            with pytest.raises(
+                Exception, match='Resposta de menus mal formatada.'
+            ):
                 await client.get_menus()
         finally:
             await client.close()
@@ -572,7 +582,9 @@ class TestUpdateUser:
         client = RouterHTTPClient(base_url=http_client_base_url)
 
         try:
-            with pytest.raises(Exception, match='Erro ao atualizar usuário: Update failed'):
+            with pytest.raises(
+                Exception, match='Erro ao atualizar usuário: Update failed'
+            ):
                 await client.update_user(user)
         finally:
             await client.close()
@@ -591,12 +603,16 @@ class TestUpdateUser:
             )
         )
 
-        user = User(data=UserData(cpf='12345678900', name='João'), identity=UserIdentity())
+        user = User(
+            data=UserData(cpf='12345678900', name='João'),
+            identity=UserIdentity(),
+        )
         client = RouterHTTPClient(base_url=http_client_base_url)
 
         try:
             await client.update_user(user)
             import json
+
             body = json.loads(respx_mock.calls.last.request.content)
             assert body['data']['cpf'] == '12345678900'
         finally:
@@ -633,6 +649,7 @@ class TestTransferToMenu:
         try:
             await client.transfer_to_menu(chat_id, menu, message)
             import json
+
             body = json.loads(respx_mock.calls.last.request.content)
             assert 'route' not in body
             assert body['menu_id'] == 'main_menu'
@@ -663,8 +680,11 @@ class TestTransferToMenu:
         client = RouterHTTPClient(base_url=http_client_base_url)
 
         try:
-            await client.transfer_to_menu(chat_id, menu, message, route='start.choice')
+            await client.transfer_to_menu(
+                chat_id, menu, message, route='start.choice'
+            )
             import json
+
             body = json.loads(respx_mock.calls.last.request.content)
             assert body['route'] == 'start.choice'
             assert body['menu_id'] == 'main_menu'
@@ -679,14 +699,23 @@ class TestAssociateCpf:
     def test_id_positiva_client_uses_correct_base(self, http_client_base_url):
         """Testa que _id_positiva_client aponta para /v1/id-positiva/."""
         client = RouterHTTPClient(base_url=http_client_base_url)
-        assert str(client._id_positiva_client.base_url) == 'http://localhost:8080/v1/id-positiva/'
+        assert (
+            str(client._id_positiva_client.base_url)
+            == 'http://localhost:8080/v1/id-positiva/'
+        )
 
     def test_url_normalization_strips_actions(self):
         """Testa que ROUTER_URL sem /actions gera a mesma estrutura."""
-        client_with = RouterHTTPClient(base_url='http://localhost:8080/v1/actions')
+        client_with = RouterHTTPClient(
+            base_url='http://localhost:8080/v1/actions'
+        )
         client_without = RouterHTTPClient(base_url='http://localhost:8080/v1/')
-        assert str(client_with._actions_client.base_url) == str(client_without._actions_client.base_url)
-        assert str(client_with._id_positiva_client.base_url) == str(client_without._id_positiva_client.base_url)
+        assert str(client_with._actions_client.base_url) == str(
+            client_without._actions_client.base_url
+        )
+        assert str(client_with._id_positiva_client.base_url) == str(
+            client_without._id_positiva_client.base_url
+        )
 
     @pytest.mark.asyncio
     async def test_associate_cpf_uses_host_url_not_base_url(
@@ -703,7 +732,9 @@ class TestAssociateCpf:
         chat_id = ChatID.from_dict(sample_chat_id_data)
         client = RouterHTTPClient(base_url=http_client_base_url)
         try:
-            await client.associate_cpf(chat_id, cpf='12345678900', source='chatbot')
+            await client.associate_cpf(
+                chat_id, cpf='12345678900', source='chatbot'
+            )
         finally:
             await client.close()
 
@@ -721,8 +752,12 @@ class TestAssociateCpf:
         chat_id = ChatID.from_dict(sample_chat_id_data)
         client = RouterHTTPClient(base_url=http_client_base_url)
         try:
-            with pytest.raises(Exception, match='Erro ao associar CPF: CPF inválido'):
-                await client.associate_cpf(chat_id, cpf='00000000000', source='chatbot')
+            with pytest.raises(
+                Exception, match='Erro ao associar CPF: CPF inválido'
+            ):
+                await client.associate_cpf(
+                    chat_id, cpf='00000000000', source='chatbot'
+                )
         finally:
             await client.close()
 
@@ -744,8 +779,12 @@ class TestAssociateCpf:
             password=http_client_config['password'],
         )
         try:
-            await client.associate_cpf(chat_id, cpf='12345678900', source='chatbot')
-            auth_header = respx_mock.calls.last.request.headers.get('Authorization', '')
+            await client.associate_cpf(
+                chat_id, cpf='12345678900', source='chatbot'
+            )
+            auth_header = respx_mock.calls.last.request.headers.get(
+                'Authorization', ''
+            )
             assert auth_header.startswith('Bearer ')
         finally:
             await client.close()
@@ -776,6 +815,7 @@ class TestGetIdentity:
             )
         )
         from chatgraph.models.userstate import UserIdentity
+
         client = RouterHTTPClient(base_url=http_client_base_url)
         try:
             result = await client.get_identity(user_id='user123')
@@ -794,7 +834,11 @@ class TestGetIdentity:
         respx_mock.get(expected_url).mock(
             return_value=httpx.Response(
                 200,
-                json={'status': True, 'message': 'ok', 'data': {'auth_level': 'unknown'}},
+                json={
+                    'status': True,
+                    'message': 'ok',
+                    'data': {'auth_level': 'unknown'},
+                },
             )
         )
         client = RouterHTTPClient(base_url=http_client_base_url)
@@ -813,7 +857,11 @@ class TestGetIdentity:
         respx_mock.get(expected_url).mock(
             return_value=httpx.Response(
                 200,
-                json={'status': True, 'message': 'ok', 'data': {'auth_level': 'unknown'}},
+                json={
+                    'status': True,
+                    'message': 'ok',
+                    'data': {'auth_level': 'unknown'},
+                },
             )
         )
         client = RouterHTTPClient(base_url=http_client_base_url)
@@ -839,7 +887,10 @@ class TestGetIdentity:
         )
         client = RouterHTTPClient(base_url=http_client_base_url)
         try:
-            with pytest.raises(Exception, match='Erro ao consultar identidade: Usuário não encontrado'):
+            with pytest.raises(
+                Exception,
+                match='Erro ao consultar identidade: Usuário não encontrado',
+            ):
                 await client.get_identity(user_id='user_inexistente')
         finally:
             await client.close()
@@ -853,7 +904,11 @@ class TestGetIdentity:
         respx_mock.get(expected_url).mock(
             return_value=httpx.Response(
                 200,
-                json={'status': True, 'message': 'ok', 'data': {'auth_level': 'unknown'}},
+                json={
+                    'status': True,
+                    'message': 'ok',
+                    'data': {'auth_level': 'unknown'},
+                },
             )
         )
         client = RouterHTTPClient(
@@ -863,7 +918,9 @@ class TestGetIdentity:
         )
         try:
             await client.get_identity(user_id='user123')
-            auth_header = respx_mock.calls.last.request.headers.get('Authorization', '')
+            auth_header = respx_mock.calls.last.request.headers.get(
+                'Authorization', ''
+            )
             assert auth_header.startswith('Bearer ')
         finally:
             await client.close()

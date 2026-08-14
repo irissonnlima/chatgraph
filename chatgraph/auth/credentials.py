@@ -6,7 +6,9 @@ class Credential:
     Classe para gerenciar credenciais de usuário e senha, com suporte a variáveis de ambiente.
     """
 
-    def __init__(self, username: str | None = None, password: str | None = None):
+    def __init__(
+        self, username: str | None = None, password: str | None = None
+    ):
         """
         Inicializa a classe Credential com um nome de usuário e senha.
 
@@ -48,7 +50,9 @@ class Credential:
         return self.__username
 
     @classmethod
-    def load_dotenv(cls, user_env: str = 'CHATBOT_USER', pass_env: str = 'CHATBOT_PASS') -> 'Credential':
+    def load_dotenv(
+        cls, user_env: str = 'CHATBOT_USER', pass_env: str = 'CHATBOT_PASS'
+    ) -> 'Credential':
         """
         Carrega as credenciais de variáveis de ambiente e retorna uma instância da classe Credential.
 

@@ -1,4 +1,3 @@
-
 import inspect
 from functools import wraps
 
@@ -11,7 +10,7 @@ _logger = UserLoggerManager.get_system_logger()
 class ChatbotRouter:
     """
     Classe responsável por gerenciar e registrar as rotas do chatbot, associando-as a funções específicas.
-    
+
     Atributos:
         routes (dict): Um dicionário que armazena as rotas do chatbot e suas funções associadas.
     """
@@ -21,7 +20,7 @@ class ChatbotRouter:
         Inicializa a classe ChatbotRouter com um dicionário vazio de rotas.
         """
         self.__routes = {}
-    
+
     @property
     def routes(self):
         """

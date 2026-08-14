@@ -4,6 +4,7 @@
 # source: router.proto
 # Protobuf Python Version: 6.31.0
 """Generated protocol buffer code."""
+
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
@@ -11,7 +12,7 @@ from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
 
 _runtime_version.ValidateProtobufRuntimeVersion(
-    _runtime_version.Domain.PUBLIC, 6, 31, 0, "", "router.proto"
+    _runtime_version.Domain.PUBLIC, 6, 31, 0, '', 'router.proto'
 )
 # @@protoc_insertion_point(imports)
 
@@ -24,56 +25,56 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "router_pb2", _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'router_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
-    _globals["DESCRIPTOR"]._loaded_options = None
-    _globals["DESCRIPTOR"]._serialized_options = b"Z\t./chatbot"
-    _globals["_VOID"]._serialized_start = 25
-    _globals["_VOID"]._serialized_end = 31
-    _globals["_REQUESTSTATUS"]._serialized_start = 33
-    _globals["_REQUESTSTATUS"]._serialized_end = 81
-    _globals["_CHATID"]._serialized_start = 83
-    _globals["_CHATID"]._serialized_end = 128
-    _globals["_USERSTATE"]._serialized_start = 130
-    _globals["_USERSTATE"]._serialized_end = 243
-    _globals["_USERSTATELIST"]._serialized_start = 245
-    _globals["_USERSTATELIST"]._serialized_end = 301
-    _globals["_ROUTEREQUEST"]._serialized_start = 303
-    _globals["_ROUTEREQUEST"]._serialized_end = 366
-    _globals["_TEXTMESSAGE"]._serialized_start = 368
-    _globals["_TEXTMESSAGE"]._serialized_end = 474
-    _globals["_BUTTON"]._serialized_start = 476
-    _globals["_BUTTON"]._serialized_end = 529
-    _globals["_MESSAGE"]._serialized_start = 532
-    _globals["_MESSAGE"]._serialized_end = 689
-    _globals["_FILEMESSAGE"]._serialized_start = 691
-    _globals["_FILEMESSAGE"]._serialized_end = 756
-    _globals["_UPLOADFILEREQUEST"]._serialized_start = 758
-    _globals["_UPLOADFILEREQUEST"]._serialized_end = 880
-    _globals["_TRANSFERTOHUMANREQUEST"]._serialized_start = 882
-    _globals["_TRANSFERTOHUMANREQUEST"]._serialized_end = 982
-    _globals["_TRANSFERTOMENUREQUEST"]._serialized_start = 984
-    _globals["_TRANSFERTOMENUREQUEST"]._serialized_end = 1092
-    _globals["_TABULATIONNAME"]._serialized_start = 1094
-    _globals["_TABULATIONNAME"]._serialized_end = 1124
-    _globals["_TABULATIONDETAILS"]._serialized_start = 1126
-    _globals["_TABULATIONDETAILS"]._serialized_end = 1192
-    _globals["_TABULATIONSLIST"]._serialized_start = 1194
-    _globals["_TABULATIONSLIST"]._serialized_end = 1260
-    _globals["_ENDCHATREQUEST"]._serialized_start = 1262
-    _globals["_ENDCHATREQUEST"]._serialized_end = 1356
-    _globals["_CAMPAIGNNAME"]._serialized_start = 1358
-    _globals["_CAMPAIGNNAME"]._serialized_end = 1386
-    _globals["_CAMPAIGNDETAILS"]._serialized_start = 1388
-    _globals["_CAMPAIGNDETAILS"]._serialized_end = 1452
-    _globals["_CAMPAIGNSLIST"]._serialized_start = 1454
-    _globals["_CAMPAIGNSLIST"]._serialized_end = 1514
-    _globals["_USERSTATESERVICE"]._serialized_start = 1517
-    _globals["_USERSTATESERVICE"]._serialized_end = 1835
-    _globals["_SENDMESSAGE"]._serialized_start = 1838
-    _globals["_SENDMESSAGE"]._serialized_end = 2091
-    _globals["_TRANSFER"]._serialized_start = 2094
-    _globals["_TRANSFER"]._serialized_end = 2378
-    _globals["_ENDCHAT"]._serialized_start = 2381
-    _globals["_ENDCHAT"]._serialized_end = 2584
+    _globals['DESCRIPTOR']._loaded_options = None
+    _globals['DESCRIPTOR']._serialized_options = b'Z\t./chatbot'
+    _globals['_VOID']._serialized_start = 25
+    _globals['_VOID']._serialized_end = 31
+    _globals['_REQUESTSTATUS']._serialized_start = 33
+    _globals['_REQUESTSTATUS']._serialized_end = 81
+    _globals['_CHATID']._serialized_start = 83
+    _globals['_CHATID']._serialized_end = 128
+    _globals['_USERSTATE']._serialized_start = 130
+    _globals['_USERSTATE']._serialized_end = 243
+    _globals['_USERSTATELIST']._serialized_start = 245
+    _globals['_USERSTATELIST']._serialized_end = 301
+    _globals['_ROUTEREQUEST']._serialized_start = 303
+    _globals['_ROUTEREQUEST']._serialized_end = 366
+    _globals['_TEXTMESSAGE']._serialized_start = 368
+    _globals['_TEXTMESSAGE']._serialized_end = 474
+    _globals['_BUTTON']._serialized_start = 476
+    _globals['_BUTTON']._serialized_end = 529
+    _globals['_MESSAGE']._serialized_start = 532
+    _globals['_MESSAGE']._serialized_end = 689
+    _globals['_FILEMESSAGE']._serialized_start = 691
+    _globals['_FILEMESSAGE']._serialized_end = 756
+    _globals['_UPLOADFILEREQUEST']._serialized_start = 758
+    _globals['_UPLOADFILEREQUEST']._serialized_end = 880
+    _globals['_TRANSFERTOHUMANREQUEST']._serialized_start = 882
+    _globals['_TRANSFERTOHUMANREQUEST']._serialized_end = 982
+    _globals['_TRANSFERTOMENUREQUEST']._serialized_start = 984
+    _globals['_TRANSFERTOMENUREQUEST']._serialized_end = 1092
+    _globals['_TABULATIONNAME']._serialized_start = 1094
+    _globals['_TABULATIONNAME']._serialized_end = 1124
+    _globals['_TABULATIONDETAILS']._serialized_start = 1126
+    _globals['_TABULATIONDETAILS']._serialized_end = 1192
+    _globals['_TABULATIONSLIST']._serialized_start = 1194
+    _globals['_TABULATIONSLIST']._serialized_end = 1260
+    _globals['_ENDCHATREQUEST']._serialized_start = 1262
+    _globals['_ENDCHATREQUEST']._serialized_end = 1356
+    _globals['_CAMPAIGNNAME']._serialized_start = 1358
+    _globals['_CAMPAIGNNAME']._serialized_end = 1386
+    _globals['_CAMPAIGNDETAILS']._serialized_start = 1388
+    _globals['_CAMPAIGNDETAILS']._serialized_end = 1452
+    _globals['_CAMPAIGNSLIST']._serialized_start = 1454
+    _globals['_CAMPAIGNSLIST']._serialized_end = 1514
+    _globals['_USERSTATESERVICE']._serialized_start = 1517
+    _globals['_USERSTATESERVICE']._serialized_end = 1835
+    _globals['_SENDMESSAGE']._serialized_start = 1838
+    _globals['_SENDMESSAGE']._serialized_end = 2091
+    _globals['_TRANSFER']._serialized_start = 2094
+    _globals['_TRANSFER']._serialized_end = 2378
+    _globals['_ENDCHAT']._serialized_start = 2381
+    _globals['_ENDCHAT']._serialized_end = 2584
 # @@protoc_insertion_point(module_scope)

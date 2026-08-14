@@ -19,12 +19,12 @@ class ActionType(Enum):
         MESSAGE: Mensagem
     """
 
-    TRANSFER = "TRANSFER"
-    END_CHAT = "END_CHAT"
-    MESSAGE = "MESSAGE"
+    TRANSFER = 'TRANSFER'
+    END_CHAT = 'END_CHAT'
+    MESSAGE = 'MESSAGE'
 
     @classmethod
-    def from_string(cls, value: str) -> "ActionType":
+    def from_string(cls, value: str) -> 'ActionType':
         """
         Cria ActionType a partir de string.
 
@@ -40,7 +40,7 @@ class ActionType(Enum):
         try:
             return cls(value.upper())
         except ValueError:
-            raise ValueError(f"invalid action type: {value}")
+            raise ValueError(f'invalid action type: {value}')
 
 
 @dataclass
@@ -56,12 +56,12 @@ class EndAction:
         last_update: Data/hora de última atualização (ISO 8601)
     """
 
-    id: str = ""
-    name: str = ""
-    description: str = ""
+    id: str = ''
+    name: str = ''
+    description: str = ''
     department_id: int = 0
-    observation: str = ""
-    last_update: str = ""
+    observation: str = ''
+    last_update: str = ''
 
     def is_empty(self) -> bool:
         """Verifica se a ação está vazia."""
@@ -70,24 +70,24 @@ class EndAction:
     def to_dict(self) -> dict:
         """Converte para dicionário."""
         return {
-            "id": self.id,
-            "name": self.name,
-            "description": self.description,
-            "department_id": self.department_id,
-            "observation": self.observation,
-            "last_update": self.last_update,
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'department_id': self.department_id,
+            'observation': self.observation,
+            'last_update': self.last_update,
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "EndAction":
+    def from_dict(cls, data: dict) -> 'EndAction':
         """Cria instância a partir de dicionário."""
         return cls(
-            id=data.get("id", ""),
-            name=data.get("name", ""),
-            description=data.get("description", ""),
-            department_id=data.get("department_id", 0),
-            observation=data.get("observation", ""),
-            last_update=data.get("last_update", ""),
+            id=data.get('id', ''),
+            name=data.get('name', ''),
+            description=data.get('description', ''),
+            department_id=data.get('department_id', 0),
+            observation=data.get('observation', ''),
+            last_update=data.get('last_update', ''),
         )
 
 
@@ -105,10 +105,10 @@ class TransferToHumanAction:
     """
 
     id: int = 0
-    name: str = ""
+    name: str = ''
     department_id: int = 0
-    observation: str = ""
-    last_update: str = ""
+    observation: str = ''
+    last_update: str = ''
 
     def is_empty(self) -> bool:
         """Verifica se a ação está vazia."""
@@ -117,22 +117,22 @@ class TransferToHumanAction:
     def to_dict(self) -> dict:
         """Converte para dicionário."""
         return {
-            "id": self.id,
-            "name": self.name,
-            "department_id": self.department_id,
-            "observation": self.observation,
-            "last_update": self.last_update,
+            'id': self.id,
+            'name': self.name,
+            'department_id': self.department_id,
+            'observation': self.observation,
+            'last_update': self.last_update,
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "TransferToHumanAction":
+    def from_dict(cls, data: dict) -> 'TransferToHumanAction':
         """Cria instância a partir de dicionário."""
         return cls(
-            id=data.get("id", 0),
-            name=data.get("name", ""),
-            department_id=data.get("department_id", 0),
-            observation=data.get("observation", ""),
-            last_update=data.get("last_update", ""),
+            id=data.get('id', 0),
+            name=data.get('name', ''),
+            department_id=data.get('department_id', 0),
+            observation=data.get('observation', ''),
+            last_update=data.get('last_update', ''),
         )
 
 

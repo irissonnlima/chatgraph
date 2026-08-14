@@ -11,7 +11,6 @@ _GUARD_NOT_SET = object()
 
 @pytest.mark.unit
 class TestChatbotAppGuard:
-
     @staticmethod
     def _make_app(guard=_GUARD_NOT_SET, default_functions=None):
         consumer = MagicMock()
@@ -32,7 +31,9 @@ class TestChatbotAppGuard:
         return usercall
 
     @staticmethod
-    def _register_route(app, route_name: str, func, auth_level: str | None = None):
+    def _register_route(
+        app, route_name: str, func, auth_level: str | None = None
+    ):
         app._ChatbotApp__routes[route_name] = {
             'function': func,
             'params': {UserCall: 'usercall'},

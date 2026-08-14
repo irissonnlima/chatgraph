@@ -39,6 +39,7 @@ class TestSendType:
         assert SendType.IMAGE.value == 'IMAGE'
         assert SendType.UNKNOWN.value == 'UNKNOWN'
 
+
 @pytest.mark.unit
 class TestFile:
     """Testes para a classe File."""
@@ -149,6 +150,7 @@ class TestFile:
         result = file.to_dict()
         assert result['send_type'] == 'UNKNOWN'
 
+
 @pytest.mark.unit
 class TestButtonType:
     """Testes para o enum ButtonType."""
@@ -168,6 +170,7 @@ class TestButtonType:
         """Testa conversão de string inválida."""
         with pytest.raises(ValueError, match='invalid button type'):
             ButtonType.from_string('invalid')
+
 
 @pytest.mark.unit
 class TestTextMessage:
@@ -242,6 +245,7 @@ class TestTextMessage:
         text_msg = TextMessage()
         assert text_msg.timestamp == 0
 
+
 @pytest.mark.unit
 class TestButton:
     """Testes para a classe Button."""
@@ -277,6 +281,7 @@ class TestButton:
         assert button.type == ButtonType.POSTBACK
         assert button.title == 'Sim'
         assert button.detail == 'confirm_yes'
+
 
 @pytest.mark.unit
 class TestMessage:

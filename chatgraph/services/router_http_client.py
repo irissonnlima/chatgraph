@@ -44,7 +44,7 @@ class RouterHTTPClient:
         # Normaliza para a raiz /v1, removendo /actions se presente
         _v1_base = self.base_url
         if _v1_base.endswith('/actions'):
-            _v1_base = _v1_base[:-len('/actions')]
+            _v1_base = _v1_base[: -len('/actions')]
         self._v1_base: str = _v1_base
 
         # Configurar autenticação básica se fornecida
@@ -103,13 +103,15 @@ class RouterHTTPClient:
         """
         endpoint = '/session/'
 
-        _logger.debug(f"[get_all_sessions] GET {endpoint}")
+        _logger.debug(f'[get_all_sessions] GET {endpoint}')
         response = await self._actions_client.get(endpoint)
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[get_all_sessions] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[get_all_sessions] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[get_all_sessions] Erro: {response_data.message}")
+            _logger.error(f'[get_all_sessions] Erro: {response_data.message}')
             raise Exception(
                 f'Erro ao buscar as Sessões: {response_data.message}'
             )
@@ -130,13 +132,19 @@ class RouterHTTPClient:
             'company_id': chat_id.company_id,
         }
 
-        _logger.debug(f"[get_session_by_chat_id] GET {endpoint} | user={chat_id.user_id} | company={chat_id.company_id}")
+        _logger.debug(
+            f'[get_session_by_chat_id] GET {endpoint} | user={chat_id.user_id} | company={chat_id.company_id}'
+        )
         response = await self._actions_client.get(endpoint, params=params)
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[get_session_by_chat_id] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[get_session_by_chat_id] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[get_session_by_chat_id] Erro: {response_data.message}")
+            _logger.error(
+                f'[get_session_by_chat_id] Erro: {response_data.message}'
+            )
             raise Exception(
                 f'Erro ao buscar a Sessão: {response_data.message}'
             )
@@ -161,16 +169,18 @@ class RouterHTTPClient:
         """
         endpoint = '/session/start/'
 
-        _logger.debug(f"[start_session] POST {endpoint}")
+        _logger.debug(f'[start_session] POST {endpoint}')
         response = await self._actions_client.post(
             endpoint,
             json=user_state.to_dict(),
         )
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[start_session] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[start_session] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[start_session] Erro: {response_data.message}")
+            _logger.error(f'[start_session] Erro: {response_data.message}')
             raise Exception(f'Erro ao iniciar sessão: {response_data.message}')
 
         return response_data
@@ -196,16 +206,18 @@ class RouterHTTPClient:
             'route': route,
         }
 
-        _logger.debug(f"[set_session_route] POST {endpoint} | route={route}")
+        _logger.debug(f'[set_session_route] POST {endpoint} | route={route}')
         response = await self._actions_client.post(
             endpoint,
             json=payload,
         )
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[set_session_route] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[set_session_route] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[set_session_route] Erro: {response_data.message}")
+            _logger.error(f'[set_session_route] Erro: {response_data.message}')
             raise Exception(
                 f'Erro ao atualizar rota da sessão: {response_data.message}'
             )
@@ -237,16 +249,20 @@ class RouterHTTPClient:
             'observation': observation,
         }
 
-        _logger.debug(f"[update_session_observation] POST {endpoint}")
+        _logger.debug(f'[update_session_observation] POST {endpoint}')
         response = await self._actions_client.post(
             endpoint,
             json=payload,
         )
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[update_session_observation] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[update_session_observation] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[update_session_observation] Erro: {response_data.message}")
+            _logger.error(
+                f'[update_session_observation] Erro: {response_data.message}'
+            )
             raise Exception(
                 f'Erro ao atualizar observação da sessão: '
                 f'{response_data.message}'
@@ -285,16 +301,18 @@ class RouterHTTPClient:
         }
         if platform_state:
             payload['platform_state'] = platform_state.to_dict()
-        _logger.debug(f"[send_message] POST {endpoint}")
+        _logger.debug(f'[send_message] POST {endpoint}')
         response = await self._actions_client.post(
             endpoint,
             json=payload,
         )
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[send_message] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[send_message] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[send_message] Erro: {response_data.message}")
+            _logger.error(f'[send_message] Erro: {response_data.message}')
             raise Exception(
                 f'Erro ao enviar mensagem: {response_data.message}'
             )
@@ -317,13 +335,15 @@ class RouterHTTPClient:
         """
         endpoint = f'/files/{file_id}/'
 
-        _logger.debug(f"[get_file] GET {endpoint}")
+        _logger.debug(f'[get_file] GET {endpoint}')
         response = await self._actions_client.get(endpoint)
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[get_file] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[get_file] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[get_file] Erro: {response_data.message}")
+            _logger.error(f'[get_file] Erro: {response_data.message}')
             raise Exception(f'Erro ao buscar arquivo: {response_data.message}')
 
         if not isinstance(response_data.data, dict):
@@ -378,17 +398,19 @@ class RouterHTTPClient:
         if file.expires_after_days > 0:
             data['expiration'] = str(file.expires_after_days)
 
-        _logger.debug(f"[upload_file] POST {endpoint} | arquivo={filename}")
+        _logger.debug(f'[upload_file] POST {endpoint} | arquivo={filename}')
         response = await self._actions_client.post(
             endpoint,
             files=files,
             # data=data,
         )
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[upload_file] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[upload_file] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[upload_file] Erro: {response_data.message}")
+            _logger.error(f'[upload_file] Erro: {response_data.message}')
             raise Exception(
                 f'Erro ao fazer upload do arquivo: {response_data.message}'
             )
@@ -414,13 +436,15 @@ class RouterHTTPClient:
         """
         endpoint = f'/files/{file_id}'
 
-        _logger.debug(f"[delete_file] DELETE {endpoint}")
+        _logger.debug(f'[delete_file] DELETE {endpoint}')
         response = await self._actions_client.delete(endpoint)
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[delete_file] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[delete_file] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[delete_file] Erro: {response_data.message}")
+            _logger.error(f'[delete_file] Erro: {response_data.message}')
             raise Exception(
                 f'Erro ao deletar arquivo: {response_data.message}'
             )
@@ -456,16 +480,18 @@ class RouterHTTPClient:
             'origin': origin,
         }
 
-        _logger.debug(f"[end_chat] POST {endpoint}")
+        _logger.debug(f'[end_chat] POST {endpoint}')
         response = await self._actions_client.post(
             endpoint,
             json=payload,
         )
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[end_chat] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[end_chat] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[end_chat] Erro: {response_data.message}")
+            _logger.error(f'[end_chat] Erro: {response_data.message}')
             raise Exception(f'Erro ao encerrar chat: {response_data.message}')
 
         return response_data
@@ -493,13 +519,17 @@ class RouterHTTPClient:
             'name': end_action_name,
         }
 
-        _logger.debug(f"[get_end_action] GET {endpoint} | id={end_action_id} | name={end_action_name}")
+        _logger.debug(
+            f'[get_end_action] GET {endpoint} | id={end_action_id} | name={end_action_name}'
+        )
         response = await self._actions_client.get(endpoint, params=params)
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[get_end_action] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[get_end_action] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[get_end_action] Erro: {response_data.message}")
+            _logger.error(f'[get_end_action] Erro: {response_data.message}')
             raise Exception(
                 f'Erro ao buscar ação de encerramento: {response_data.message}'
             )
@@ -534,13 +564,15 @@ class RouterHTTPClient:
         if protection_level is not None:
             params['protection_level'] = protection_level
 
-        _logger.debug(f"[get_menus] GET {endpoint} | params={params}")
+        _logger.debug(f'[get_menus] GET {endpoint} | params={params}')
         response = await self._actions_client.get(endpoint, params=params)
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[get_menus] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[get_menus] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[get_menus] Erro: {response_data.message}")
+            _logger.error(f'[get_menus] Erro: {response_data.message}')
             raise Exception(f'Erro ao buscar menus: {response_data.message}')
 
         if not isinstance(response_data.data, list):
@@ -552,14 +584,20 @@ class RouterHTTPClient:
     async def update_user(self, user: User) -> RouterResponses:
         endpoint = '/user'
 
-        _logger.debug(f"[update_user] PATCH {endpoint}")
-        response = await self._actions_client.patch(endpoint, json=user.to_dict())
+        _logger.debug(f'[update_user] PATCH {endpoint}')
+        response = await self._actions_client.patch(
+            endpoint, json=user.to_dict()
+        )
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[update_user] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[update_user] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[update_user] Erro: {response_data.message}")
-            raise Exception(f'Erro ao atualizar usuário: {response_data.message}')
+            _logger.error(f'[update_user] Erro: {response_data.message}')
+            raise Exception(
+                f'Erro ao atualizar usuário: {response_data.message}'
+            )
 
         return response_data
 
@@ -596,16 +634,20 @@ class RouterHTTPClient:
         if route:
             payload['route'] = route
 
-        _logger.debug(f"[transfer_to_menu] POST {endpoint} | menu={menu.name} | route={route or 'N/A'}")
+        _logger.debug(
+            f'[transfer_to_menu] POST {endpoint} | menu={menu.name} | route={route or "N/A"}'
+        )
         response = await self._actions_client.post(
             endpoint,
             json=payload,
         )
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[transfer_to_menu] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[transfer_to_menu] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[transfer_to_menu] Erro: {response_data.message}")
+            _logger.error(f'[transfer_to_menu] Erro: {response_data.message}')
             raise Exception(
                 f'Erro ao transferir para o menu: {response_data.message}'
             )
@@ -633,16 +675,20 @@ class RouterHTTPClient:
         if device_id:
             payload['device_id'] = device_id
 
-        _logger.debug(f"[associate_cpf] POST {endpoint} | cpf={cpf[:3]}*** | source={source}")
+        _logger.debug(
+            f'[associate_cpf] POST {endpoint} | cpf={cpf[:3]}*** | source={source}'
+        )
         response = await self._id_positiva_client.post(
             endpoint,
             json=payload,
         )
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[associate_cpf] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[associate_cpf] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[associate_cpf] Erro: {response_data.message}")
+            _logger.error(f'[associate_cpf] Erro: {response_data.message}')
             raise Exception(f'Erro ao associar CPF: {response_data.message}')
 
         return response_data
@@ -657,14 +703,18 @@ class RouterHTTPClient:
         if cpf:
             params['cpf'] = cpf
 
-        _logger.debug(f"[get_identity] GET {endpoint} | user_id={user_id}")
+        _logger.debug(f'[get_identity] GET {endpoint} | user_id={user_id}')
         response = await self._id_positiva_client.get(endpoint, params=params)
         response_data = RouterResponses.from_dict(response.json())
-        _logger.debug(f"[get_identity] Resposta: status_code={response.status_code} | ok={response_data.status}")
+        _logger.debug(
+            f'[get_identity] Resposta: status_code={response.status_code} | ok={response_data.status}'
+        )
 
         if not response_data.status:
-            _logger.error(f"[get_identity] Erro: {response_data.message}")
-            raise Exception(f'Erro ao consultar identidade: {response_data.message}')
+            _logger.error(f'[get_identity] Erro: {response_data.message}')
+            raise Exception(
+                f'Erro ao consultar identidade: {response_data.message}'
+            )
 
         if not isinstance(response_data.data, dict):
             raise Exception('Resposta de identidade mal formatada.')

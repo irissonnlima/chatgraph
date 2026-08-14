@@ -42,9 +42,9 @@ class TestRouterHTTPClientIntegrationSessions:
         sessions = await real_http_client.get_all_sessions()
 
         # Validações de contrato
-        assert isinstance(
-            sessions, list
-        ), 'get_all_sessions deve retornar lista'
+        assert isinstance(sessions, list), (
+            'get_all_sessions deve retornar lista'
+        )
 
         if sessions:
             session = sessions[0]
@@ -52,20 +52,20 @@ class TestRouterHTTPClientIntegrationSessions:
             # Valida estrutura de UserState
             assert hasattr(session, 'chat_id'), 'UserState deve ter chat_id'
             assert hasattr(session, 'platform'), 'UserState deve ter platform'
-            assert isinstance(
-                session.chat_id, ChatID
-            ), 'chat_id deve ser ChatID'
-            assert isinstance(
-                session.platform, str
-            ), 'platform deve ser string'
+            assert isinstance(session.chat_id, ChatID), (
+                'chat_id deve ser ChatID'
+            )
+            assert isinstance(session.platform, str), (
+                'platform deve ser string'
+            )
 
             # Valida ChatID
-            assert hasattr(
-                session.chat_id, 'user_id'
-            ), 'ChatID deve ter user_id'
-            assert hasattr(
-                session.chat_id, 'company_id'
-            ), 'ChatID deve ter company_id'
+            assert hasattr(session.chat_id, 'user_id'), (
+                'ChatID deve ter user_id'
+            )
+            assert hasattr(session.chat_id, 'company_id'), (
+                'ChatID deve ter company_id'
+            )
 
     async def test_get_session_by_chat_id_real_api(
         self,
@@ -89,12 +89,12 @@ class TestRouterHTTPClientIntegrationSessions:
 
             # Se encontrou sessão, valida estrutura
             assert isinstance(user_state, UserState), 'Deve retornar UserState'
-            assert (
-                user_state.chat_id.user_id == chat_id.user_id
-            ), 'user_id deve corresponder'
-            assert (
-                user_state.chat_id.company_id == chat_id.company_id
-            ), 'company_id deve corresponder'
+            assert user_state.chat_id.user_id == chat_id.user_id, (
+                'user_id deve corresponder'
+            )
+            assert user_state.chat_id.company_id == chat_id.company_id, (
+                'company_id deve corresponder'
+            )
 
         except Exception as e:
             # Se não encontrar, apenas loga (pode ser esperado)
@@ -127,13 +127,13 @@ class TestRouterHTTPClientIntegrationSessions:
             response = await real_http_client.start_session(user_state)
 
             # Valida resposta
-            assert isinstance(
-                response, dict
-            ), 'Resposta deve ser um dicionário'
+            assert isinstance(response, dict), (
+                'Resposta deve ser um dicionário'
+            )
             # API pode retornar estruturas diferentes
-            assert (
-                'status' in response or 'message' in response
-            ), 'Resposta deve conter status ou message'
+            assert 'status' in response or 'message' in response, (
+                'Resposta deve conter status ou message'
+            )
 
         except Exception as e:
             pytest.skip(f'Erro ao criar sessão: {e}')
@@ -183,12 +183,12 @@ class TestRouterHTTPClientIntegrationMessages:
             response = await real_http_client.send_message(message, user_state)
 
             # Valida resposta
-            assert isinstance(
-                response, dict
-            ), 'Resposta deve ser um dicionário'
-            assert (
-                'status' in response or 'message' in response
-            ), 'Resposta deve conter status ou message'
+            assert isinstance(response, dict), (
+                'Resposta deve ser um dicionário'
+            )
+            assert 'status' in response or 'message' in response, (
+                'Resposta deve conter status ou message'
+            )
 
         except Exception as e:
             pytest.skip(f'Erro ao enviar mensagem: {e}')
@@ -249,9 +249,9 @@ class TestRouterHTTPClientIntegrationFiles:
             response = await real_http_client.upload_file(test_file_content)
 
             # Valida resposta
-            assert isinstance(
-                response, dict
-            ), 'Resposta deve ser um dicionário'
+            assert isinstance(response, dict), (
+                'Resposta deve ser um dicionário'
+            )
             assert (
                 'status' in response
                 or 'file_id' in response
@@ -301,35 +301,35 @@ class TestRouterHTTPClientIntegrationResponseFormat:
             user_state = await real_http_client.get_session_by_chat_id(chat_id)
 
             # Valida campos obrigatórios do UserState
-            assert hasattr(
-                user_state, 'session_id'
-            ), 'UserState deve ter session_id'
+            assert hasattr(user_state, 'session_id'), (
+                'UserState deve ter session_id'
+            )
             assert hasattr(user_state, 'chat_id'), 'UserState deve ter chat_id'
-            assert hasattr(
-                user_state, 'platform'
-            ), 'UserState deve ter platform'
+            assert hasattr(user_state, 'platform'), (
+                'UserState deve ter platform'
+            )
             assert hasattr(user_state, 'menu'), 'UserState deve ter menu'
             assert hasattr(user_state, 'user'), 'UserState deve ter user'
             assert hasattr(user_state, 'route'), 'UserState deve ter route'
 
             # Valida tipos dos campos
-            assert isinstance(
-                user_state.session_id, int
-            ), 'session_id deve ser int'
-            assert isinstance(
-                user_state.chat_id, ChatID
-            ), 'chat_id deve ser ChatID'
-            assert isinstance(
-                user_state.platform, str
-            ), 'platform deve ser string'
+            assert isinstance(user_state.session_id, int), (
+                'session_id deve ser int'
+            )
+            assert isinstance(user_state.chat_id, ChatID), (
+                'chat_id deve ser ChatID'
+            )
+            assert isinstance(user_state.platform, str), (
+                'platform deve ser string'
+            )
 
             # Valida estrutura do ChatID
-            assert (
-                user_state.chat_id.user_id == sample_test_user_id
-            ), 'user_id deve corresponder'
-            assert (
-                user_state.chat_id.company_id == sample_test_company_id
-            ), 'company_id deve corresponder'
+            assert user_state.chat_id.user_id == sample_test_user_id, (
+                'user_id deve corresponder'
+            )
+            assert user_state.chat_id.company_id == sample_test_company_id, (
+                'company_id deve corresponder'
+            )
 
             # Valida estrutura do Menu
             assert hasattr(user_state.menu, 'name'), 'Menu deve ter name'
@@ -342,13 +342,13 @@ class TestRouterHTTPClientIntegrationResponseFormat:
 
             # Valida campos opcionais
             if hasattr(user_state, 'last_update'):
-                assert (
-                    user_state.last_update is not None
-                ), 'last_update deve estar presente'
+                assert user_state.last_update is not None, (
+                    'last_update deve estar presente'
+                )
             if hasattr(user_state, 'dt_created'):
-                assert (
-                    user_state.dt_created is not None
-                ), 'dt_created deve estar presente'
+                assert user_state.dt_created is not None, (
+                    'dt_created deve estar presente'
+                )
 
         except Exception as e:
             pytest.skip(
