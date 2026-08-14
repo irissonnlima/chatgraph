@@ -2,10 +2,12 @@ import logging
 import os
 import sys
 
-LOG_DIR = "chatgraph_logs"
-LOG_FORMAT = "%(asctime)s | %(levelname)s | %(message)s | %(funcName)s | %(name)s"
+LOG_DIR = 'chatgraph_logs'
+LOG_FORMAT = (
+    '%(asctime)s | %(levelname)s | %(message)s | %(funcName)s | %(name)s'
+)
 
-_ENV_LEVEL = os.getenv("CHATGRAPH_LOG_LEVEL", "").upper()
+_ENV_LEVEL = os.getenv('CHATGRAPH_LOG_LEVEL', '').upper()
 _DEFAULT_LEVEL: int = getattr(logging, _ENV_LEVEL, logging.INFO)
 
 
@@ -13,7 +15,9 @@ class ChatIDFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         chat_id = getattr(record, 'chat_id', None)
         if chat_id:
-            record.msg = f'[ChatID: {chat_id}] - {record.msg}'
+            prefix = f'[ChatID: {chat_id}] - '
+            if not record.msg.startswith(prefix):
+                record.msg = f'{prefix}{record.msg}'
         return True
 
 
@@ -36,7 +40,7 @@ class UserLoggerManager:
 
     @classmethod
     def get_user_logger(cls, user_id: str, company_id: str) -> logging.Logger:
-        key = f"{user_id}_{company_id}"
+        key = f'{user_id}_{company_id}'
         if key in cls._loggers:
             return cls._loggers[key]
 
@@ -47,7 +51,7 @@ class UserLoggerManager:
 
         if not logger.handlers:
             handler = logging.FileHandler(
-                os.path.join(LOG_DIR, f"{key}.log"), encoding="utf-8"
+                os.path.join(LOG_DIR, f'{key}.log'), encoding='utf-8'
             )
             handler.setLevel(cls._level)
             handler.setFormatter(logging.Formatter(LOG_FORMAT))
@@ -63,16 +67,19 @@ class UserLoggerManager:
 
     @classmethod
     def remove_user_logger(cls, user_id: str, company_id: str) -> None:
-        key = f"{user_id}_{company_id}"
+        key = f'{user_id}_{company_id}'
         logger = cls._loggers.pop(key, None)
         if logger:
+            for f in logger.filters[:]:
+                if isinstance(f, ChatIDFilter):
+                    logger.removeFilter(f)
             for handler in logger.handlers[:]:
                 handler.close()
                 logger.removeHandler(handler)
 
     @classmethod
     def get_system_logger(cls) -> logging.Logger:
-        key = "chatgraph.system"
+        key = 'chatgraph.system'
         if key in cls._loggers:
             return cls._loggers[key]
 
@@ -83,7 +90,7 @@ class UserLoggerManager:
 
         if not logger.handlers:
             handler = logging.FileHandler(
-                os.path.join(LOG_DIR, "system.log"), encoding="utf-8"
+                os.path.join(LOG_DIR, 'system.log'), encoding='utf-8'
             )
             handler.setLevel(cls._level)
             handler.setFormatter(logging.Formatter(LOG_FORMAT))

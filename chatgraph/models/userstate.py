@@ -70,6 +70,9 @@ class ChatID:
         self.user_id = str(self.user_id)
         self.company_id = str(self.company_id)
 
+    def __str__(self) -> str:
+        return f'{self.user_id}:{self.company_id}'
+
     def to_dict(self) -> dict:
         """Converte para dicionário."""
         return {
@@ -232,7 +235,9 @@ class User:
         return cls(
             data=UserData.from_dict(data.get('data', {})),
             identity=UserIdentity.from_dict(data.get('identity', {})),
-            internal=UserInternal.from_dict(internal_data) if internal_data else None,
+            internal=UserInternal.from_dict(internal_data)
+            if internal_data
+            else None,
         )
 
 
@@ -285,7 +290,9 @@ class Menu:
             name=data.get('name'),
             description=data.get('description'),
             active=data.get('active'),
-            protection_level=AuthLevel.from_value(data['protection_level']) if data.get('protection_level') is not None else None,
+            protection_level=AuthLevel.from_value(data['protection_level'])
+            if data.get('protection_level') is not None
+            else None,
             internal=data.get('internal'),
         )
 

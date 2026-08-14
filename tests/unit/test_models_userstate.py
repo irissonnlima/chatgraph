@@ -5,7 +5,16 @@ Este módulo contém testes unitários para ChatID, User, Menu e UserState.
 """
 
 import pytest
-from chatgraph.models.userstate import ChatID, User, Menu, UserState, AuthLevel, UserData, UserIdentity, UserInternal
+from chatgraph.models.userstate import (
+    ChatID,
+    User,
+    Menu,
+    UserState,
+    AuthLevel,
+    UserData,
+    UserIdentity,
+    UserInternal,
+)
 
 
 @pytest.mark.unit
@@ -44,6 +53,11 @@ class TestChatID:
 
         assert chat_id.user_id == ''
         assert chat_id.company_id == ''
+
+    def test_chatid_str(self):
+        """Testa representação string de ChatID."""
+        chat_id = ChatID(user_id='user123', company_id='company456')
+        assert str(chat_id) == 'user123:company456'
 
 
 @pytest.mark.unit
@@ -244,7 +258,12 @@ class TestUser:
 
     def test_user_initialization_with_data(self):
         user = User(
-            data=UserData(cpf='12345678900', name='João Silva', phone='11999999999', email='joao@example.com'),
+            data=UserData(
+                cpf='12345678900',
+                name='João Silva',
+                phone='11999999999',
+                email='joao@example.com',
+            ),
             identity=UserIdentity(auth_level=AuthLevel.READ),
         )
         assert user.data.cpf == '12345678900'

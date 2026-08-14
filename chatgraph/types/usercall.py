@@ -146,9 +146,7 @@ class UserCall:  # noqa: PLR0904
 
             await asyncio.sleep(0.1)
         except Exception as e:
-            raise Exception(
-                f'[ChatID: {self.__user_state.chat_id}] - Erro ao enviar mensagem: {e}'
-            )
+            raise Exception(f'Erro ao enviar mensagem: {e}')
 
         try:
             await self.__record_history(

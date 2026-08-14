@@ -84,7 +84,9 @@ class TestAddObservation:
     def user_call_with_menu(self, sample_message, mock_router_client):
         user = User(
             data=UserData(name='João Silva', cpf='11111111111'),
-            identity=UserIdentity(auth_level=AuthLevel.READ, cpf='11111111111'),
+            identity=UserIdentity(
+                auth_level=AuthLevel.READ, cpf='11111111111'
+            ),
         )
         user_state = UserState(
             chat_id=ChatID(user_id='user123', company_id='company456'),
@@ -104,7 +106,9 @@ class TestAddObservation:
     def user_call_no_menu(self, sample_message, mock_router_client):
         user = User(
             data=UserData(name='João Silva', cpf='11111111111'),
-            identity=UserIdentity(auth_level=AuthLevel.READ, cpf='11111111111'),
+            identity=UserIdentity(
+                auth_level=AuthLevel.READ, cpf='11111111111'
+            ),
         )
         user_state = UserState(
             chat_id=ChatID(user_id='user123', company_id='company456'),
@@ -124,7 +128,9 @@ class TestAddObservation:
     def user_call_menu_no_name(self, sample_message, mock_router_client):
         user = User(
             data=UserData(name='João Silva', cpf='11111111111'),
-            identity=UserIdentity(auth_level=AuthLevel.READ, cpf='11111111111'),
+            identity=UserIdentity(
+                auth_level=AuthLevel.READ, cpf='11111111111'
+            ),
         )
         user_state = UserState(
             chat_id=ChatID(user_id='user123', company_id='company456'),
@@ -273,7 +279,9 @@ class TestLoadIdentity:
     ):
         """Happy path: get_identity retorna UserIdentity e user.identity é atualizado."""
         expected_identity = UserIdentity(auth_level=AuthLevel.WRITE)
-        mock_router_client.get_identity = AsyncMock(return_value=expected_identity)
+        mock_router_client.get_identity = AsyncMock(
+            return_value=expected_identity
+        )
 
         result = await user_call.load_identity()
 
@@ -299,7 +307,9 @@ class TestLoadIdentity:
             router_client=mock_router_client,
         )
         expected_identity = UserIdentity(auth_level=AuthLevel.READ)
-        mock_router_client.get_identity = AsyncMock(return_value=expected_identity)
+        mock_router_client.get_identity = AsyncMock(
+            return_value=expected_identity
+        )
 
         await uc.load_identity()
 
@@ -312,7 +322,9 @@ class TestLoadIdentity:
     ):
         """cpf fornecido é repassado para router_client.get_identity."""
         expected_identity = UserIdentity(auth_level=AuthLevel.READ)
-        mock_router_client.get_identity = AsyncMock(return_value=expected_identity)
+        mock_router_client.get_identity = AsyncMock(
+            return_value=expected_identity
+        )
 
         await user_call.load_identity(cpf='12345678900')
 
@@ -350,7 +362,9 @@ class TestLoadUserstate:
             user=sample_user_state.user,
             route='outro',
         )
-        mock_router_client.get_session_by_chat_id = AsyncMock(return_value=new_user_state)
+        mock_router_client.get_session_by_chat_id = AsyncMock(
+            return_value=new_user_state
+        )
 
         result = await user_call.load_userstate()
 
@@ -362,7 +376,9 @@ class TestLoadUserstate:
         self, user_call, mock_router_client
     ):
         """get_session_by_chat_id retorna None → método lança ValueError."""
-        mock_router_client.get_session_by_chat_id = AsyncMock(return_value=None)
+        mock_router_client.get_session_by_chat_id = AsyncMock(
+            return_value=None
+        )
 
         with pytest.raises(ValueError, match='Sessão não encontrada'):
             await user_call.load_userstate()
@@ -392,7 +408,9 @@ class TestLoadUserstate:
             user=sample_user_state.user,
             route='start',
         )
-        mock_router_client.get_session_by_chat_id = AsyncMock(return_value=new_user_state)
+        mock_router_client.get_session_by_chat_id = AsyncMock(
+            return_value=new_user_state
+        )
 
         await user_call.load_userstate()
 
@@ -408,13 +426,15 @@ class TestPlatformState:
     def test_platform_state_returns_injected_object(
         self, sample_user_state, sample_message, mock_router_client
     ):
-        ps = PlatformState(data={
-            'session_id': 1,
-            'customer_id': 'CUST001',
-            'platform': 'whatsapp_enterprise',
-            'protocol': 'P001',
-            'campaign': 'C.TEST',
-        })
+        ps = PlatformState(
+            data={
+                'session_id': 1,
+                'customer_id': 'CUST001',
+                'platform': 'whatsapp_enterprise',
+                'protocol': 'P001',
+                'campaign': 'C.TEST',
+            }
+        )
         uc = UserCall(
             user_state=sample_user_state,
             message=sample_message,
@@ -473,3 +493,28 @@ class TestUserStateProperty:
             router_client=mock_router_client,
         )
         assert uc.user_state is None
+
+
+@pytest.mark.unit
+class TestSendException:
+    """Testes para a exceção levantada por __send de UserCall."""
+
+    @pytest.mark.asyncio
+    async def test_send_exception_does_not_contain_chatid_prefix(
+        self, sample_user_state, mock_router_client
+    ):
+        """Exceção de __send NÃO deve conter o prefixo [ChatID:]."""
+        from chatgraph.models.message import Message
+
+        mock_router_client.send_message = AsyncMock(
+            side_effect=Exception('timeout')
+        )
+        uc = UserCall(
+            user_state=sample_user_state,
+            message=Message('Olá'),
+            router_client=mock_router_client,
+        )
+        msg = Message('Teste')
+
+        with pytest.raises(Exception, match='Erro ao enviar mensagem'):
+            await uc._UserCall__send(msg)
