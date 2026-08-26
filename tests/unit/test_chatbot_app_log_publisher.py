@@ -4,6 +4,7 @@ import pytest
 
 from chatgraph.bot.chatbot_model import ChatbotApp
 from chatgraph.error.chatbot_error import ChatbotMessageError
+from chatgraph.models.log_envelope import is_error_logged
 from chatgraph.models.userstate import Menu
 from chatgraph.types.usercall import UserCall
 
@@ -61,6 +62,37 @@ class TestProcessMessagePublishesError:
 
         with pytest.raises(ChatbotMessageError):
             await app.process_message(mock_usercall)
+
+
+@pytest.mark.unit
+class TestPublishErrorLogMarksException:
+    @pytest.mark.asyncio
+    async def test_published_exception_is_marked(
+        self, mock_message_consumer, mock_log_publisher, mock_usercall
+    ):
+        app = ChatbotApp(
+            message_consumer=mock_message_consumer,
+            log_publisher=mock_log_publisher,
+        )
+
+        with pytest.raises(ChatbotMessageError) as exc_info:
+            await app.process_message(mock_usercall)
+
+        assert is_error_logged(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_exception_not_marked_without_publisher(
+        self, mock_message_consumer, mock_usercall
+    ):
+        app = ChatbotApp(
+            message_consumer=mock_message_consumer,
+            log_publisher=None,
+        )
+
+        with pytest.raises(ChatbotMessageError) as exc_info:
+            await app.process_message(mock_usercall)
+
+        assert not is_error_logged(exc_info.value)
 
 
 @pytest.mark.unit
