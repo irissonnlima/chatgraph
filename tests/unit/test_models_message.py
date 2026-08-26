@@ -344,3 +344,33 @@ class TestMessage:
         assert len(message.buttons) == 1
         assert message.buttons[0].title == 'Sim'
         assert isinstance(message.date_time, datetime)
+
+    def test_message_from_dict_converte_file_em_objeto(self):
+        """O payload do consumer traz `file` como dict cru."""
+        data = {
+            'text_message': {'detail': 'segue o anexo'},
+            'file': {'id': 'f1', 'name': 'contrato.pdf', 'size': 42},
+        }
+        message = Message.from_dict(data)
+
+        assert isinstance(message.file, File)
+        assert message.file.name == 'contrato.pdf'
+        assert message.has_file() is True
+
+    def test_message_to_dict_com_file_vindo_de_dict(self):
+        """to_dict de mensagem com anexo cru quebrava o histórico."""
+        message = Message.from_dict({
+            'text_message': {'detail': 'segue o anexo'},
+            'file': {'id': 'f1', 'name': 'contrato.pdf'},
+        })
+
+        result = message.to_dict()
+
+        assert result['file']['name'] == 'contrato.pdf'
+
+    def test_message_from_dict_sem_file(self):
+        """Ausência de `file` continua produzindo None."""
+        message = Message.from_dict({'text_message': {'detail': 'oi'}})
+
+        assert message.file is None
+        assert 'file' not in message.to_dict()

@@ -302,7 +302,7 @@ class Message:
         text_message: TextMessage | str = '',
         buttons: List[Button] = [],
         display_button: Optional[Button] = None,
-        file: Optional[File | str] = None,
+        file: Optional[File | str | dict] = None,
         date_time: Optional[datetime] = None,
     ):
         self.buttons = buttons
@@ -320,9 +320,15 @@ class Message:
         """Verifica se a mensagem possui arquivo anexado."""
         return self.file is not None and not self.file.is_empty()
 
-    def __load_file(self, file: Optional[File | str]) -> None:
+    def __load_file(self, file: Optional[File | str | dict]) -> None:
+        # O payload do consumer traz `file` como dict cru. Sem converter
+        # aqui, self.file vira dict e todo acesso a método de File
+        # (to_dict, is_empty) quebra — foi assim que o registro de
+        # histórico de mensagens com anexo passou a falhar.
         if isinstance(file, str):
             self.file = File(name=file)
+        elif isinstance(file, dict):
+            self.file = File.from_dict(file)
         else:
             self.file = file
 

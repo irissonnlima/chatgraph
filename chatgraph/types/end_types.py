@@ -45,7 +45,12 @@ class EndChatResponse:
 
 class TransferToHuman:
     """
-    Representa uma transferencia para um atendente humano.
+    OBSOLETO: sem efeito no pipeline HTTP. Era usado só pelo caminho
+    gRPC legado (``gRPC/gRPCCall.py``); ``__process_func_response`` não
+    tem ramo para este tipo. Para transferir para atendente humano, use
+    ``EndChatResponse`` com a end action de atendimento humano
+    configurada no chatbot-router — no chatbot, encerrar e transferir
+    para humano são a mesma operação (uma tabulação de encerramento).
     """
 
     def __init__(

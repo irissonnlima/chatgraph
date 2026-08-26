@@ -1,3 +1,5 @@
+# ruff: noqa: F822 - os símbolos do agente em __all__ resolvem via
+# __getattr__ (PEP 562, import lazy); o ruff não os enxerga.
 from .auth.credentials import Credential
 from .bot.chatbot_model import ChatbotApp
 from .bot.chatbot_router import ChatbotRouter
@@ -27,13 +29,64 @@ from .types.background_task import BackgroundTask
 from .types.end_types import (
     EndChatResponse,
     RedirectResponse,
-    TransferToHuman,
     TransferToMenu,
 )
 from .types.route import Route
 from .types.usercall import UserCall
 
+# Símbolos do módulo de agentes de IA (extra opcional `agent`).
+# Import lazy via PEP 562: quem não instalou pydantic não paga o custo
+# nem quebra; o erro amigável vem do guard em chatgraph/agent/__init__.
+_AGENT_EXPORTS = {
+    'Agent': 'chatgraph.agent.agent',
+    'AgentAction': 'chatgraph.agent.protocol',
+    'AgentActionError': 'chatgraph.agent.errors',
+    'AgentContext': 'chatgraph.agent.protocol',
+    'AgentError': 'chatgraph.agent.errors',
+    'AgentResult': 'chatgraph.agent.protocol',
+    'ContentResult': 'chatgraph.agent.content',
+    'EndActionInfo': 'chatgraph.agent.protocol',
+    'LLMClientError': 'chatgraph.agent.errors',
+    'MenuInfo': 'chatgraph.agent.protocol',
+    'OpenRouterClient': 'chatgraph.agent.openrouter',
+    'RouteInfo': 'chatgraph.agent.protocol',
+    'Tool': 'chatgraph.agent.types',
+    'ToolExecutionError': 'chatgraph.agent.errors',
+    'ToolInfo': 'chatgraph.agent.protocol',
+    'Usage': 'chatgraph.agent.types',
+    'execute_single_agent': 'chatgraph.agent.executor',
+    'generate_content': 'chatgraph.agent.content',
+}
+
+
+def __getattr__(name: str):
+    if name in _AGENT_EXPORTS:
+        import importlib  # noqa: PLC0415 - import lazy proposital
+
+        module = importlib.import_module(_AGENT_EXPORTS[name])
+        return getattr(module, name)
+    raise AttributeError(f'module {__name__!r} has no attribute {name!r}')
+
+
 __all__ = [
+    'Agent',
+    'AgentAction',
+    'AgentActionError',
+    'AgentContext',
+    'AgentError',
+    'AgentResult',
+    'ContentResult',
+    'EndActionInfo',
+    'LLMClientError',
+    'MenuInfo',
+    'OpenRouterClient',
+    'RouteInfo',
+    'Tool',
+    'ToolExecutionError',
+    'ToolInfo',
+    'Usage',
+    'execute_single_agent',
+    'generate_content',
     'set_level',
     'ChatbotApp',
     'Credential',
@@ -47,7 +100,6 @@ __all__ = [
     'EventType',
     'Route',
     'EndChatResponse',
-    'TransferToHuman',
     'TransferToMenu',
     'UserState',
     'ChatID',

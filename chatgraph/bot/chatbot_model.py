@@ -1,5 +1,4 @@
 import asyncio
-import inspect
 import json
 import re
 from datetime import datetime
@@ -21,6 +20,7 @@ from ..types.background_task import BackgroundTask
 from ..types.end_types import (
     EndChatResponse,
     RedirectResponse,
+    TransferToHuman,
     TransferToMenu,
 )
 from ..types.route import Route
@@ -28,12 +28,18 @@ from ..types.usercall import UserCall
 from .chatbot_router import ChatbotRouter
 from .default_functions import voltar
 from .default_guard import default_guard as _default_guard
+from .route_registry import build_route_entry, route_infos
 
 _logger = UserLoggerManager.get_system_logger()
 
 DEFAULT_FUNCTION: dict[str, Callable] = {
     r'^\s*(voltar)\s*$': voltar,
 }
+
+# Limite de redirects encadeados num mesmo turno. Sem ele, um handler
+# (ou agente de IA) que redirecione em ciclo recursa em process_message
+# até estourar a pilha e travar o consumer.
+MAX_REDIRECT_DEPTH = 5
 
 
 class ChatbotApp:
@@ -93,13 +99,22 @@ class ChatbotApp:
         self.__routes.update(router.routes)
 
     def route(
-        self, route_name: str, auth_level: str | None = None
+        self,
+        route_name: str,
+        auth_level: str | None = None,
+        *,
+        description: str = '',
+        ai_visible: bool = False,
     ) -> Callable:
         """
         Decorador para adicionar uma função como uma rota na aplicação do chatbot.
 
         Args:
             route_name (str): O nome da rota para a qual a função deve ser associada.
+            auth_level (str | None): Nível de autorização exigido pela rota.
+            description (str): Prompt de comportamento da rota para
+                agentes de IA (injetado no system prompt do protocolo).
+            ai_visible (bool): Expõe a rota ao roteamento do agente de IA.
 
         Returns:
             function: O decorador que adiciona a função à rota especificada.
@@ -107,25 +122,12 @@ class ChatbotApp:
         route_name = route_name.strip().lower()
 
         def decorator(func):
-            params = {}
-            signature = inspect.signature(func)
-            output_param = signature.return_annotation
-
-            for name, param in signature.parameters.items():
-                param_type = (
-                    param.annotation
-                    if param.annotation != inspect.Parameter.empty
-                    else 'Any'
-                )
-                params[param_type] = name
-                _logger.debug(f'Parameter: {name}, Type: {param_type}')
-
-            self.__routes[route_name] = {
-                'function': func,
-                'params': params,
-                'return': output_param,
-                'auth_level': auth_level,
-            }
+            self.__routes[route_name] = build_route_entry(
+                func,
+                auth_level=auth_level,
+                description=description,
+                ai_visible=ai_visible,
+            )
 
             @wraps(func)
             async def wrapper(*args, **kwargs):
@@ -182,13 +184,17 @@ class ChatbotApp:
         except BaseException as e:
             _logger.warning(f'Erro ao registrar histórico de entrada: {e}')
 
-    async def process_message(self, usercall: UserCall) -> None:
+    async def process_message(
+        self, usercall: UserCall, _redirect_depth: int = 0
+    ) -> None:
         """
         Processa uma mensagem recebida, identificando a rota correspondente
         e executando a função associada.
 
         Args:
             usercall (UserCall): A mensagem a ser processada.
+            _redirect_depth (int): Profundidade da cadeia de redirects
+                do turno (uso interno; limitada por MAX_REDIRECT_DEPTH).
 
         Raises:
             ChatbotMessageError: Se nenhuma rota for encontrada para
@@ -198,7 +204,11 @@ class ChatbotApp:
         route = usercall.route.lower()
         route_handler = route.split('.')[-1]
 
-        await self.__record_message_in(usercall, route)
+        # A mensagem do usuário entra 1x por turno no histórico: a
+        # reentrada via redirect regravaria a mesma mensagem com outra
+        # rota (idempotency key nova) e o agente a veria duplicada.
+        if _redirect_depth == 0:
+            await self.__record_message_in(usercall, route)
 
         try:
             matchDefault = False
@@ -235,7 +245,10 @@ class ChatbotApp:
 
                 if guard_response is not None:
                     await self.__process_func_response(
-                        guard_response, usercall, route=route
+                        guard_response,
+                        usercall,
+                        route=route,
+                        _redirect_depth=_redirect_depth,
                     )
                     return
 
@@ -248,7 +261,9 @@ class ChatbotApp:
                 kwargs[usercall_name] = usercall
             if route_state_name:
                 kwargs[route_state_name] = Route(
-                    route, list(self.__routes.keys())
+                    route,
+                    list(self.__routes.keys()),
+                    infos=route_infos(self.__routes),
                 )
 
             if asyncio.iscoroutinefunction(func):
@@ -265,11 +280,17 @@ class ChatbotApp:
             if isinstance(usercall_response, (list, tuple)):
                 for response in usercall_response:
                     await self.__process_func_response(
-                        response, usercall, route=route
+                        response,
+                        usercall,
+                        route=route,
+                        _redirect_depth=_redirect_depth,
                     )
             else:
                 await self.__process_func_response(
-                    usercall_response, usercall, route=route
+                    usercall_response,
+                    usercall,
+                    route=route,
+                    _redirect_depth=_redirect_depth,
                 )
         except Exception as e:
             await self._publish_error_log(usercall, e)
@@ -331,6 +352,7 @@ class ChatbotApp:
         usercall_response,
         usercall: UserCall,
         route: str,
+        _redirect_depth: int = 0,
     ) -> None:
         """
         Processa a resposta de uma função associada a uma rota,
@@ -371,9 +393,34 @@ class ChatbotApp:
             )
             return
 
+        if isinstance(usercall_response, TransferToHuman):
+            # TransferToHuman é obsoleto (caminho gRPC legado); o
+            # atendimento HTTP não tem endpoint equivalente. Loga em
+            # vez de cair no "Tipo de retorno inválido!" genérico, para
+            # apontar a saída certa em vez de só constatar o erro.
+            _logger.error(
+                'TransferToHuman não tem efeito no pipeline HTTP; use '
+                'EndChatResponse com a end action de atendimento '
+                'humano configurada no chatbot-router.'
+            )
+            return
+
         if isinstance(usercall_response, RedirectResponse):
             await usercall.set_route(usercall_response.route)
-            await self.process_message(usercall)
+            if _redirect_depth + 1 > MAX_REDIRECT_DEPTH:
+                # Um ciclo de redirects (handler ou agente de IA)
+                # recursaria sem limite. O set_route já ocorreu, então
+                # a próxima mensagem do usuário cai na rota destino.
+                _logger.error(
+                    f'Limite de redirects excedido '
+                    f'(MAX_REDIRECT_DEPTH={MAX_REDIRECT_DEPTH}); '
+                    f'turno encerrado na rota '
+                    f'{usercall_response.route!r}.'
+                )
+                return
+            await self.process_message(
+                usercall, _redirect_depth=_redirect_depth + 1
+            )
             return
 
         if not usercall_response:
@@ -383,7 +430,12 @@ class ChatbotApp:
 
         if isinstance(usercall_response, BackgroundTask):
             response = await usercall_response.run()
-            await self.__process_func_response(response, usercall, route=route)
+            await self.__process_func_response(
+                response,
+                usercall,
+                route=route,
+                _redirect_depth=_redirect_depth,
+            )
             return
 
         _logger.error('Tipo de retorno inválido!')

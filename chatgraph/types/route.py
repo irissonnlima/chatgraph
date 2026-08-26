@@ -15,6 +15,7 @@ class Route:
         current: str,
         routes: list[str] | None = None,
         separator: str = '.',
+        infos: list[dict] | None = None,
     ):
         """
         Inicializa a rota com a rota atual e a lista de rotas disponíveis.
@@ -23,10 +24,14 @@ class Route:
             current (str): A rota atual.
             routes (list[str]): A lista de todas as rotas disponíveis no fluxo.
             separator (str): O separador de partes de rota. Padrão é '.'.
+            infos (list[dict] | None): Metadados das rotas registradas
+                ({'name', 'description', 'ai_visible'}), consumidos
+                pelos agentes de IA.
         """
         self.current = current
         self.routes = routes
         self.separator = separator
+        self.infos = infos
 
     @property
     def previous(self) -> 'Route':
@@ -53,7 +58,7 @@ class Route:
             str: O caminho anterior à rota atual.
         """
         if self.current == 'start':
-            return Route(self.current, self.routes, self.separator)
+            return Route(self.current, self.routes, self.separator, self.infos)
 
         rotas_dedup = self.separator.join(
             dict.fromkeys(self.current.split(self.separator))
@@ -63,7 +68,7 @@ class Route:
             rotas_dedup.split(self.separator)[:-1]
         )
 
-        return Route(previous_route, self.routes, self.separator)
+        return Route(previous_route, self.routes, self.separator, self.infos)
 
     def get_next(self, next_part: str) -> 'Route':
         """
@@ -83,7 +88,7 @@ class Route:
         if next_part not in self.routes:
             raise RouteError(f'Rota não encontrada: {next_part}')
 
-        return Route(next_route, self.routes, self.separator)
+        return Route(next_route, self.routes, self.separator, self.infos)
 
     def __str__(self):
         """
