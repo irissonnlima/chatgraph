@@ -185,3 +185,7 @@ ROADMAP.md
 *jpg
 *.jpeg
 *.png
+
+# credenciais e configuração local (não versionar)
+kubeconfig
+.claude/
