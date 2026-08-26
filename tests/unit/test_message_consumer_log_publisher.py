@@ -5,6 +5,7 @@ import pytest
 
 from chatgraph.auth.credentials import Credential
 from chatgraph.messages.message_consumer import MessageConsumer
+from chatgraph.models.log_envelope import mark_error_logged
 from chatgraph.types.usercall import UserCall
 
 
@@ -87,6 +88,38 @@ class TestOnRequestPublishesError:
         call_args = mock_log_publisher.publish_error.call_args
         envelope = call_args[0][0]
         assert envelope.origin == 'chatgraph:unknown'
+
+    @pytest.mark.asyncio
+    async def test_on_request_skips_error_already_published(
+        self, mock_log_publisher, mock_usercall
+    ):
+        # O pipeline já publicou esse erro com o contexto do usercall: a
+        # borda não pode gerar um segundo evento para a mesma exceção.
+        consumer = make_consumer()
+        consumer.set_log_publisher(mock_log_publisher)
+
+        error = RuntimeError('handler error')
+        mark_error_logged(error)
+        process_message = AsyncMock(side_effect=error)
+
+        body = json.dumps({
+            'user_state': {'observation': '{}'},
+            'message': {},
+        }).encode()
+
+        with patch.object(
+            consumer,
+            '_MessageConsumer__transform_message',
+            new=AsyncMock(return_value=mock_usercall),
+        ):
+            with patch.object(
+                consumer,
+                '_MessageConsumer__initialize_router',
+                new=AsyncMock(),
+            ):
+                await consumer.on_request(body, process_message)
+
+        mock_log_publisher.publish_error.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_on_request_no_publisher_no_error(self):

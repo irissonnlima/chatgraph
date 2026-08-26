@@ -20,6 +20,22 @@ ERROR_CODE_MAP = {
 }
 _ERROR_CODE_FALLBACK = 'UNKNOWN_ERROR'
 
+# Marca posta na exceção depois que o erro já virou evento de log. O
+# pipeline publica dentro da rota (contexto rico de usercall) e o consumer
+# publica na borda (é quem pega falha de decode/parse); sem a marca o mesmo
+# erro entra duas vezes na fila, com event_id diferente.
+_ERROR_LOGGED_ATTR = '_chatgraph_error_logged'
+
+
+def mark_error_logged(exc: BaseException) -> None:
+    """Sinaliza que a exceção já foi publicada como log_error."""
+    setattr(exc, _ERROR_LOGGED_ATTR, True)
+
+
+def is_error_logged(exc: BaseException) -> bool:
+    """Informa se a exceção já foi publicada como log_error."""
+    return bool(getattr(exc, _ERROR_LOGGED_ATTR, False))
+
 
 def error_code_from_exception(exc: Exception) -> str:
     exc_name = type(exc).__name__

@@ -290,6 +290,7 @@ class ChatbotApp:
                 EventType,
                 LogEnvelope,
                 error_code_from_exception,
+                mark_error_logged,
             )
 
             menu = usercall.menu
@@ -321,6 +322,7 @@ class ChatbotApp:
             )
 
             await self.__log_publisher.publish_error(envelope)
+            mark_error_logged(exc)
         except Exception as pub_err:
             _logger.warning(f'Falha ao publicar log_error: {pub_err}')
 

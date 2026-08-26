@@ -13,6 +13,7 @@ from rich.text import Text
 from ..auth.credentials import Credential
 from ..history.store import HistoryStore
 from ..logger.user_logger import UserLoggerManager
+from ..models.log_envelope import is_error_logged
 from ..models.message import Message
 from ..models.platform_state import PlatformState
 from ..models.userstate import UserState
@@ -197,7 +198,10 @@ class MessageConsumer:
             pure_message = await self.__transform_message(message_json)
             await process_message(pure_message)
         except Exception as e:
-            if self.__log_publisher is not None:
+            # O pipeline já publica o erro da rota com o contexto do
+            # usercall; aqui a borda cobre o que falha antes disso (decode,
+            # parse, transform) sem duplicar o evento.
+            if self.__log_publisher is not None and not is_error_logged(e):
                 try:
                     import traceback
                     import uuid
