@@ -1,6 +1,6 @@
 # Progresso do Projeto ChatGraph
 
-**Última atualização:** 2026-08-05
+**Última atualização:** 2026-08-17
 
 ## 1. Visão Geral do Projeto
 
@@ -50,6 +50,8 @@ tests/
 
 | Data | Commit | Descrição |
 |------|--------|-----------|
+| 2026-08-17 | - | **Fix: vocabulário de encerramento do agente + re-prompt corretivo.** Dois turnos de produção em 2026-08-14 falharam por causa raiz comum: o protocolo do agente não distinguia "transferir para outro bot" (`transfer_menu`) de "encerrar atendimento/transferir para humano" (`end_session`, ambos a mesma operação de EndAction no chatbot-router) — um bot acabou configurando um `MenuInfo` chamado `humano`, que o router rejeitou (`sql: no rows in result set`) só depois da promessa já ter sido enviada ao usuário. Correções: (1) `EndActionInfo`/`Agent(end_actions=...)`/`AgentContext.available_end_actions`, seção `AVAILABLE END ACTIONS` no prompt, resolução em `executor.py` (seletor por name/id, falha ANTES de side effect); (2) `AgentActionError` + `AgentContext.last_action_error` — ação inválida (transfer_menu ou end_session com seletor desconhecido) dispara 1 re-prompt corretivo por turno em vez de estourar o turno inteiro; sem correção, fallback é uma mensagem neutra fixa (nunca o `result.response`, que nesses casos costuma ser a promessa que acabou de falhar); (3) `build_agent_result_schema` parametrizado com enum de `menu`/`end_action_id` por Agent (`lru_cache(maxsize=32)`, antes `maxsize=1` sem args); (4) `agent.validate_config(router_client)` opt-in, confere no boot se menus/end_actions existem de verdade; (5) `TransferToHuman` aposentado do público (`__init__.py`, SKILL.md) — código morto no pipeline HTTP, mesma fonte de confusão um nível abaixo. Log DEBUG do raw response da LLM em `openrouter.py` para diagnosticar o próximo caso. Bug lateral corrigido: `Message.from_dict` não convertia `file` de dict para `File`, quebrando o registro de histórico em mensagens com anexo (`'dict' object has no attribute 'to_dict'`). |
+| 2026-08-14 | - | **Agentes de IA (v1.4.0):** novo módulo `chatgraph/agent/` portando o protocolo single-agent do `chatgraph-go`: `Agent` (tools locais via `@agent.tool`, `generate_protocol`), `OpenRouterClient` (httpx, retry/backoff/Retry-After, structured outputs), normalização de JSON Schema (`schema.py`, port do `normalize.go`), prompts portados literalmente, executor com proteções (dedup por `result_key`, máx. 2 tentativas por tool, self-redirect guard, redirect silencioso, parada na primeira ação terminal, merge aditivo de observation), `history_bridge` (pareamento assistant/tool + `trim_safe`). Integração: `description=`/`ai_visible=` nos decorators (builder comum `route_registry.py`), `Route.infos`, `MAX_REDIRECT_DEPTH=5` no pipeline (corrige loop infinito de redirects e MESSAGE_IN duplicado em redirects). Extra opcional `chatgraph[agent]` (pydantic>=2) com exports lazy (PEP 562). Divergência consciente do Go: `transfer_menu` seleciona por **name** (client Python não transfere por queue). 461 testes unitários. |
 | 2026-08-05 | `c24cbbd` | **Fix: acúmulo de `[ChatID: ...]` nos logs:** `ChatIDFilter.filter()` tornado idempotente (verifica `startswith` antes de prefixar); `remove_user_logger()` agora remove instâncias de `ChatIDFilter` antes de fechar handlers; `ChatID.__str__` adicionado (`user_id:company_id`); prefixo hardcoded removido da exceção em `UserCall.__send()`. Testes: `TestChatIDFilter` (3 novos), `test_remove_user_logger_removes_chatid_filters`, `test_remove_then_get_has_exactly_one_chatid_filter`, `test_chatid_str`, `TestSendException`. Revisão: ⚠️ CUIDADO — edge case `startswith` com `record.msg` não-string; teste de exceção poderia validar ausência de prefixo com `assert '[ChatID:' not in ...`. |
 | 2026-08-04 | `672e4df` | **LogPublisher + integração final do histórico:** `LogPublisher` para publicação de erros via RabbitMQ com auto-configuração via `load_dotenv()`; `LogEnvelope`, `ErrorLogPayload`, `EventType` e mapeamento `error_code` por tipo de exceção. Integração completa do `HistoryStore` no pipeline: hooks `MESSAGE_IN`/`MESSAGE_OUT`/`ROUTE_CHANGE`/`TRANSFER`/`END_CHAT` no `UserCall` e `ChatbotApp`; repasse via `MessageConsumer`. Novas properties em `UserCall`: `user_state`, `session_id`, `message`, `history`. Publicação de erros em `ChatbotApp._publish_error_log` e `MessageConsumer._process_message_callback`. |
 | 2026-08-04 | `c24cbbd` | **Testes:** `TestLogPublisher`, `TestLogEnvelope`, `TestChatbotAppLogPublisher`, `TestMessageConsumerLogPublisher`, `TestHistoryStore`, `TestHistoryIntegration`, `TestUserStateProperty`. Total: 283 testes unitários. |
@@ -74,9 +76,10 @@ tests/
 | **HTTP Router Client** | ✅ | RouterHTTPClient para integração com API REST |
 | **Logging** | ✅ | UserLoggerManager com logs por usuário e sistema |
 | **CLI** | ✅ | Comandos básicos (campaigns, delete-ustate) |
-| **Testes Unitários** | ✅ | 283 testes passando (histórico + log publisher + UserState) |
+| **Agentes de IA** | ✅ | Módulo `chatgraph/agent/` (protocolo single-agent do Go): Agent + tools locais, OpenRouterClient, schema normalizer, executor com proteções (inclui re-prompt corretivo de ação inválida), histórico com pareamento assistant/tool, `end_actions`/`validate_config`, `generate_content` desacoplado do turno de chat. Extra `chatgraph[agent]`. Futuro: two-agent, MCP, memória, guardrails |
+| **Testes Unitários** | ✅ | 500 testes passando (agent + histórico + log publisher + UserState) |
 | **Testes de Integração** | ⚠️ | Requer variáveis de ambiente configuradas |
-| **Documentação** | ⚠️ | README completo, falta docs/ detalhada |
+| **Documentação** | ⚠️ | README completo + SKILL.md §14 (agentes); falta docs/ detalhada |
 
 **Legenda:**
 - ✅ Completo
@@ -158,15 +161,25 @@ poetry run ruff check . && ruff format .
 | gRPC | protobuf | Contratos tipados e performance |
 | History Store | Protocol (não ABC) | Plugável, sem acoplamento a classe base |
 | Log Publisher | load_dotenv() + opcional | Retrocompatível — se `LOG_RABBIT_QUEUE` não estiver definido, o publisher é `None` e os erros não são publicados |
+| Agentes de IA | Port fiel do Go, sem pydantic-ai/SDK openai | Paridade de comportamento entre os frameworks; cliente OpenRouter próprio via httpx; pydantic>=2 isolado ao módulo `agent/` (extra opcional `chatgraph[agent]`, exports lazy PEP 562) |
+| transfer_menu do agente | Seletor por `name` do menu | O client Python só transfere por nome (`Menu.from_name`); queue/menu_id do Go não mapeiam — reintroduzir se o RouterHTTPClient ganhar transfer por queue |
+| Redirects | `MAX_REDIRECT_DEPTH=5` global | Recursão de `RedirectResponse` era ilimitada (risco de loop, agravado por agentes); a reentrada por redirect também não regrava MESSAGE_IN no histórico |
+| end_session do agente | Seletor por `name` (depois `id`) de `EndActionInfo`, mesmo critério do `transfer_menu` | `end_session` cobre encerrar E transferir para humano (mesma EndAction no chatbot-router); sem `end_actions` configuradas, `end_action_id` continua livre (retrocompatível) |
+| Ação inválida do agente | Re-prompt corretivo (1 tentativa/turno via `AgentContext.last_action_error`), depois mensagem neutra fixa | Um `transfer_menu`/`end_session` com seletor inexistente perdia o turno inteiro em silêncio (ou, pior, enviava a promessa antes do router rejeitar); "falha antes de side effect" continua valendo — a correção nunca executa ação |
+| TransferToHuman | Aposentado do público (`__init__.py`, SKILL.md); classe mantida em `end_types.py` só por compatibilidade de import | Código morto no pipeline HTTP (sem ramo em `__process_func_response`, sem método no `RouterHTTPClient`) — mesma confusão de "transferir para humano" um nível abaixo do bug de `transfer_menu`/`humano` |
 
 ## 9. Trabalhos Pendentes
 
 | Prioridade | Tarefa | Área | Status |
 |------------|--------|------|--------|
 | Alta | Eliminar duplicação de lógica de registro entre `ChatbotApp.__record_message_in` e `UserCall.__record_history` | chatgraph/bot + types | ⚠️ |
+| Média | Agentes: protocolo two-agent (`DecideRoute`+`Speak`) | chatgraph/agent | ❌ |
+| Média | Agentes: MCP (stdio/SSE/HTTP) como fonte de tools | chatgraph/agent | ❌ |
+| Média | Agentes: memória de longo prazo (`MemoryContext`) e guardrails | chatgraph/agent | ❌ |
 | Média | Documentação técnica detalhada | docs/ | ❌ |
 | Média | Mais testes de integração | tests/integration/ | ⚠️ |
-| Baixa | Exemplos adicionais | examples/ | ❌ |
+| Baixa | Dispatcher com serialização por chat_id (prefetch > 1 seguro p/ bots com agente) | messages/ | ❌ |
+| Baixa | Exemplos adicionais | examples/ | ⚠️ (`examples/agents_bot.py` criado) |
 | Baixa | Suporte a mais plataformas | bot/ | ❌ |
 
 ## 10. Notas e Observações

@@ -1,6 +1,6 @@
 ---
 name: chatgraph-framework
-description: "Use when: implementing a chatbot with chatgraph, creating routes with @app.route or @router.route, using UserCall, Route, Message, File, Button, EndChatResponse, RedirectResponse, TransferToMenu, TransferToHuman, BackgroundTask, setting up ChatbotApp, ChatbotRouter, include_router, configuring RabbitMQ consumer, adding per-user file logging with UserLoggerManager, integrating chatgraph in a new Python project."
+description: "Use when: implementing a chatbot with chatgraph, creating routes with @app.route or @router.route, using UserCall, Route, Message, File, Button, EndChatResponse, RedirectResponse, TransferToMenu, BackgroundTask, setting up ChatbotApp, ChatbotRouter, include_router, configuring RabbitMQ consumer, adding per-user file logging with UserLoggerManager, integrating chatgraph in a new Python project."
 argument-hint: "Descreva o fluxo de rotas que deseja implementar (opcional)"
 ---
 
@@ -200,22 +200,28 @@ return RedirectResponse('choice_start')
 return Route('aguardando_resposta')
 ```
 
-### `EndChatResponse(end_chat_id, end_chat_name?, observations?)` — Encerra o chat
+### `EndChatResponse(end_chat_id, end_chat_name?, observations?)` — Encerra o chat OU transfere para humano
+No chatbot-router, encerrar o atendimento e transferir para um atendente humano são a
+**mesma operação**: uma tabulação de encerramento com ID/nome próprio. Não existe um tipo de
+retorno separado para "transferir para humano" — use `EndChatResponse` com a end action de
+atendimento humano configurada no router.
 ```python
 return EndChatResponse('voll_ended')
 return EndChatResponse('', end_chat_name='Encerrado pelo usuário', observations='motivo')
+return EndChatResponse('ea_atendimento_humano')  # transferência para humano é um end_chat_id específico
 ```
 
-### `TransferToMenu(menu, user_message, route?)` — Transfere para outro menu
+### `TransferToMenu(menu, user_message, route?)` — Transfere para OUTRO BOT (menu)
+`TransferToMenu` é só bot→bot (outro menu/robô configurado no router). **Nunca** use para chegar a
+um atendente humano — isso é `EndChatResponse` (ver acima). Confundir os dois faz o handler prometer
+uma transferência que o router rejeita, porque o "menu" de atendimento humano não existe como menu.
 ```python
 return TransferToMenu('p0299_suporte_ti', 'Transferindo...')
 return TransferToMenu('p0299_suporte_ti', 'Transferindo...', route='etapa_inicial')  # inicia em rota específica
 ```
 
-### `TransferToHuman(campaign_id?, campaign_name?, observations?)` — Transfere para humano
-```python
-return TransferToHuman(campaign_name='Suporte N2')
-```
+> `TransferToHuman` (`chatgraph.types.end_types`) é **obsoleto**: não tem efeito no pipeline HTTP
+> (só existia no caminho gRPC legado). Não é mais exportado por `chatgraph/__init__.py`.
 
 ### `BackgroundTask(async_func, *args, **kwargs)` — Executa tarefa em background e encadeia o retorno
 ```python
@@ -526,3 +532,191 @@ async def aguardar_escolha(usercall: UserCall):
 
 app.start()
 ```
+
+## 14. Agentes de IA (`chatgraph.agent`)
+
+Requer o extra opcional: `pip install chatgraph[agent]` (pydantic>=2).
+Port do protocolo single-agent do `chatgraph-go`: uma chamada de LLM
+decide navegação E escreve a resposta, com tool calling declarativo.
+
+### Conceitos
+
+- **`Agent`**: configura LLM client, modelo, prompt de personalidade,
+  tools locais, menus, end actions e o modelo pydantic da observation.
+- **`description` da rota é o prompt de comportamento** daquela rota —
+  injetada no system prompt do protocolo. `ai_visible=True` expõe a
+  rota ao roteamento do agente.
+- **Tools locais** (`@agent.tool`): o modelo as chama via ação
+  `call_tool`; o resultado entra na observation sob `result_key` e o
+  agente decide de novo (até `max_tool_loops`, default 5).
+- **Ações do protocolo** mapeiam nos tipos de retorno existentes:
+  `send_message`→`Message`, `next_route`→`Route`,
+  `redirect`→`RedirectResponse`, `set_observation`→merge aditivo na
+  observation.
+- **`end_session`→`EndChatResponse`** cobre TANTO encerrar o
+  atendimento QUANTO transferir para um atendente humano — no
+  chatbot-router as duas são a mesma operação (uma tabulação de
+  encerramento). Seleção por **name** do `EndActionInfo` configurado
+  em `Agent(end_actions=[...])`.
+- **`transfer_menu`→`TransferToMenu`** é só bot→bot (seleção por
+  **name** do `MenuInfo`). **Nunca** configure um menu para representar
+  "atendimento humano" — isso pertence a `end_actions`/`end_session`.
+  Confundir os dois faz o agente prometer uma transferência que o
+  router rejeita (o "menu" de humano não existe como menu).
+- **Histórico**: com `history_store` configurado no `ChatbotApp`, o
+  agente recebe a conversa (janela `history_limit`, default 20) com o
+  pareamento assistant/tool preservado.
+- **Ação inválida do modelo** (menu/end_action_id que não existe na
+  lista configurada) dispara um re-prompt corretivo automático (1
+  tentativa por turno, via `AgentContext.last_action_error`); se a
+  correção também falhar, o turno termina com uma mensagem neutra em
+  vez de silêncio ou uma promessa que não vai se cumprir.
+
+### Env vars
+
+```
+OPENROUTER_API_KEY=sk-or-...   # obrigatória p/ OpenRouterClient
+OPENROUTER_BASE_URL=...        # opcional
+AGENT_MODEL=openai/gpt-4o-mini # obrigatória p/ Agent.load_dotenv
+AGENT_TEMPERATURE / AGENT_MAX_TOKENS / AGENT_MAX_TOOL_LOOPS /
+AGENT_HISTORY_LIMIT / AGENT_SYSTEM_PROMPT_FILE   # opcionais
+LOG_AGENT_CONTEXT=1            # debug: loga contexto completo (PII!)
+```
+
+### Exemplo
+
+```python
+from pydantic import BaseModel
+from chatgraph import (
+    Agent, ChatbotApp, EndActionInfo, MenuInfo, OpenRouterClient, Route,
+    UserCall,
+)
+from chatgraph.history.store import MemoryHistoryStore
+
+
+class PedidoObs(BaseModel):
+    cpf: str = ''
+    numero_pedido: str = ''
+
+
+agent = Agent(
+    llm_client=OpenRouterClient.load_dotenv(),
+    model='openai/gpt-4o-mini',
+    system_prompt='Você é o assistente da loja. Responda em pt-BR.',
+    observation_model=PedidoObs,
+    # transfer_menu: só bot→bot (outro robô configurado no router).
+    menus=[MenuInfo(name='suporte_ti', description='Bot de suporte técnico.')],
+    # end_session: encerrar OU transferir para atendente humano — NÃO
+    # é um menu. "id" é opcional (o seletor por name já basta).
+    end_actions=[
+        EndActionInfo(name='humano', description='Atendente humano.'),
+        EndActionInfo(name='resolvido', description='Atendimento concluído.'),
+    ],
+)
+
+# Opcional, no boot do bot (fora do caminho de mensagem): confirma que
+# os menus/end_actions acima existem de verdade no chatbot-router,
+# falhando cedo em vez de só na primeira transferência de um usuário.
+# await agent.validate_config(router_client)
+
+
+@agent.tool(
+    description='Consulta pedido por CPF e número.',
+    parameters={
+        'type': 'object',
+        'properties': {
+            'cpf': {'type': 'string'},
+            'numero_pedido': {'type': 'string'},
+        },
+        'required': ['cpf', 'numero_pedido'],
+    },
+)
+async def consultar_pedido(cpf: str, numero_pedido: str) -> dict:
+    return {'status': 'Entregue'}
+
+
+app = ChatbotApp(history_store=MemoryHistoryStore())
+
+
+@app.route(
+    'buscar_pedido',
+    description="Order lookup — collect cpf and numero_pedido. Call "
+        "consultar_pedido with result_key='dados_pedido', then "
+        'redirect to exibir_pedido.',
+    ai_visible=True,
+)
+async def buscar_pedido(call: UserCall, route: Route):
+    return await agent.execute(call, route)
+```
+
+### Regras e cuidados
+
+- Handlers com agente devem ser `async` (sync roda em thread e não
+  pode `await`).
+- Um turno de agente pode levar vários segundos (até `max_tool_loops`
+  chamadas de LLM). Com `RABBIT_PREFETCH=1` a fila serializa —
+  considere aumentar o prefetch para bots com agente.
+- Redirects têm limite global (`MAX_REDIRECT_DEPTH=5` em
+  `chatbot_model.py`): um agente que redirecionar em ciclo é
+  interrompido com erro no log.
+- `await agent.validate_config(router_client)` é opcional e não é
+  chamado automaticamente — confere no boot se os `menus`/`end_actions`
+  configurados existem de verdade no chatbot-router. Chame fora do
+  caminho de mensagem (uma vez, ao subir o bot).
+- Proteções do executor (port do Go): dedup de tool por `result_key`,
+  máx. 2 tentativas por tool com degradação, self-redirect vira
+  "none", alvo de rota desconhecido vira "none" com warning, redirect
+  é silencioso (a rota destino responde), transfer inválido falha
+  ANTES de qualquer side effect.
+- Exemplo completo: `examples/agents_bot.py`.
+
+## 15. Geração de conteúdo desacoplada (`generate_content`)
+
+Requer o mesmo extra opcional: `pip install chatgraph[agent]`.
+
+**Para dados internos do bot, não para turno de chat.** Caso de uso:
+o bot tem acesso a uma base interna (ex.: uma consulta a banco) e
+precisa que a IA analise esse conteúdo e devolva um insight — não é
+uma mensagem de cliente, não tem rota, não tem menu, não passa por
+`UserCall`/`Route`/`AgentContext`. `generate_content` é uma função
+solta, independente de `Agent`: funciona com qualquer `LLMClient`
+(inclusive `OpenRouterClient` já existente), sem exigir menus, tools,
+observation_model ou histórico de conversa configurados.
+
+```python
+import json
+
+from pydantic import BaseModel
+from chatgraph import OpenRouterClient, generate_content
+
+
+class VendasInsight(BaseModel):
+    resumo: str
+    tendencia: str
+    produtos_em_alerta: list[str] = []
+
+
+async def gerar_relatorio(dados_do_banco: list[dict]) -> VendasInsight | None:
+    result = await generate_content(
+        OpenRouterClient.load_dotenv(),
+        model='openai/gpt-4o-mini',
+        content=json.dumps(dados_do_banco, ensure_ascii=False),
+        system_prompt='Você é um analista de vendas. Responda em pt-BR.',
+        response_model=VendasInsight,  # opcional; sem ele, result.data é None
+    )
+    return result.data  # ou result.text, se response_model não foi passado
+```
+
+- **`content`** é uma string já serializada pelo chamador (JSON, CSV,
+  texto) — a função não sabe de onde o dado vem.
+- **`response_model`** opcional (mesmo padrão do `observation_model` do
+  `Agent`): com ele, o Structured Output usa o schema fechado do
+  modelo e `result.data` vem parseado; sem ele, só `result.text`.
+- **`history`** opcional para follow-up sobre o mesmo conteúdo (ex.:
+  uma segunda pergunta sobre o mesmo relatório) — sem `HistoryStore`,
+  cada chamada é isolada por padrão.
+- **O retorno não passa pelo pipeline** (`Message`/`Route`/etc.): é
+  consumido diretamente por quem chamou — envie via `usercall.send(...)`
+  se estiver dentro de um handler, ou grave em log/banco se for um job
+  agendado sem turno de chat nenhum.
+- Exemplo completo: `examples/content_insight.py`.
