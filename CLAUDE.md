@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+esteira: simples
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 `chatgraph` é uma **biblioteca** (não uma aplicação) para construir chatbots orientados a rotas.
