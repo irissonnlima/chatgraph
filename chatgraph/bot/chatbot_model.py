@@ -15,7 +15,9 @@ from ..history.keys import generate_idempotency_key
 from ..history.store import HistoryStore
 from ..logger.user_logger import UserLoggerManager
 from ..messages.message_consumer import MessageConsumer
+from ..messages.transport import consumer_from_env
 from ..models.message import File, Message, MessageTypes
+from ..stream.consumer import StreamConsumer
 from ..types.background_task import BackgroundTask
 from ..types.end_types import (
     EndChatResponse,
@@ -49,7 +51,7 @@ class ChatbotApp:
 
     def __init__(
         self,
-        message_consumer: Optional[MessageConsumer] = None,
+        message_consumer: Optional['MessageConsumer | StreamConsumer'] = None,
         default_functions: dict[str, Callable] = DEFAULT_FUNCTION,
         log_level: int | str | None = None,
         guard: Callable = _default_guard,
@@ -67,7 +69,7 @@ class ChatbotApp:
             UserLoggerManager.set_level(log_level)
 
         if not message_consumer:
-            message_consumer = MessageConsumer.load_dotenv()
+            message_consumer = consumer_from_env()
 
         self.default_functions = default_functions
         self.__message_consumer = message_consumer

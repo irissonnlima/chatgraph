@@ -13,12 +13,11 @@ from rich.text import Text
 from ..auth.credentials import Credential
 from ..history.store import HistoryStore
 from ..logger.user_logger import UserLoggerManager
-from ..models.log_envelope import is_error_logged
-from ..models.message import Message
-from ..models.platform_state import PlatformState
-from ..models.userstate import UserState
+from ..models.message import Message  # noqa: F401
+from ..models.userstate import UserState  # noqa: F401
 from ..services.router_http_client import RouterHTTPClient
 from ..types.usercall import UserCall
+from .turn import build_usercall, publish_edge_error
 
 _logger = UserLoggerManager.get_system_logger()
 
@@ -198,66 +197,7 @@ class MessageConsumer:
             pure_message = await self.__transform_message(message_json)
             await process_message(pure_message)
         except Exception as e:
-            # O pipeline já publica o erro da rota com o contexto do
-            # usercall; aqui a borda cobre o que falha antes disso (decode,
-            # parse, transform) sem duplicar o evento.
-            if self.__log_publisher is not None and not is_error_logged(e):
-                try:
-                    import traceback
-                    import uuid
-                    from datetime import datetime, timezone
-
-                    from ..models.log_envelope import (
-                        ErrorLogPayload,
-                        EventType,
-                        LogEnvelope,
-                        error_code_from_exception,
-                    )
-
-                    if pure_message is not None:
-                        menu = pure_message.menu
-                        menu_name = (
-                            menu.name if menu and menu.name else 'unknown'
-                        )
-                        user_state = pure_message.user_state
-                        platform = user_state.platform if user_state else ''
-                        envelope = LogEnvelope(
-                            event_id=str(uuid.uuid4()),
-                            event_type=EventType.ERROR,
-                            timestamp=datetime.now(timezone.utc).isoformat(),
-                            request_id='',
-                            session_id=pure_message.session_id or 0,
-                            chat_user_id=pure_message.user_id,
-                            chat_company_id=pure_message.company_id,
-                            platform=platform,
-                            origin=f'chatgraph:{menu_name}',
-                            error=str(e),
-                            payload=ErrorLogPayload(
-                                error_code=error_code_from_exception(e),
-                                error_message=f'{e}\n{traceback.format_exc()}',
-                                context_menu_id=(
-                                    menu.id if menu and menu.id else 0
-                                ),
-                                context_menu_name=menu_name,
-                                context_route=pure_message.route or '',
-                            ).to_dict(),
-                        )
-                    else:
-                        envelope = LogEnvelope(
-                            event_id=str(uuid.uuid4()),
-                            event_type=EventType.ERROR,
-                            timestamp=datetime.now(timezone.utc).isoformat(),
-                            request_id='',
-                            origin='chatgraph:unknown',
-                            error=str(e),
-                            payload=ErrorLogPayload(
-                                error_code=error_code_from_exception(e),
-                                error_message=f'{e}\n{traceback.format_exc()}',
-                            ).to_dict(),
-                        )
-                    await self.__log_publisher.publish_error(envelope)
-                except Exception as pub_err:
-                    _logger.warning(f'Falha ao publicar log_error: {pub_err}')
+            await publish_edge_error(self.__log_publisher, e, pure_message)
             _logger.error(f'Erro ao processar mensagem: {e}')
         finally:
             if pure_message is not None:
@@ -266,32 +206,9 @@ class MessageConsumer:
                 )
 
     async def __transform_message(self, message: dict) -> UserCall:
-        user_state = message.get('user_state', {})
-        message_data = message.get('message', {})
-        observation = user_state.get('observation', '{}')
-
-        if isinstance(observation, str):
-            observation = json.loads(observation)
-
-        user_state_models = UserState.from_dict(user_state)
-        message_models = Message.from_dict(message_data)
-
-        platform_state_data = message.get('platform_state', {})
-        if not isinstance(platform_state_data, dict):
-            platform_state_data = None
-        platform_state = PlatformState.from_dict(platform_state_data)
-
-        router_client = await self.__initialize_router()
-
-        usercall = UserCall(
-            user_state=user_state_models,
-            message=message_models,
-            router_client=router_client,
-            platform_state=platform_state,
-            history_store=self.__history_store,
+        return build_usercall(
+            message, await self.__initialize_router(), self.__history_store
         )
-
-        return usercall
 
     async def cleanup(self):
         """Libera recursos do cliente HTTP."""

@@ -6,8 +6,10 @@ tentativa usa `scripts[n]` e, sem roteiro, o `default`.
 """
 
 import asyncio
+import concurrent.futures
 import contextlib
 import json
+import threading
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from http import HTTPStatus
@@ -278,3 +280,49 @@ async def stream_client(
         yield client, sink
     finally:
         await client.close()
+
+
+class ThreadedFakeRouter:
+    """
+    FakeRouter numa thread com loop própria.
+
+    Serve para provar que o ack do receiver não depende da loop principal:
+    com o router na mesma loop do teste, um handler bloqueante congelaria
+    os dois lados.
+    """
+
+    def __init__(self) -> None:
+        self.router: FakeRouter | None = None
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(
+            target=self._run, name='fake-router', daemon=True
+        )
+        self._ready = threading.Event()
+
+    @property
+    def url(self) -> str:
+        return self.router.url
+
+    def start(self) -> None:
+        self._thread.start()
+        self._ready.wait()
+
+    def run(
+        self, make_coro: Callable[[FakeRouter], Awaitable[None]]
+    ) -> concurrent.futures.Future:
+        return asyncio.run_coroutine_threadsafe(
+            make_coro(self.router), self._loop
+        )
+
+    def close(self) -> None:
+        self.run(lambda router: router.close()).result(5)
+        self._loop.call_soon_threadsafe(self._loop.stop)
+        self._thread.join(5)
+        self._loop.close()
+
+    def _run(self) -> None:
+        asyncio.set_event_loop(self._loop)
+        self.router = FakeRouter()
+        self._loop.run_until_complete(self.router.start())
+        self._ready.set()
+        self._loop.run_forever()
