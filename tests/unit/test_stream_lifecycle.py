@@ -1,6 +1,7 @@
 # ruff: noqa: PLR2004, PLR6301 - testes em classe e literais nos asserts, como no
 # resto da suíte.
 import asyncio
+import dataclasses
 import logging
 
 import pytest
@@ -232,6 +233,41 @@ class TestGoAway:
 
             assert client._current is not old
             assert client._current.id.startswith('conn-')
+
+    @pytest.mark.asyncio
+    async def test_in_flight_command_finishes_on_old_connection_then_it_closes(
+        self, fake_router, stream_settings
+    ):
+        settings = dataclasses.replace(stream_settings, command_timeout=2.0)
+        chat = {'user_id': 'user-1', 'company_id': 'company-1'}
+        fake_router.scripts = [ConnScript(command_delay=0.4)]
+        async with stream_client(fake_router, settings) as (client, _):
+            await client.connect()
+            first = fake_router.conns[0]
+            in_flight = asyncio.create_task(
+                client.command('set_route', chat, {'route': 'a'}, True)
+            )
+            await eventually(lambda: first.of_type('command'))
+
+            await first.send({'type': 'goaway', 'reason': 'shutdown'})
+            await eventually(
+                lambda: (
+                    client._current is not None
+                    and client._current.id == 'conn-1'
+                )
+            )
+            assert not in_flight.done()
+            assert not first.closed.is_set()
+
+            await in_flight
+            await eventually(first.closed.is_set, timeout=1.0)
+            await client.command('send', chat, {}, False)
+
+        second = fake_router.conns[1]
+        assert first.closed_at - first.results()[0][0] <= 0.2
+        assert first.close_code == 1000
+        assert [f['name'] for f in first.of_type('command')] == ['set_route']
+        assert [f['name'] for f in second.of_type('command')] == ['send']
 
 
 @pytest.mark.unit

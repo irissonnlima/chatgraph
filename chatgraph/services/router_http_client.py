@@ -25,7 +25,7 @@ def router_v1_base(url: str) -> str:
     return f'{base}/v1'
 
 
-class RouterHTTPClient:
+class RouterHTTPClient:  # noqa: PLR0904
     """
     Cliente HTTP para serviços de roteamento de mensagens.
 
@@ -280,6 +280,20 @@ class RouterHTTPClient:
         return response_data
 
     # Messages Methods
+    @staticmethod
+    def build_send_payload(
+        message_data: Message,
+        user_state: UserState,
+        platform_state: PlatformState,
+    ) -> dict:
+        payload = {
+            'message': message_data.to_dict(),
+            'user_state': user_state.to_dict(),
+        }
+        if platform_state:
+            payload['platform_state'] = platform_state.to_dict()
+        return payload
+
     async def send_message(
         self,
         message_data: Message,
@@ -304,12 +318,9 @@ class RouterHTTPClient:
         """
         endpoint = '/messages/send/'
 
-        payload = {
-            'message': message_data.to_dict(),
-            'user_state': user_state.to_dict(),
-        }
-        if platform_state:
-            payload['platform_state'] = platform_state.to_dict()
+        payload = self.build_send_payload(
+            message_data, user_state, platform_state
+        )
         _logger.debug(f'[send_message] POST {endpoint}')
         response = await self._actions_client.post(
             endpoint,

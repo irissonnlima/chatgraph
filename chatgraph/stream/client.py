@@ -1,7 +1,10 @@
 import asyncio
 import contextlib
+import itertools
+import secrets
 import threading
-from typing import Any, Callable, Final
+from dataclasses import dataclass, field
+from typing import Any, AsyncIterator, Callable, Final
 
 from websockets.exceptions import InvalidStatus
 
@@ -11,7 +14,12 @@ from .backoff import FailureClass, classify, failure_detail, full_jitter
 from .connection import _Connection, spawn, wait_first
 from .dedupe import LRU
 from .errors import (
+    CommandFailedError,
+    CommandTimeoutError,
+    ConnectionLostError,
+    FrameTooLargeError,
     InvalidDeliveryError,
+    SessionNotOwnedError,
     StreamClosedError,
     StreamRejectedError,
 )
@@ -26,6 +34,12 @@ _REJECTIONS = {
     403: '403 forbidden',
     404: '404 (router não está em modo stream?)',
 }
+
+
+@dataclass
+class _ChatLock:
+    lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    refs: int = 0
 
 
 def _rejection_message(exc: BaseException) -> str:
@@ -77,6 +91,22 @@ async def _send_nack(
         )
 
 
+def _raise_for_result(name: str, cmd_id: str, result: dict) -> None:
+    if result.get('ok') is True:
+        return
+    error = str(result.get('error') or '')
+    if error.startswith('session_not_owned'):
+        _logger.warning(
+            f'Stream command session not owned name={name} '
+            f'cmd_id={cmd_id} error={error}'
+        )
+        raise SessionNotOwnedError(error)
+    _logger.error(
+        f'Stream command failed name={name} cmd_id={cmd_id} error={error}'
+    )
+    raise CommandFailedError(f'{name}: {error}')
+
+
 class StreamClient:
     def __init__(
         self,
@@ -104,6 +134,9 @@ class StreamClient:
         self._supervisor: asyncio.Task | None = None
         self._stopped = asyncio.Event()
         self._closed = False
+        self._cmd_prefix = secrets.token_hex(8)
+        self._cmd_seq = itertools.count(1)
+        self._chat_locks: dict[str, _ChatLock] = {}
 
     async def connect(self) -> None:
         if self._closed:
@@ -113,6 +146,94 @@ class StreamClient:
                 self._supervise(), 'supervisor', self._tasks
             )
         await asyncio.shield(self._boot)
+
+    async def command(
+        self, name: str, chat_id: dict, payload: dict, idempotent: bool
+    ) -> None:
+        if self._closed:
+            raise StreamClosedError('client fechado')
+        cmd_id = f'{self._cmd_prefix}-{next(self._cmd_seq)}'
+        frame = frames.command(cmd_id, name, chat_id, payload)
+        size = len(frames.encode(frame).encode('utf-8'))
+        if size > self._settings.max_frame_bytes:
+            raise FrameTooLargeError(name)
+        async with self._chat_lock(chat_id):
+            await self._execute(name, cmd_id, frame, idempotent)
+
+    @contextlib.asynccontextmanager
+    async def _chat_lock(self, chat_id: dict) -> AsyncIterator[None]:
+        key = f'{chat_id["user_id"]}|{chat_id["company_id"]}'
+        entry = self._chat_locks.setdefault(key, _ChatLock())
+        entry.refs += 1
+        try:
+            async with entry.lock:
+                yield
+        finally:
+            entry.refs -= 1
+            if entry.refs == 0:
+                del self._chat_locks[key]
+
+    async def _execute(
+        self, name: str, cmd_id: str, frame: dict, idempotent: bool
+    ) -> None:
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + self._settings.command_timeout
+        while True:
+            conn = await self._wait_conn(name, cmd_id, deadline)
+            fut = conn.register(cmd_id)
+            waiters = [
+                spawn(event.wait(), 'wait', self._tasks)
+                for event in (conn.closed, self._stopped)
+            ]
+            try:
+                remaining = deadline - loop.time()
+                if remaining <= 0:
+                    raise CommandTimeoutError(name)
+                try:
+                    await conn.write(frame, remaining)
+                except Exception:
+                    if loop.time() >= deadline:
+                        raise CommandTimeoutError(name) from None
+                    continue
+                await asyncio.wait(
+                    [fut, *waiters],
+                    timeout=deadline - loop.time(),
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                if fut.done():
+                    _raise_for_result(name, cmd_id, fut.result())
+                    return
+                if self._stopped.is_set():
+                    raise StreamClosedError(name)
+                if conn.closed.is_set():
+                    if idempotent:
+                        continue
+                    raise ConnectionLostError(name)
+                raise CommandTimeoutError(name)
+            finally:
+                for waiter in waiters:
+                    waiter.cancel()
+                conn.unregister(cmd_id)
+
+    async def _wait_conn(
+        self, name: str, cmd_id: str, deadline: float
+    ) -> _Connection:
+        loop = asyncio.get_running_loop()
+        while True:
+            if self._closed:
+                raise StreamClosedError(name)
+            conn = self._current
+            if conn is not None and not conn.closed.is_set():
+                return conn
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                raise CommandTimeoutError(f'{name} aguardando conexão')
+            _logger.debug(
+                f'Stream command waiting for connection name={name} '
+                f'cmd_id={cmd_id}'
+            )
+            with contextlib.suppress(TimeoutError):
+                await asyncio.wait_for(self._conn_ready.wait(), remaining)
 
     async def begin_drain(self) -> None:
         async with self._accept_lock:
@@ -127,6 +248,7 @@ class StreamClient:
             return
         self._closed = True
         self._stopped.set()
+        self._conn_ready.set()
         if self._supervisor is not None:
             self._supervisor.cancel()
         self._resolve_boot(StreamClosedError('client fechado'))

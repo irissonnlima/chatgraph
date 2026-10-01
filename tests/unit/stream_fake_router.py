@@ -6,6 +6,7 @@ tentativa usa `scripts[n]` e, sem roteiro, o `default`.
 """
 
 import asyncio
+import contextlib
 import json
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
@@ -31,6 +32,12 @@ class ConnScript:
     answer_ping: bool = True
     silent: bool = False
     abort_after_welcome: bool = False
+    command_error: str | None = None
+    command_omit_ok: bool = False
+    command_delay: float = 0.0
+    command_silent: bool = False
+    command_abort: bool = False
+    command_abort_after_reply: bool = False
 
 
 @dataclass
@@ -39,6 +46,8 @@ class FakeConn:
     ws: ServerConnection
     script: ConnScript
     frames: list[tuple[float, dict]] = field(default_factory=list)
+    sent: list[tuple[float, dict]] = field(default_factory=list)
+    reply_tasks: set[asyncio.Task] = field(default_factory=set)
     close_code: int | None = None
     close_reason: str | None = None
     welcome_at: float | None = None
@@ -48,7 +57,11 @@ class FakeConn:
     def of_type(self, frame_type: str) -> list[dict]:
         return [f for _, f in self.frames if f.get('type') == frame_type]
 
+    def results(self) -> list[tuple[float, dict]]:
+        return [(t, f) for t, f in self.sent if f['type'] == 'command_result']
+
     async def send(self, frame: dict) -> None:
+        self.sent.append((asyncio.get_running_loop().time(), frame))
         await self.ws.send(json.dumps(frame))
 
     def abort(self) -> None:
@@ -122,6 +135,8 @@ class FakeRouter:
         except ConnectionClosed:
             pass
         finally:
+            for task in conn.reply_tasks:
+                task.cancel()
             close_rcvd = ws.protocol.close_rcvd
             if close_rcvd is not None:
                 conn.close_code = close_rcvd.code
@@ -166,6 +181,34 @@ class FakeRouter:
             frame = self._record(conn, raw)
             if frame.get('type') == 'ping' and script.answer_ping:
                 await conn.send({'type': 'pong'})
+            if frame.get('type') == 'command':
+                self._on_command(conn, frame)
+
+    def _on_command(self, conn: FakeConn, frame: dict) -> None:
+        script = conn.script
+        if script.command_abort:
+            conn.abort()
+        elif not script.command_silent:
+            task = asyncio.get_running_loop().create_task(
+                self._reply(conn, frame)
+            )
+            conn.reply_tasks.add(task)
+            task.add_done_callback(conn.reply_tasks.discard)
+
+    @staticmethod
+    async def _reply(conn: FakeConn, frame: dict) -> None:
+        script = conn.script
+        if script.command_delay:
+            await asyncio.sleep(script.command_delay)
+        result = {'type': 'command_result', 'cmd_id': frame['cmd_id']}
+        if not script.command_omit_ok:
+            result['ok'] = script.command_error is None
+        if script.command_error is not None:
+            result['error'] = script.command_error
+        with contextlib.suppress(ConnectionClosed):
+            await conn.send(result)
+        if script.command_abort_after_reply:
+            conn.abort()
 
 
 def make_deliver(

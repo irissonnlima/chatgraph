@@ -161,6 +161,17 @@ class _Connection:
             f'Stream late command_result conn_id={self.id} cmd_id={cmd_id}'
         )
 
+    def register(self, cmd_id: str) -> asyncio.Future:
+        fut = asyncio.get_running_loop().create_future()
+        self._pending[cmd_id] = fut
+        self._idle.clear()
+        return fut
+
+    def unregister(self, cmd_id: str) -> None:
+        self._pending.pop(cmd_id, None)
+        if not self._pending:
+            self._idle.set()
+
     def pending_count(self) -> int:
         return len(self._pending)
 
