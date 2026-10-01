@@ -12,6 +12,19 @@ from ..models.userstate import ChatID, Menu, User, UserIdentity, UserState
 _logger = UserLoggerManager.get_system_logger()
 
 
+def router_v1_base(url: str) -> str:
+    """
+    Normaliza ROUTER_URL para a raiz /v1, aceitando só o host, /v1 e
+    /v1/actions. Serve ao HTTP (queue e stream) e ao WebSocket.
+    """
+    base = url.strip().rstrip('/')
+    if base.endswith('/actions'):
+        base = base[: -len('/actions')].rstrip('/')
+    if base.endswith('/v1'):
+        base = base[: -len('/v1')].rstrip('/')
+    return f'{base}/v1'
+
+
 class RouterHTTPClient:
     """
     Cliente HTTP para serviços de roteamento de mensagens.
@@ -41,11 +54,7 @@ class RouterHTTPClient:
         self.timeout = timeout
         self._bearer_token: str = password or ''
 
-        # Normaliza para a raiz /v1, removendo /actions se presente
-        _v1_base = self.base_url
-        if _v1_base.endswith('/actions'):
-            _v1_base = _v1_base[: -len('/actions')]
-        self._v1_base: str = _v1_base
+        self._v1_base: str = router_v1_base(base_url)
 
         # Configurar autenticação básica se fornecida
         _auth = None

@@ -5,7 +5,11 @@ Este módulo contém fixtures compartilhadas entre todos os testes.
 """
 
 import pytest
+import pytest_asyncio
 import respx
+
+from chatgraph.stream.options import _Settings  # noqa: PLC2701
+from tests.unit.stream_fake_router import FakeRouter
 
 
 @pytest.fixture
@@ -112,3 +116,29 @@ def sample_user_state_data(sample_chat_id_data):
         'route': 'start',
         'observation': 'test observation',
     }
+
+
+@pytest_asyncio.fixture
+async def fake_router():
+    """Router WebSocket falso do modo stream, em 127.0.0.1 porta livre."""
+    router = FakeRouter()
+    await router.start()
+    yield router
+    await router.close()
+
+
+@pytest.fixture
+def stream_settings():
+    """Prazos de teste do modo stream: dezenas de milissegundos."""
+    return _Settings(
+        backoff_base=0.01,
+        short_backoff_cap=0.05,
+        backoff_cap=0.2,
+        auth_retry_delay=0.05,
+        heartbeat_unit=0.1,
+        welcome_timeout=1.0,
+        dial_timeout=1.0,
+        command_timeout=1.0,
+        close_timeout=0.5,
+        rand=lambda ceiling: ceiling,
+    )
