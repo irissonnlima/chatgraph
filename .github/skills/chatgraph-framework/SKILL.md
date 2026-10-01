@@ -1,6 +1,6 @@
 ---
 name: chatgraph-framework
-description: "Use when: implementing a chatbot with chatgraph, creating routes with @app.route or @router.route, using UserCall, Route, Message, File, Button, EndChatResponse, RedirectResponse, TransferToMenu, BackgroundTask, setting up ChatbotApp, ChatbotRouter, include_router, configuring RabbitMQ consumer, adding per-user file logging with UserLoggerManager, integrating chatgraph in a new Python project."
+description: "Use when: implementing a chatbot with chatgraph, creating routes with @app.route or @router.route, using UserCall, Route, Message, File, Button, EndChatResponse, RedirectResponse, TransferToMenu, BackgroundTask, setting up ChatbotApp, ChatbotRouter, include_router, configuring RabbitMQ consumer, configuring WebSocket stream transport (ROUTER_TRANSPORT=stream, ROUTER_MENUS, StreamConsumer, SessionNotOwnedError), adding per-user file logging with UserLoggerManager, integrating chatgraph in a new Python project."
 argument-hint: "Descreva o fluxo de rotas que deseja implementar (opcional)"
 ---
 
@@ -46,8 +46,15 @@ RABBIT_URI=localhost:5672
 RABBIT_QUEUE=minha_fila
 RABBIT_PREFETCH=1
 RABBIT_VHOST=/
+# Só o host; /v1/actions continua aceito
 ROUTER_URL=http://localhost:8000
 ROUTER_TOKEN=meu_token
+
+# Opcional — transporte de entrada: queue (RabbitMQ, padrão) ou stream
+# (WebSocket). No stream as RABBIT_* são dispensadas e ROUTER_MENUS
+# (vírgula; padrão RABBIT_QUEUE) lista os menus servidos.
+# ROUTER_TRANSPORT=queue
+# ROUTER_MENUS=minha_fila
 
 # Opcional — nível de log padrão (DEBUG, INFO, WARNING, ERROR). Default: INFO
 CHATGRAPH_LOG_LEVEL=INFO
@@ -720,3 +727,44 @@ async def gerar_relatorio(dados_do_banco: list[dict]) -> VendasInsight | None:
   se estiver dentro de um handler, ou grave em log/banco se for um job
   agendado sem turno de chat nenhum.
 - Exemplo completo: `examples/content_insight.py`.
+
+---
+
+## 16. Transporte stream (WebSocket)
+
+Alternativa ao RabbitMQ: o bot recebe as mensagens do router por WebSocket. `ROUTER_TRANSPORT=stream` basta; o código das rotas não muda. `ChatbotApp()` escolhe o consumer pelo transporte; com consumer explícito: `ChatbotApp(message_consumer=StreamConsumer(router_url, router_token, menus=['rh']))`.
+
+| Variável | Descrição |
+|---|---|
+| `ROUTER_TRANSPORT` | `queue` (padrão) ou `stream` |
+| `ROUTER_MENUS` | menus servidos, separados por vírgula (padrão: `RABBIT_QUEUE`) |
+| `ROUTER_URL` | só o host (`https://voll-hml.verdecard.cloud`); `…/v1` e `…/v1/actions` continuam aceitos. A URL do WebSocket é derivada (`http→ws`, `https→wss`, `/v1/menus/connect`) |
+| `ROUTER_TOKEN` | precisa estar vinculado em `token_menus` a cada menu declarado |
+| `RABBIT_*` | dispensadas; só o `LogPublisher` usa, se `LOG_RABBIT_QUEUE` estiver definida |
+
+Comportamento:
+
+- ack imediato antes do handler, dedupe por `msg_id` + menu, processamento serial, fila de 100 com `nack` quando cheia;
+- o I/O roda numa thread própria: handler bloqueante não atrasa o ack, mas continua atrasando o próprio turno;
+- GoAway sem perda e reconexão com backoff;
+- 401/403/404/1008 no boot: `StreamRejectedError` e exit 1; sinal antes do `welcome` (ou `request_shutdown()` antes do `start_consume`): `StreamClosedError` e exit 1;
+- SIGTERM/SIGINT depois do boot: drena a fila por até 15 s e sai com 0; um segundo sinal mata na hora;
+- arquivos e ID Positiva continuam no HTTP; o `StreamConsumer` é de uso único.
+
+```python
+from chatgraph import is_session_not_owned
+
+try:
+    await usercall.send('Mensagem')
+except Exception as e:
+    if is_session_not_owned(e):
+        return None
+    raise
+```
+
+**Gotchas**
+
+- No stream, comando depois de `TransferToMenu` ou fallback falha com `SessionNotOwnedError` (no HTTP passava). O `UserCall` embrulha a exceção: use `is_session_not_owned(e)`. `usercall.set_observation` só loga o erro.
+- `time.sleep` em handler `async` continua travando o turno.
+- Observation que não é JSON vira `nack` e o router manda ao fallback (no queue a mensagem era descartada com log).
+- Exemplo completo, com Dockerfile: `examples/stream/` (bot de eco; `STREAM_ECHO_POD` entra no texto).

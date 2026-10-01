@@ -15,7 +15,9 @@ então as tasks `poetry run task test|lint|format` documentadas no README e no P
 funcionam — use os binários diretamente:
 
 ```bash
-.venv/bin/python -m pytest tests/unit -q            # suíte rápida (500 testes, ~20s)
+uv pip install --python .venv/bin/python 'websockets>=15.0' 'pytest-asyncio>=1.3.0' 'respx>=0.22.0'   # deps de dev, aditivo (sem remover nada do .venv)
+LOG_RABBIT_QUEUE= .venv/bin/python -m pytest tests/unit -q   # suíte rápida (738 testes, ~17s); sem a env vazia, o .env local com LOG_RABBIT_QUEUE derruba test_exception_not_marked_without_publisher
+PYTHONASYNCIODEBUG=1 LOG_RABBIT_QUEUE= .venv/bin/python -m pytest tests/unit -q -o addopts="" -W error::RuntimeWarning -W error::pytest.PytestUnraisableExceptionWarning   # gate de vazamento assíncrono
 .venv/bin/python -m pytest tests/unit/test_agent_executor.py -v          # um arquivo
 .venv/bin/python -m pytest tests/unit/test_agent_executor.py::TestNome::test_caso -v   # um teste
 .venv/bin/python -m pytest -m integration -v        # integração (auto-skip sem env vars)
@@ -43,6 +45,13 @@ Pipeline de um turno:
 ```
 RabbitMQ → MessageConsumer → ChatbotApp.process_message → default_functions (regex)
         → guard (auth_level) → handler da rota → __process_func_response → UserCall → RouterHTTPClient
+```
+
+Variante `ROUTER_TRANSPORT=stream` (o `queue` continua o padrão):
+
+```
+Router (WebSocket) → StreamConsumer (thread chatgraph-stream-io) → ChatbotApp.process_message → …
+        → UserCall → RouterStreamClient
 ```
 
 Pontos que não se deduzem lendo um arquivo só:
@@ -94,6 +103,18 @@ navegação *e* escreve a resposta). Regras que orientam mudanças aqui:
 - Proteções do turno que existem por motivo específico, não as remova sem substituto: dedup de
   tool por `result_key`, `MAX_ATTEMPTS_PER_TOOL = 2`, guard de self-redirect, alvo de rota
   desconhecido vira "none", transfer inválido falha **antes** de qualquer side effect.
+
+### `chatgraph/stream/` — transporte WebSocket
+
+Espelho do `adapters/stream/` do `chatgraph-go`. Regras que orientam mudanças aqui:
+
+- **O I/O do WebSocket roda só na thread `chatgraph-stream-io`**, com loop própria; os handlers continuam na loop principal. Um handler `async` que bloqueia (há bots com `time.sleep`) não pode atrasar o ack nem o ping. A travessia entre as loops é `_IoThread.call`, o único ponto permitido.
+- **O ack nunca depende do handler**: é escrito pelo loop de leitura antes de a entrega entrar na fila.
+- **`accept_lock` protege dedupe e drain**: `seen`/`add` e a sentinela do drain saem sob o mesmo lock, sem `await` entre `seen` e `add`.
+- **Pendentes de comando sempre saem no `finally`** de cada volta do `command`, e `_idle` sinaliza a aposentadoria da conexão no GoAway.
+- **Toda task do pacote** tem nome `chatgraph-stream-`, fica num `set` do dono e loga `Stream task crashed` se terminar com exceção. `CancelledError` nunca é engolido e não há `except BaseException`.
+- `ROUTER_URL` é normalizada por `router_v1_base` (HTTP e WebSocket): só o host é o formato recomendado.
+- Log nunca leva payload (`user_state`, `message`, `observation`, `platform_state`).
 
 ## Convenções
 

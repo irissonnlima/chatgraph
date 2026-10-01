@@ -33,6 +33,57 @@ RABBIT_VHOST=/
 GRPC_URI=grpc://localhost:50051
 ```
 
+## **Transporte stream (WebSocket)**
+
+Além do consumo por RabbitMQ (`queue`, o padrão), o bot pode receber as mensagens do router por WebSocket (`stream`). A escolha é por variável de ambiente; o código do bot não muda.
+
+| Variável | Descrição |
+|---|---|
+| `ROUTER_TRANSPORT` | `queue` (padrão) ou `stream`. |
+| `ROUTER_MENUS` | Menus servidos pelo bot, separados por vírgula. Padrão: o valor de `RABBIT_QUEUE`. |
+| `ROUTER_URL` | **Só o host**, como `https://voll-hml.verdecard.cloud`. As formas `…/v1` e `…/v1/actions` continuam aceitas. A URL do WebSocket é derivada: `http` vira `ws`, `https` vira `wss`, mais `/v1/menus/connect`. A mesma normalização vale para o HTTP, no `queue` e no `stream`. |
+| `ROUTER_TOKEN` | Token do bot. Precisa estar vinculado em `token_menus` a cada menu declarado em `ROUTER_MENUS`. |
+| `RABBIT_*` | Dispensadas no `stream`. Só o `LogPublisher` usa RabbitMQ, e só se `LOG_RABBIT_QUEUE` estiver definida. |
+
+Comportamento:
+
+- Cada entrega é confirmada (`ack`) na hora, antes do handler rodar, e entregas repetidas (mesmo `msg_id` e menu) são descartadas.
+- O processamento é serial, como no `queue`. A fila interna guarda até 100 entregas; cheia, o SDK responde `nack` e o router manda a mensagem ao fallback.
+- O I/O do WebSocket roda numa thread própria (`chatgraph-stream-io`). Um handler `async` que bloqueia a loop (por exemplo `time.sleep`) não atrasa o `ack` nem o ping, mas **continua atrasando o próprio turno**.
+- Quando o router avisa que vai sair (GoAway), o SDK abre a nova conexão antes de fechar a antiga, sem perder entrega. Quedas são tratadas com reconexão e backoff.
+- Boot rejeitado (401, 403, 404 ou 1008 antes do `welcome`): `StreamRejectedError` e exit 1.
+- Sinal (SIGINT ou SIGTERM) antes do `welcome`: `StreamClosedError` e exit 1. O mesmo vale para `request_shutdown()` chamado antes do `start_consume`.
+- SIGTERM ou SIGINT depois do boot: o SDK para de aceitar entregas (`nack` com `draining`), processa o que já está na fila por até 15 s (`drain_timeout`) e sai com exit 0. Um segundo sinal mata o processo na hora.
+- Arquivos, ID Positiva e consultas continuam no HTTP.
+- O `StreamConsumer` é de uso único: depois de `start_consume` ele não pode ser reiniciado.
+
+Depois de `TransferToMenu` ou de um fallback, a sessão pertence a outro menu e qualquer comando do handler falha com `SessionNotOwnedError`. O `UserCall` embrulha a exceção original, então use `is_session_not_owned`:
+
+```python
+from chatgraph import is_session_not_owned
+
+try:
+    await usercall.send('Mensagem')
+except Exception as e:
+    if is_session_not_owned(e):
+        return None
+    raise
+```
+
+`usercall.set_observation` só registra o erro em log e não propaga.
+
+Construção manual do consumer:
+
+```python
+from chatgraph import ChatbotApp, StreamConsumer
+
+app = ChatbotApp(
+    message_consumer=StreamConsumer(router_url, router_token, menus=['rh'])
+)
+```
+
+Um bot de eco completo, com Dockerfile, está em `examples/stream/`.
+
 Aqui está uma descrição mais detalhada de cada um dos objetos mencionados. Esses componentes são fundamentais para a estrutura e funcionalidade do ChatGraph, permitindo gerenciar fluxos de chat, interações e estados do usuário de forma eficiente.
 
 ### **Tipos de Objetos e Suas Funções**
