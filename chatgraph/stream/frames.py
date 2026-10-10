@@ -20,13 +20,16 @@ def encode(frame: dict) -> str:
     return json.dumps(frame, ensure_ascii=False, separators=(',', ':'))
 
 
-def hello(menus: list[str], max_inflight: int) -> dict:
-    return {
+def hello(menus: list[str], max_inflight: int, mode: str = '') -> dict:
+    frame = {
         'type': HELLO,
         'menus': menus,
         'version': PROTOCOL_VERSION,
         'max_inflight': max_inflight,
     }
+    if mode:
+        frame['mode'] = mode
+    return frame
 
 
 def ack(delivery_id: str, msg_id: str) -> dict:

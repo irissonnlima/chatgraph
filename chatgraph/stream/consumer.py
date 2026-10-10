@@ -15,6 +15,7 @@ from ..logger.user_logger import UserLoggerManager
 from ..messages.log_publisher import LogPublisher
 from ..messages.turn import build_usercall, publish_edge_error
 from ..models.userstate import ChatID
+from ..services.router_http_client import RouterHTTPClient
 from ..types.usercall import UserCall
 from .client import DRAIN_SENTINEL, StreamClient
 from .connection import spawn
@@ -46,6 +47,9 @@ class StreamConsumer:
         queue_size: int = 100,
         drain_timeout: float = 15.0,
         *,
+        tolerant: bool = False,
+        mode: str = '',
+        actions_via_http: bool = False,
         _settings: Optional[_Settings] = None,
     ) -> None:
         self._options = normalize_options(
@@ -56,12 +60,15 @@ class StreamConsumer:
                 username=username,
                 queue_size=queue_size,
                 drain_timeout=drain_timeout,
+                tolerant=tolerant,
+                mode=mode,
             )
         )
+        self._actions_via_http = actions_via_http
         self._settings = _settings
         self._history_store: Optional[HistoryStore] = None
         self._log_publisher: Optional[LogPublisher] = None
-        self._router_client: Optional[RouterStreamClient] = None
+        self._router_client: Optional[RouterHTTPClient] = None
         self._client: Optional[StreamClient] = None
         self._runtime: Optional[_IoThread] = None
         self._tasks: set[asyncio.Task] = set()
@@ -72,12 +79,16 @@ class StreamConsumer:
         self._in_turn = False
 
     @classmethod
-    def load_dotenv(
+    def load_dotenv(  # noqa: PLR0913
         cls,
         menus_env: str = 'ROUTER_MENUS',
         router_env: str = 'ROUTER_URL',
         router_token_env: str = 'ROUTER_TOKEN',
         queue_env: str = 'RABBIT_QUEUE',
+        *,
+        tolerant: bool = False,
+        mode: str = '',
+        actions_via_http: bool = False,
     ) -> 'StreamConsumer':
         router_url = os.getenv(router_env, '').strip()
         router_token = os.getenv(router_token_env, '').strip()
@@ -95,7 +106,14 @@ class StreamConsumer:
             raise ValueError(
                 f'Corrija as variáveis de ambiente: {envs_missing}'
             )
-        return cls(router_url, router_token, menus)
+        return cls(
+            router_url,
+            router_token,
+            menus,
+            tolerant=tolerant,
+            mode=mode,
+            actions_via_http=actions_via_http,
+        )
 
     def set_history_store(self, store: Optional[HistoryStore]) -> None:
         self._history_store = store
@@ -132,12 +150,19 @@ class StreamConsumer:
         inbox: asyncio.Queue = asyncio.Queue()
         options = self._options
         self._install_signals(main_loop)
-        self._router_client = RouterStreamClient(
-            base_url=options.router_url,
-            command=self._command,
-            username=options.username,
-            password=options.token,
-        )
+        if self._actions_via_http:
+            self._router_client = RouterHTTPClient(
+                base_url=options.router_url,
+                username=options.username,
+                password=options.token,
+            )
+        else:
+            self._router_client = RouterStreamClient(
+                base_url=options.router_url,
+                command=self._command,
+                username=options.username,
+                password=options.token,
+            )
         self._runtime = _IoThread()
         self._runtime.start()
         overran = False
@@ -150,7 +175,8 @@ class StreamConsumer:
                 )
             )
             _logger.info(
-                f'Router transport mode=stream menus={list(options.menus)}'
+                f'Router transport mode={options.mode or "stream"} '
+                f'menus={list(options.menus)}'
             )
             await self._connect()
             worker = spawn(
@@ -315,7 +341,7 @@ class StreamConsumer:
         )
         table.add_column('Valor', justify='center', style='magenta')
 
-        table.add_row('Transport', 'stream')
+        table.add_row('Transport', options.mode or 'stream')
         table.add_row('Menus', ', '.join(options.menus))
         table.add_row('Router URL', options.router_url)
         table.add_row('WebSocket URL', connect_url(options.router_url))

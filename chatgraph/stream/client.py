@@ -29,6 +29,9 @@ _logger = UserLoggerManager.get_system_logger()
 
 DRAIN_SENTINEL: Final = object()
 
+_NOT_FOUND = 404
+_TRANSPORT_QUEUE = 'queue'
+
 _REJECTIONS = {
     401: '401 unauthorized',
     403: '403 forbidden',
@@ -91,6 +94,11 @@ async def _send_nack(
         )
 
 
+def _log_idle(conn: _Connection) -> None:
+    if conn.transport == _TRANSPORT_QUEUE:
+        _logger.info('Stream idle: router in queue mode')
+
+
 def _raise_for_result(name: str, cmd_id: str, result: dict) -> None:
     if result.get('ok') is True:
         return
@@ -130,6 +138,7 @@ class StreamClient:
         self._retired: set[_Connection] = set()
         self._conn_ready = asyncio.Event()
         self._connected_at = 0.0
+        self._not_found_logged = False
         self._boot: asyncio.Future = asyncio.get_running_loop().create_future()
         self._supervisor: asyncio.Task | None = None
         self._stopped = asyncio.Event()
@@ -145,6 +154,8 @@ class StreamClient:
             self._supervisor = spawn(
                 self._supervise(), 'supervisor', self._tasks
             )
+            if self._options.tolerant:
+                self._resolve_boot()
         await asyncio.shield(self._boot)
 
     async def command(
@@ -302,6 +313,7 @@ class StreamClient:
 
     def _promote(self, conn: _Connection) -> None:
         self._current = conn
+        self._not_found_logged = False
         self._connected_at = asyncio.get_running_loop().time()
         ready, self._conn_ready = self._conn_ready, asyncio.Event()
         ready.set()
@@ -334,8 +346,10 @@ class StreamClient:
                 self._promote(conn)
                 _logger.info(
                     f'Stream connected conn_id={conn.id} pod={conn.pod} '
-                    f'heartbeat={conn.heartbeat}'
+                    f'heartbeat={conn.heartbeat} '
+                    f'router_transport={conn.transport}'
                 )
+                _log_idle(conn)
                 self._resolve_boot()
                 if await self._monitor(conn) is None:
                     return
@@ -366,9 +380,10 @@ class StreamClient:
                     StreamRejectedError(_rejection_message(exc))
                 )
                 return None
-            _logger.error(f'Stream rejected, retrying {failure_detail(exc)}')
+            self._log_rejection(exc)
             delay = settings.auth_retry_delay
         else:
+            self._not_found_logged = False
             cap = settings.backoff_cap
             if failure is FailureClass.SHORT:
                 cap = settings.short_backoff_cap
@@ -388,6 +403,27 @@ class StreamClient:
         if await self._sleep(delay):
             return None
         return attempt
+
+    def _log_rejection(self, exc: Exception) -> None:
+        detail = failure_detail(exc)
+        if (
+            self._options.tolerant
+            and isinstance(exc, InvalidStatus)
+            and exc.response.status_code == _NOT_FOUND
+        ):
+            if self._not_found_logged:
+                _logger.debug(
+                    f'Stream router has no stream endpoint (404), retrying '
+                    f'{detail}'
+                )
+                return
+            self._not_found_logged = True
+            _logger.warning(
+                'Stream router has no stream endpoint (404), retrying'
+            )
+            return
+        self._not_found_logged = False
+        _logger.error(f'Stream rejected, retrying {detail}')
 
     async def _monitor(self, conn: _Connection) -> _Connection | None:
         while True:
@@ -426,6 +462,7 @@ class StreamClient:
                     f'Stream connection replaced old_conn_id={old.id} '
                     f'conn_id={conn.id} pod={conn.pod}'
                 )
+                _log_idle(conn)
                 self._retire(old)
                 return conn
             return None

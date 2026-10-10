@@ -68,6 +68,7 @@ class _Connection:
     ) -> None:
         self.id = ''
         self.pod = ''
+        self.transport = ''
         self.heartbeat = settings.default_heartbeat_s * settings.heartbeat_unit
         self.last_recv = asyncio.get_running_loop().time()
         self.closed = asyncio.Event()
@@ -102,7 +103,9 @@ class _Connection:
         ready = False
         try:
             async with asyncio.timeout(settings.welcome_timeout):
-                hello = frames.hello(list(options.menus), options.queue_size)
+                hello = frames.hello(
+                    list(options.menus), options.queue_size, options.mode
+                )
                 await self._ws.send(frames.encode(hello))
                 await self._await_welcome()
             ready = True
@@ -228,6 +231,7 @@ class _Connection:
             self.heartbeat = heartbeat_s * self._settings.heartbeat_unit
             self.id = frame.get('conn_id', '')
             self.pod = frame.get('pod', '')
+            self.transport = str(frame.get('transport') or '')
             version = frame.get('version')
             if version != frames.PROTOCOL_VERSION:
                 _logger.warning(

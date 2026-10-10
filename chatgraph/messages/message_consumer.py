@@ -168,7 +168,7 @@ class MessageConsumer:
                 '[x] Server inicializado! Aguardando solicitações RPC'
             )
             async for message in queue:
-                async with message.process():
+                async with message.process(requeue=True):
                     await self.on_request(message.body, process_message)
 
     async def start_consume(self, process_message: Callable) -> None:

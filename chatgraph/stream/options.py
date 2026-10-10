@@ -21,6 +21,8 @@ class StreamOptions:
     username: str = _DEFAULT_USERNAME
     queue_size: int = _DEFAULT_QUEUE_SIZE
     drain_timeout: float = _DEFAULT_DRAIN_TIMEOUT
+    tolerant: bool = False
+    mode: str = ''
 
 
 @dataclass
@@ -84,4 +86,6 @@ def normalize_options(opts: StreamOptions) -> StreamOptions:
         drain_timeout=opts.drain_timeout
         if opts.drain_timeout > 0
         else _DEFAULT_DRAIN_TIMEOUT,
+        tolerant=opts.tolerant,
+        mode=opts.mode,
     )

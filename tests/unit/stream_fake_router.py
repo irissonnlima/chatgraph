@@ -31,6 +31,7 @@ class ConnScript:
     deliver_before_welcome: dict | None = None
     on_hello: Callable[[], Awaitable[None]] | None = None
     heartbeat_s: int = 5
+    transport: str | None = None
     answer_ping: bool = True
     silent: bool = False
     abort_after_welcome: bool = False
@@ -166,13 +167,16 @@ class FakeRouter:
         if script.welcome_delay:
             await asyncio.sleep(script.welcome_delay)
         conn.welcome_at = asyncio.get_running_loop().time()
-        await conn.send({
+        welcome = {
             'type': 'welcome',
             'conn_id': f'conn-{conn.index}',
             'pod': 'router-a',
             'heartbeat_s': script.heartbeat_s,
             'version': '1.0',
-        })
+        }
+        if script.transport is not None:
+            welcome['transport'] = script.transport
+        await conn.send(welcome)
         if script.abort_after_welcome:
             conn.abort()
             return
