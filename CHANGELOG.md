@@ -4,7 +4,7 @@ Todas as mudanças relevantes do `chatgraph` ficam neste arquivo. O formato segu
 
 Histórico anterior a esta seção: `PROGRESS.md` e `git log`.
 
-## [Unreleased]
+## [1.5.0] — 2026-10-10
 
 ### Adicionado
 - Transporte stream por WebSocket (`ROUTER_TRANSPORT=stream`, `ROUTER_MENUS`).
