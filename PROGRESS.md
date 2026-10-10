@@ -1,6 +1,6 @@
 # Progresso do Projeto ChatGraph
 
-**Última atualização:** 2026-08-17
+**Última atualização:** 2026-10-01
 
 ## 1. Visão Geral do Projeto
 
@@ -46,6 +46,12 @@ tests/
 
 ## 4. Linha do Tempo
 
+### 2026-10
+
+| Data | Commit | Descrição |
+|------|--------|-----------|
+| 2026-10-01 | - | **Fase 3 do modo stream (release planejada `1.5.0`, branch `feat/menu-stream`, ainda sem merge).** Novo transporte por WebSocket (`ROUTER_TRANSPORT=stream`, `ROUTER_MENUS`) em `chatgraph/stream/`, espelho do `adapters/stream/` do `chatgraph-go`: `StreamConsumer` (mesma superfície do `MessageConsumer`), `StreamClient` (supervisor com backoff, GoAway sem perda, ack imediato, dedupe, fila de 100 com `nack`, drain com teto de 15 s), executor de comandos com trava por chat e reenvio só de `set_route`/`set_observation`, `RouterStreamClient` (subclasse do `RouterHTTPClient`; arquivos, ID Positiva e consultas continuam no HTTP) e `SessionNotOwnedError` exposto por `is_session_not_owned`. Extrações sem mudança de comportamento no queue: `messages/turn.py` (`build_usercall`, `publish_edge_error`) e `RouterHTTPClient.build_send_payload`. **Decisão: I/O do stream numa thread dedicada (`chatgraph-stream-io`) com loop própria**, handlers na loop principal. Motivo: bots reais fazem I/O bloqueante em handler `async` (`time.sleep(1)` em `PCS_0299`); numa loop única isso atrasaria o ack além do `ROUTER_ACK_TIMEOUT=2s`, e o router reentregaria a mensagem em duplicidade. **Decisão: normalização única de `ROUTER_URL`** (`router_v1_base`, HTTP e WebSocket): o formato recomendado passa a ser só o host, e `…/v1` e `…/v1/actions` continuam aceitos; corrige o `RouterHTTPClient` do modo queue com a URL só com o host (o formato do `.env.example`), que batia em `<host>/actions/…`. `websockets>=15.0` vira dependência obrigatória; `pytest-asyncio` e `respx` passam para `[dependency-groups] dev`. Sinal antes do `welcome` sai com exit 1 (paridade com o Go); SIGTERM depois do boot drena e sai com 0. `pyproject.toml` fica em `1.4.0` até o passo de release (bump, `CHANGELOG`, `main`, tag e PyPI). Pendente: validação na stack do router (E5). |
+
 ### 2026-08
 
 | Data | Commit | Descrição |
@@ -77,7 +83,8 @@ tests/
 | **Logging** | ✅ | UserLoggerManager com logs por usuário e sistema |
 | **CLI** | ✅ | Comandos básicos (campaigns, delete-ustate) |
 | **Agentes de IA** | ✅ | Módulo `chatgraph/agent/` (protocolo single-agent do Go): Agent + tools locais, OpenRouterClient, schema normalizer, executor com proteções (inclui re-prompt corretivo de ação inválida), histórico com pareamento assistant/tool, `end_actions`/`validate_config`, `generate_content` desacoplado do turno de chat. Extra `chatgraph[agent]`. Futuro: two-agent, MCP, memória, guardrails |
-| **Testes Unitários** | ✅ | 500 testes passando (agent + histórico + log publisher + UserState) |
+| **Transporte stream (WebSocket)** | ⚠️ | Implementado em `chatgraph/stream/` na branch `feat/menu-stream` (release planejada `1.5.0`); falta validar na stack do router (E5) |
+| **Testes Unitários** | ✅ | 738 testes passando (agent + histórico + log publisher + UserState + stream), rodando com `LOG_RABBIT_QUEUE=` |
 | **Testes de Integração** | ⚠️ | Requer variáveis de ambiente configuradas |
 | **Documentação** | ⚠️ | README completo + SKILL.md §14 (agentes); falta docs/ detalhada |
 
@@ -163,6 +170,8 @@ poetry run ruff check . && ruff format .
 | Log Publisher | load_dotenv() + opcional | Retrocompatível — se `LOG_RABBIT_QUEUE` não estiver definido, o publisher é `None` e os erros não são publicados |
 | Agentes de IA | Port fiel do Go, sem pydantic-ai/SDK openai | Paridade de comportamento entre os frameworks; cliente OpenRouter próprio via httpx; pydantic>=2 isolado ao módulo `agent/` (extra opcional `chatgraph[agent]`, exports lazy PEP 562) |
 | transfer_menu do agente | Seletor por `name` do menu | O client Python só transfere por nome (`Menu.from_name`); queue/menu_id do Go não mapeiam — reintroduzir se o RouterHTTPClient ganhar transfer por queue |
+| I/O do stream | Thread dedicada `chatgraph-stream-io` com loop própria; handlers na loop principal | Handler `async` bloqueante (há bots com `time.sleep`) numa loop única atrasaria ack e ping e geraria reentrega duplicada; a thread protege o ack, mas o handler bloqueante continua atrasando o próprio turno |
+| `ROUTER_URL` | `router_v1_base` única para HTTP e WebSocket; formato recomendado = só o host | Aceita host, `/v1` e `/v1/actions`; as formas em uso nos bots resolvem como antes e a forma só com o host, que quebrava o HTTP, passa a funcionar |
 | Redirects | `MAX_REDIRECT_DEPTH=5` global | Recursão de `RedirectResponse` era ilimitada (risco de loop, agravado por agentes); a reentrada por redirect também não regrava MESSAGE_IN no histórico |
 | end_session do agente | Seletor por `name` (depois `id`) de `EndActionInfo`, mesmo critério do `transfer_menu` | `end_session` cobre encerrar E transferir para humano (mesma EndAction no chatbot-router); sem `end_actions` configuradas, `end_action_id` continua livre (retrocompatível) |
 | Ação inválida do agente | Re-prompt corretivo (1 tentativa/turno via `AgentContext.last_action_error`), depois mensagem neutra fixa | Um `transfer_menu`/`end_session` com seletor inexistente perdia o turno inteiro em silêncio (ou, pior, enviava a promessa antes do router rejeitar); "falha antes de side effect" continua valendo — a correção nunca executa ação |
@@ -181,6 +190,11 @@ poetry run ruff check . && ruff format .
 | Baixa | Dispatcher com serialização por chat_id (prefetch > 1 seguro p/ bots com agente) | messages/ | ❌ |
 | Baixa | Exemplos adicionais | examples/ | ⚠️ (`examples/agents_bot.py` criado) |
 | Baixa | Suporte a mais plataformas | bot/ | ❌ |
+| Média | `tests/unit/test_chatbot_app_log_publisher.py::TestPublishErrorLogMarksException::test_exception_not_marked_without_publisher` falha quando o `.env` local define `LOG_RABBIT_QUEUE`; o gate roda com `LOG_RABBIT_QUEUE=` até o teste isolar a env | tests/unit | ⚠️ |
+| Baixa | Suíte do stream validada com `websockets` 16.0 (`.venv`) e 17.1 (`uv.lock`); reavaliar o piso `>=15.0` nas próximas majors | pyproject.toml | ⚠️ |
+| Baixa | `MessageConsumer.load_dotenv` lista só a última variável faltante (dict indexado pelo valor; várias `None` colidem e sobra `['ROUTER_TOKEN']`); inverter para `{nome_env: valor}` como no `StreamConsumer` | messages/ | ❌ |
+| Baixa | `make_deliver` do `tests/unit/stream_fake_router.py` não põe `menu` dentro do `user_state` (o router põe); contra o fake o eco do exemplo sai com menu `None` | tests/unit | ❌ |
+| Média | Validação do modo stream na stack do router (profile `sdk-python`, E5) e release `1.5.0` | examples/stream + router | ❌ |
 
 ## 10. Notas e Observações
 

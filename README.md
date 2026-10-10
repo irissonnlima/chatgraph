@@ -33,6 +33,75 @@ RABBIT_VHOST=/
 GRPC_URI=grpc://localhost:50051
 ```
 
+## **Transporte stream (WebSocket)**
+
+Além do consumo por RabbitMQ (`queue`, o padrão), o bot pode receber as mensagens do router por WebSocket (`stream`). A escolha é por variável de ambiente; o código do bot não muda.
+
+| Variável | Descrição |
+|---|---|
+| `ROUTER_TRANSPORT` | `queue` (padrão), `stream` ou `dual`. O `dual` é a transição: consome a fila RabbitMQ **e** mantém a conexão stream, com todas as ações por HTTP. Use durante o corte do router. |
+| `ROUTER_MENUS` | Menus servidos pelo bot, separados por vírgula. Padrão: o valor de `RABBIT_QUEUE`. |
+| `ROUTER_URL` | **Só o host**, como `https://voll-hml.verdecard.cloud`. As formas `…/v1` e `…/v1/actions` continuam aceitas. A URL do WebSocket é derivada: `http` vira `ws`, `https` vira `wss`, mais `/v1/menus/connect`. A mesma normalização vale para o HTTP, no `queue` e no `stream`. |
+| `ROUTER_TOKEN` | Token do bot. Precisa estar vinculado em `token_menus` a cada menu declarado em `ROUTER_MENUS`. |
+| `RABBIT_*` | Dispensadas no `stream`; obrigatórias no `queue` e no `dual`. Só o `LogPublisher` usa RabbitMQ, e só se `LOG_RABBIT_QUEUE` estiver definida. |
+
+Comportamento:
+
+- Cada entrega é confirmada (`ack`) na hora, antes do handler rodar, e entregas repetidas (mesmo `msg_id` e menu) são descartadas.
+- O processamento é serial, como no `queue`. A fila interna guarda até 100 entregas; cheia, o SDK responde `nack` e o router manda a mensagem ao fallback.
+- O I/O do WebSocket roda numa thread própria (`chatgraph-stream-io`). Um handler `async` que bloqueia a loop (por exemplo `time.sleep`) não atrasa o `ack` nem o ping, mas **continua atrasando o próprio turno**.
+- Quando o router avisa que vai sair (GoAway), o SDK abre a nova conexão antes de fechar a antiga, sem perder entrega. Quedas são tratadas com reconexão e backoff.
+- Boot rejeitado (401, 403, 404 ou 1008 antes do `welcome`): `StreamRejectedError` e exit 1.
+- Sinal (SIGINT ou SIGTERM) antes do `welcome`: `StreamClosedError` e exit 1. O mesmo vale para `request_shutdown()` chamado antes do `start_consume`.
+- SIGTERM ou SIGINT depois do boot: o SDK para de aceitar entregas (`nack` com `draining`), processa o que já está na fila por até 15 s (`drain_timeout`) e sai com exit 0. Um segundo sinal mata o processo na hora.
+- Arquivos, ID Positiva e consultas continuam no HTTP.
+- O `StreamConsumer` é de uso único: depois de `start_consume` ele não pode ser reiniciado.
+
+Depois de `TransferToMenu` ou de um fallback, a sessão pertence a outro menu e qualquer comando do handler falha com `SessionNotOwnedError`. O `UserCall` embrulha a exceção original, então use `is_session_not_owned`:
+
+```python
+from chatgraph import is_session_not_owned
+
+try:
+    await usercall.send('Mensagem')
+except Exception as e:
+    if is_session_not_owned(e):
+        return None
+    raise
+```
+
+`usercall.set_observation` só registra o erro em log e não propaga.
+
+Construção manual do consumer:
+
+```python
+from chatgraph import ChatbotApp, StreamConsumer
+
+app = ChatbotApp(
+    message_consumer=StreamConsumer(router_url, router_token, menus=['rh'])
+)
+```
+
+Um bot de eco completo, com Dockerfile, está em `examples/stream/`.
+
+### **Migração para o modo stream: queue → dual → stream**
+
+O corte do router de `queue` para `stream` não exige trocar todos os bots no mesmo instante. O modo `dual` permite que cada bot troque no seu próprio deploy, antes do corte, e que o corte e o rollback dependam só do `ROUTER_TRANSPORT` do router.
+
+1. **`queue`** (estado atual). Nenhuma mudança.
+2. **`dual`**: `ROUTER_TRANSPORT=dual`, mantendo as `RABBIT_*` e `ROUTER_URL`/`ROUTER_TOKEN`, e acrescentando `ROUTER_MENUS` (ou deixando o padrão, `RABBIT_QUEUE`). O código do bot não muda. O token precisa de vínculo em `token_menus` para cada menu.
+3. **`stream`** puro (depois do corte do router, fora desta etapa): `ROUTER_TRANSPORT=stream`, sem `RABBIT_*`.
+
+Com `dual`, o bot:
+
+- consome a fila exatamente como no `queue` e mantém a conexão stream em paralelo; as duas origens entregam ao mesmo `process_message`;
+- faz **todas** as ações por HTTP, como no `queue`. Não há a cerca `SessionNotOwnedError` do `stream`;
+- manda `"mode":"dual"` no `hello` e lê `transport` no `welcome`. Com o router em `queue`, a conexão fica de pé sem receber nada (log `Stream idle: router in queue mode`); com o router em `stream`, as mensagens chegam por ela; num rollback do router, voltam para a fila;
+- **nunca derruba o processo** por causa do lado stream. 401, 403 e `1008` no `hello` (por exemplo `router_in_queue_mode`) dão log `ERROR` e nova tentativa a cada 30 s. 404 (router sem o endpoint, por exemplo antes do deploy da pré-conexão) dá nova tentativa a cada 30 s, com um único `WARNING` por sequência. 503 e falhas de rede usam o backoff normal;
+- trata SIGTERM e SIGINT como o `stream`: drena o que está na fila interna do stream, cancela o consumo da fila RabbitMQ e sai com exit 0. O turno da fila que estiver em voo no SIGTERM é interrompido e a mensagem volta para a fila (requeue), para ser reprocessada por outro pod, como no `queue`. Exceção em qualquer dos dois lados cancela o outro e sobe.
+
+Concorrência: há até um turno por caminho ao mesmo tempo (a fila processa no próprio laço de consumo; o stream, no worker). Na prática só um caminho recebe por vez, porque o router entrega por um transporte só, mas o SDK não impede dois turnos simultâneos, um de cada origem. Um handler não deve assumir serialização entre os dois caminhos.
+
 Aqui está uma descrição mais detalhada de cada um dos objetos mencionados. Esses componentes são fundamentais para a estrutura e funcionalidade do ChatGraph, permitindo gerenciar fluxos de chat, interações e estados do usuário de forma eficiente.
 
 ### **Tipos de Objetos e Suas Funções**

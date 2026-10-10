@@ -25,6 +25,15 @@ from .models.userstate import (
     UserInternal,
     UserState,
 )
+from .stream import (
+    CommandTimeoutError,
+    ConnectionLostError,
+    SessionNotOwnedError,
+    StreamClosedError,
+    StreamConsumer,
+    StreamRejectedError,
+    is_session_not_owned,
+)
 from .types.background_task import BackgroundTask
 from .types.end_types import (
     EndChatResponse,
@@ -94,6 +103,13 @@ __all__ = [
     'ChatbotRouter',
     'RedirectResponse',
     'MessageConsumer',
+    'StreamConsumer',
+    'StreamRejectedError',
+    'SessionNotOwnedError',
+    'CommandTimeoutError',
+    'ConnectionLostError',
+    'StreamClosedError',
+    'is_session_not_owned',
     'LogPublisher',
     'LogEnvelope',
     'ErrorLogPayload',
