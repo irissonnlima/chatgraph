@@ -1,8 +1,8 @@
-import inspect
 from functools import wraps
 
 from ..error.chatbot_error import ChatbotError
 from ..logger.user_logger import UserLoggerManager
+from .route_registry import build_route_entry
 
 _logger = UserLoggerManager.get_system_logger()
 
@@ -31,12 +31,23 @@ class ChatbotRouter:
         """
         return self.__routes
 
-    def route(self, route_name: str, auth_level: str | None = None):
+    def route(
+        self,
+        route_name: str,
+        auth_level: str | None = None,
+        *,
+        description: str = '',
+        ai_visible: bool = False,
+    ):
         """
         Decorador para adicionar uma função como uma rota no roteador do chatbot.
 
         Args:
             route_name (str): O nome da rota para a qual a função deve ser associada.
+            auth_level (str | None): Nível de autorização exigido pela rota.
+            description (str): Prompt de comportamento da rota para
+                agentes de IA (injetado no system prompt do protocolo).
+            ai_visible (bool): Expõe a rota ao roteamento do agente de IA.
 
         Returns:
             function: O decorador que adiciona a função à rota especificada.
@@ -45,25 +56,12 @@ class ChatbotRouter:
         route_name = route_name.strip().lower()
 
         def decorator(func):
-            params = dict()
-            signature = inspect.signature(func)
-            output_param = signature.return_annotation
-
-            for name, param in signature.parameters.items():
-                param_type = (
-                    param.annotation
-                    if param.annotation != inspect.Parameter.empty
-                    else 'Any'
-                )
-                params[param_type] = name
-                _logger.debug(f'Parameter: {name}, Type: {param_type}')
-
-            self.__routes[route_name] = {
-                'function': func,
-                'params': params,
-                'return': output_param,
-                'auth_level': auth_level,
-            }
+            self.__routes[route_name] = build_route_entry(
+                func,
+                auth_level=auth_level,
+                description=description,
+                ai_visible=ai_visible,
+            )
 
             @wraps(func)
             def wrapper(*args, **kwargs):

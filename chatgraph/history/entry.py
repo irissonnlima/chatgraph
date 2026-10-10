@@ -8,6 +8,7 @@ class HistoryRole(Enum):
     USER = 'user'
     BOT = 'bot'
     SYSTEM = 'system'
+    TOOL = 'tool'
 
 
 class HistoryEventType(Enum):
@@ -16,6 +17,8 @@ class HistoryEventType(Enum):
     ROUTE_CHANGE = 'route_change'
     TRANSFER = 'transfer'
     END_CHAT = 'end_chat'
+    TOOL_CALL = 'tool_call'
+    TOOL_RESULT = 'tool_result'
 
 
 @dataclass
@@ -29,9 +32,13 @@ class HistoryEntry:
     route: str
     message: Optional[dict] = None
     metadata: dict = field(default_factory=dict)
+    # Tool exchange (agentes de IA): tool_calls na mensagem assistant e
+    # tool_call_id na mensagem de resultado. A API do LLM exige o par.
+    tool_calls: Optional[list[dict]] = None
+    tool_call_id: Optional[str] = None
 
     def to_dict(self) -> dict:
-        return {
+        data = {
             'idempotency_key': self.idempotency_key,
             'chat_id': self.chat_id,
             'session_id': self.session_id,
@@ -42,6 +49,11 @@ class HistoryEntry:
             'message': self.message,
             'metadata': self.metadata,
         }
+        if self.tool_calls is not None:
+            data['tool_calls'] = self.tool_calls
+        if self.tool_call_id is not None:
+            data['tool_call_id'] = self.tool_call_id
+        return data
 
     @classmethod
     def from_dict(cls, data: dict) -> 'HistoryEntry':
@@ -55,4 +67,6 @@ class HistoryEntry:
             route=data['route'],
             message=data.get('message'),
             metadata=data.get('metadata', {}),
+            tool_calls=data.get('tool_calls'),
+            tool_call_id=data.get('tool_call_id'),
         )

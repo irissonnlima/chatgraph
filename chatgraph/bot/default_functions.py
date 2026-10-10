@@ -3,7 +3,6 @@ from ..models.message import Message, Button
 from ..types.end_types import (
     RedirectResponse,
     EndChatResponse,
-    TransferToHuman,
     TransferToMenu,
 )
 from ..types.route import Route

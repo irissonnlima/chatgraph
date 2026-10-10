@@ -1,6 +1,6 @@
 [project]
 name = "chatgraph"
-version = "1.3.1"
+version = "1.5.0"
 description = "A user-friendly chatbot library"
 authors = [
     {name = "Irisson N. Lima", email = "irisson.lima@verdecard.com.br"}
@@ -21,6 +21,7 @@ dependencies = [
     "protobuf>=6.31.1",
     "httpx>=0.28.1",
     "aio-pika>=9.5.8",
+    "websockets>=15.0",
 ]
 
 dev-dependencies = [
@@ -33,6 +34,11 @@ dev-dependencies = [
     "pytest-httpx>=0.35.0",
 ]
 
+
+[project.optional-dependencies]
+agent = [
+    "pydantic>=2",
+]
 
 [project.urls]
 Homepage = "https://github.com/irissonnlima/chatgraph"
@@ -77,4 +83,6 @@ build-backend = "hatchling.build"
 dev = [
     "pytest>=9.0.3",
     "ruff>=0.15.12",
+    "pytest-asyncio>=1.3.0",
+    "respx>=0.22.0",
 ]

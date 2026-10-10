@@ -101,7 +101,7 @@ class TestChatbotAppGuard:
         guard.assert_called_once_with(usercall, 'read')
         route_func.assert_not_called()
         process_func_response_mock.assert_called_once_with(
-            transfer, usercall, route='test_route'
+            transfer, usercall, route='test_route', _redirect_depth=0
         )
 
     @pytest.mark.asyncio

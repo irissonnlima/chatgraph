@@ -5,6 +5,41 @@ Ordenadas por impacto estimado em produção.
 
 ---
 
+## 0. Agentes de IA — ✅ PARCIALMENTE RESOLVIDO (v1.4.0)
+
+O módulo `chatgraph/agent/` porta o protocolo **single-agent** do Go
+(`GenerateProtocol` + `ExecuteSingleAgent`): `Agent`, tools locais com
+`@agent.tool`, cliente OpenRouter próprio (httpx, retry/backoff),
+normalização de JSON Schema para Structured Outputs, prompts portados,
+executor com as proteções do Go (dedup por `result_key`, máx. 2
+tentativas por tool, self-redirect guard, redirect silencioso, merge
+aditivo de observation) e histórico com pareamento assistant/tool
+(`trim_safe`). Extra opcional `chatgraph[agent]` (pydantic>=2).
+
+Desde então (2026-08-17): `end_actions`/`EndActionInfo` para
+`end_session` (seleção por name/id, mesmo critério do `transfer_menu`),
+enum de `menu`/`end_action_id` por Agent no Structured Output, um
+guardrail de saída específico — re-prompt corretivo de 1 tentativa via
+`AgentContext.last_action_error` quando o modelo escolhe um
+menu/end_action inexistente — e `Agent.validate_config` (opt-in,
+confere no boot se os menus/end_actions configurados existem no
+router). Também um extra sem equivalente no Go: `generate_content`
+(`chatgraph/agent/content.py`), chamada de LLM tiro-único desacoplada
+do protocolo de chat/roteamento, para analisar dados internos do bot.
+
+**Ainda faltam** (extensões futuras, design já acomoda):
+- Protocolo two-agent (`DecideRoute` + `Speak`, router barato + speaker premium)
+- MCP (stdio/SSE/HTTP/JSON-RPC + registry) — tools hoje são locais
+- Memória de longo prazo (`MemoryContext` cross-session)
+- Guardrails de entrada/saída (o único hoje é a correção de ação
+  inválida acima; nada cobre conteúdo impróprio na entrada/saída)
+- `recoverObservation` (re-run do router em rotas "collect")
+- Transfer por queue (divergência consciente: o client Python
+  transfere por **name** de menu, e `end_session` seleciona a end
+  action pelo mesmo critério)
+
+---
+
 ## 1. Timeout automático de handler
 
 **Prioridade: Alta**
@@ -27,22 +62,21 @@ engine.RegisterRoute("slow_task", handler, chat.RouterHandlerOptions{
 
 ---
 
-## 2. Loop protection
-
-**Prioridade: Alta**
+## 2. Loop protection — ✅ PARCIALMENTE RESOLVIDO (v1.4.0)
 
 No Go, o `Engine` rastreia quantas vezes consecutivas o mesmo redirect ocorreu. Se o limite for atingido (`LoopCountRouteOps{Count, Route}`), o usuário é enviado para uma rota de fallback.
 
-```go
-// Padrão: 3 visitas consecutivas → redireciona para "loop_route"
-engine.RegisterRoute("A", func(ctx *chat.Context[Obs]) chat.RouteReturn {
-    return &chat.RedirectResponse{TargetRoute: "A"} // loop detectado na 4ª vez
-})
-```
+**Implementado no Python (v1.4.0):** `MAX_REDIRECT_DEPTH = 5` em
+`chatbot_model.py` limita a profundidade de redirects encadeados num
+mesmo turno (a recursão de `RedirectResponse` em `process_message`).
+Ao estourar, o turno é encerrado com erro no log — o `set_route` já
+ocorreu, então a próxima mensagem cai na rota destino. A mesma
+proteção evita que um agente de IA em ciclo trave o consumer, e a
+reentrada por redirect não regrava MESSAGE_IN no histórico.
 
-**O que falta no Python:**
-- Contador de redirects consecutivos para a mesma rota em `UserCall` / `ChatbotApp`
-- Configuração de limite por rota ou global
+**O que ainda falta (paridade completa):**
+- Contador por rota (visitas consecutivas à MESMA rota, como no Go)
+- Configuração de limite por rota
 - Redirect automático para rota de fallback ao atingir o limite
 
 ---
