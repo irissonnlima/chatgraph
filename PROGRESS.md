@@ -46,6 +46,12 @@ tests/
 
 ## 4. Linha do Tempo
 
+### 2026-11
+
+| Data | Commit | Descrição |
+|------|--------|-----------|
+| 2026-11-13 | - | **Botão de URL (`1.6.0`)**: `URLButtonMessage` + `UserCall.send_url_button`, mesmas regras e códigos de motivo do `chatgraph-go` e do Router; `ButtonType` exportado; 66 testes unitários. |
+
 ### 2026-10
 
 | Data | Commit | Descrição |
