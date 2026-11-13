@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import json
 import logging
 from datetime import datetime
@@ -18,6 +19,7 @@ from chatgraph.models.message import (
     MessageTypes,
 )
 from chatgraph.models.platform_state import PlatformState
+from chatgraph.models.url_button import URLButtonMessage
 from chatgraph.models.userstate import Menu, User, UserIdentity, UserState
 from chatgraph.services.router_http_client import RouterHTTPClient
 
@@ -158,6 +160,42 @@ class UserCall:  # noqa: PLR0904
             self.logger.warning(
                 f'Falha ao registrar histórico (message_out): {e}'
             )
+
+    async def send_url_button(self, message: URLButtonMessage) -> None:
+        """
+        Envia ao cliente uma mensagem com 1 botão que abre um link.
+
+        Confere as regras do `cta_url` da Voll antes de enviar. Um arquivo
+        local (por `name` ou `url`) é enviado ao Router antes. Retornar sem
+        erro quer dizer que o Router aceitou a mensagem, e não garante que o
+        cliente veja o botão: ele só vira botão interativo na Voll WhatsApp
+        Enterprise com a conta habilitada. Nos outros casos o Router manda o
+        link como texto `*Label*: url`.
+
+        Exige o chatbot-router 1.88.0 ou mais novo. Com Router mais antigo,
+        uma URL com mais de 30 caracteres faz o envio falhar na Voll.
+
+        Args:
+            message (URLButtonMessage): A mensagem. Não é alterada.
+
+        Raises:
+            URLButtonInvalidError: A mensagem não cumpre as regras do
+                `cta_url`. Nada é enviado. Para mandar assim mesmo, com a
+                queda do Router para texto, use
+                `await usercall.send(message.to_message())`.
+            ValueError: Falha ao carregar ou enviar o arquivo.
+        """
+        message._validate(require_file_id=False)
+
+        if message.file is not None and not message.file.id:
+            # Cópia, para não carregar os bytes no File do bot.
+            resolved = await self.__check_file_for_send(
+                dataclasses.replace(message.file)
+            )
+            message = dataclasses.replace(message, file=resolved)
+
+        message.validate()
+        await self.__send(message.to_message())
 
     async def send(
         self,
