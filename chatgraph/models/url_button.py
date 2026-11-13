@@ -122,8 +122,9 @@ class URLButtonMessage:
 def _is_valid_url(url: object) -> bool:
     if not isinstance(url, str):
         return False
-    # O urlsplit remove \t, \n e \r sem avisar; o Router recusa.
-    if any(c < ' ' or c == '\x7f' for c in url):
+    # O urlsplit remove \t, \n, \r e o espaço inicial sem avisar; o Router
+    # recusa.
+    if any(c < ' ' or c == '\x7f' for c in url) or url.startswith(' '):
         return False
     try:
         parts = urlsplit(url)

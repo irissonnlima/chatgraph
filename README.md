@@ -233,7 +233,7 @@ Facilita a navegação no chatbot ao permitir que o usuário escolha uma ação 
 
 #### **Botão de URL (`cta_url` na Voll)**
 
-`URLButtonMessage` e `usercall.send_url_button` enviam uma mensagem com 1 botão que abre um link. As regras do `cta_url` da Voll são conferidas antes do envio: mensagem inválida levanta `URLButtonInvalidError` e não é enviada. O botão interativo só aparece na Voll WhatsApp Enterprise com a conta habilitada; nos outros casos o Router manda o link como texto. Exige o chatbot-router 1.88.0 ou mais novo.
+`URLButtonMessage` e `usercall.send_url_button` enviam uma mensagem com 1 botão que abre um link. As regras do `cta_url` da Voll são conferidas antes do envio: mensagem inválida levanta `URLButtonInvalidError` e não é enviada. O botão interativo só aparece na Voll WhatsApp Enterprise com a conta habilitada; nos outros casos o Router manda o link como texto. Exige o chatbot-router com o envio `cta_url` (HML `1.88.0`; versão de PRD a confirmar na subida do Router).
 
 ```python
 from chatgraph import URLButtonInvalidError, URLButtonMessage

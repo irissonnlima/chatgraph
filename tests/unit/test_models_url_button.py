@@ -95,6 +95,11 @@ ERROR_CASES = [
     pytest.param({'url': 'https://'}, 'url_invalid', id='url_sem_host'),
     pytest.param({'url': 'https://user@'}, 'url_invalid', id='url_so_usuario'),
     pytest.param({'url': ''}, 'url_invalid', id='url_vazia'),
+    pytest.param(
+        {'url': ' https://exemplo.com.br/a'},
+        'url_invalid',
+        id='url_com_espaco_inicial',
+    ),
     pytest.param({'url': None}, 'url_invalid', id='url_none'),
     pytest.param(
         {'url': 'https://exemplo.com.br/a\n'},

@@ -172,8 +172,9 @@ class UserCall:  # noqa: PLR0904
         Enterprise com a conta habilitada. Nos outros casos o Router manda o
         link como texto `*Label*: url`.
 
-        Exige o chatbot-router 1.88.0 ou mais novo. Com Router mais antigo,
-        uma URL com mais de 30 caracteres faz o envio falhar na Voll.
+        Exige o chatbot-router com o envio `cta_url` (HML 1.88.0; versão de
+        PRD a confirmar na subida do Router). Com Router anterior, uma URL
+        com mais de 30 caracteres faz o envio falhar na Voll.
 
         Args:
             message (URLButtonMessage): A mensagem. Não é alterada.
@@ -182,7 +183,8 @@ class UserCall:  # noqa: PLR0904
             URLButtonInvalidError: A mensagem não cumpre as regras do
                 `cta_url`. Nada é enviado. Para mandar assim mesmo, com a
                 queda do Router para texto, use
-                `await usercall.send(message.to_message())`.
+                `await usercall.send(message.to_message())` (sem arquivo, ou
+                com arquivo local por `name`).
             ValueError: Falha ao carregar ou enviar o arquivo.
         """
         message._validate(require_file_id=False)

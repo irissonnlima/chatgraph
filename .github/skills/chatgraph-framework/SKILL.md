@@ -320,9 +320,9 @@ except URLButtonInvalidError as e:
 | `file` | cabeçalho de mídia | imagem, vídeo ou documento; com ele, `header` fica vazio |
 
 - Só vira botão na Voll WhatsApp Enterprise com a conta habilitada. Nos outros casos o link chega como texto `*Label*: url`.
-- Exige o chatbot-router 1.88.0 ou mais novo. Com Router mais antigo, URL com mais de 30 caracteres faz o envio falhar na Voll.
+- Exige o chatbot-router com o envio `cta_url` (HML `1.88.0`; versão de PRD a confirmar na subida do Router). Com Router anterior, URL com mais de 30 caracteres faz o envio falhar na Voll.
 - `Message` com mais de 1 botão, ou com botão de URL e postback juntos, nunca vira `cta_url`.
-- `send_url_button` valida antes de enviar. Se a mensagem for inválida, levanta `URLButtonInvalidError` (atributo `reason`) e não envia. O texto do erro nunca leva a URL nem o conteúdo da mensagem. Para mandar assim mesmo, use `usercall.send(msg.to_message())`, sem validação.
+- `send_url_button` valida antes de enviar. Se a mensagem for inválida, levanta `URLButtonInvalidError` (atributo `reason`) e não envia. O texto do erro nunca leva a URL nem o conteúdo da mensagem. Para mandar assim mesmo, use `usercall.send(msg.to_message())`, sem validação (sem arquivo, ou com arquivo local por `name`).
 - Códigos de motivo, na ordem em que são conferidos: `url_invalid`, `label_empty`, `label_too_long`, `body_empty`, `body_too_long`, `file_without_id`, `header_with_file`, `file_type_unsupported`, `header_too_long`, `footer_too_long`.
 - O agente de IA (`chatgraph.agent`) não gera botão de URL.
 
