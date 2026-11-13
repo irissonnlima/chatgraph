@@ -231,6 +231,29 @@ O `Button` representa uma mensagem que inclui botões clicáveis para oferecer a
 
 Facilita a navegação no chatbot ao permitir que o usuário escolha uma ação clicando em um botão, em vez de digitar uma resposta.
 
+#### **Botão de URL (`cta_url` na Voll)**
+
+`URLButtonMessage` e `usercall.send_url_button` enviam uma mensagem com 1 botão que abre um link. As regras do `cta_url` da Voll são conferidas antes do envio: mensagem inválida levanta `URLButtonInvalidError` e não é enviada. O botão interativo só aparece na Voll WhatsApp Enterprise com a conta habilitada; nos outros casos o Router manda o link como texto. Exige o chatbot-router com o envio `cta_url` (HML `1.88.0`; versão de PRD a confirmar na subida do Router).
+
+```python
+from chatgraph import URLButtonInvalidError, URLButtonMessage
+
+msg = URLButtonMessage(
+    header='Sua fatura',
+    body='Sua fatura de novembro já está disponível.',
+    footer='Verdecard',
+    label='Ver fatura',
+    url='https://exemplo.com.br/fatura/98765',
+)
+try:
+    await usercall.send_url_button(msg)
+except URLButtonInvalidError as e:
+    usercall.logger.warning(f'botão de URL inválido: {e.reason}')
+    await usercall.send(msg.to_message())  # o Router manda o link como texto
+```
+
+Limites, códigos de motivo e detalhes: seção "Botão de URL (`cta_url` na Voll)" em [`.github/skills/chatgraph-framework/SKILL.md`](.github/skills/chatgraph-framework/SKILL.md).
+
 ---
 
 ### **8. `ListElements`**
