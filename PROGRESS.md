@@ -202,7 +202,7 @@ poetry run ruff check . && ruff format .
 | Baixa | `make_deliver` do `tests/unit/stream_fake_router.py` não põe `menu` dentro do `user_state` (o router põe); contra o fake o eco do exemplo sai com menu `None` | tests/unit | ❌ |
 | Média | Validação do modo stream na stack do router (profile `sdk-python`, E5) e release `1.5.0` | examples/stream + router | ❌ |
 | Alta | Botão de URL (`1.6.0`): publicar no PyPI antes do Router com `cta_url` em PRD, e trocar "versão de PRD a confirmar" (CHANGELOG, docstring de `send_url_button`, SKILL.md §7, README) pela versão de PRD quando o Router subir. A `1.88.0` é só a imagem de HML | chatgraph/types + docs | ⚠️ |
-| Baixa | Botão de URL: o `urlsplit` aceita URLs que o `url.Parse` do Go recusa, e o Router manda texto sem o bot receber `URLButtonInvalidError`: espaço no início (`' https://...'`), `%` sem 2 dígitos hexa no path ou no fragmento, porta não numérica, espaço no userinfo, caractere inválido no host | chatgraph/models/url_button.py | ⚠️ |
+| Baixa | Botão de URL: o `urlsplit` aceita URLs que o `url.Parse` do Go recusa, e o Router manda texto sem o bot receber `URLButtonInvalidError`: `%` sem 2 dígitos hexa no path ou no fragmento, porta não numérica, espaço no userinfo, caractere inválido no host | chatgraph/models/url_button.py | ⚠️ |
 | Baixa | Botão de URL: o fallback documentado `usercall.send(msg.to_message())` falha com `ValueError` quando `file` é um `File` só com `id`, porque o `send()` recarrega pelo `name` | chatgraph/types/usercall.py | ❌ |
 
 ## 10. Notas e Observações
