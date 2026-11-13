@@ -4,7 +4,7 @@ Todas as mudanças relevantes do `chatgraph` ficam neste arquivo. O formato segu
 
 Histórico anterior a esta seção: `PROGRESS.md` e `git log`.
 
-## [1.6.0] — <data do merge na main>
+## [1.6.0] — 2026-11-13
 
 ### Adicionado
 - `URLButtonMessage` e `UserCall.send_url_button`: mensagem com 1 botão que abre um link, com as regras do `cta_url` da Voll (WhatsApp Enterprise) validadas antes do envio. Mensagem inválida levanta `URLButtonInvalidError` (atributo `reason`) e não é enviada. Aceita imagem, vídeo ou documento como cabeçalho.
