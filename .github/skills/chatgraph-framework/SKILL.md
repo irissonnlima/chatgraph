@@ -156,6 +156,7 @@ usercall.logger           # logging.Logger → chatgraph_logs/{user_id}_{company
 
 # Envio de mensagens
 await usercall.send(message)           # Message | File | str | int | float
+await usercall.send_url_button(URLButtonMessage(...))  # botão de URL (cta_url na Voll), ver §7
 
 # Navegação e estado
 await usercall.set_route('nova_rota')
@@ -281,8 +282,7 @@ await usercall.send(msg_com_arquivo)
 
 ### `Button` — campos
 ```python
-from chatgraph import Button
-from chatgraph.models.message import ButtonType  # não exportado no __init__ top-level
+from chatgraph import Button, ButtonType
 
 Button(
     title='Texto do botão',   # exibido para o usuário
@@ -290,6 +290,41 @@ Button(
     type=ButtonType.POSTBACK, # ButtonType.POSTBACK (padrão) | ButtonType.URL
 )
 ```
+
+### Botão de URL (`cta_url` na Voll)
+
+```python
+from chatgraph import URLButtonInvalidError, URLButtonMessage
+
+msg = URLButtonMessage(
+    header='Sua fatura',
+    body='Sua fatura de novembro já está disponível.',
+    footer='Verdecard',
+    label='Ver fatura',
+    url='https://exemplo.com.br/fatura/98765',
+)
+try:
+    await usercall.send_url_button(msg)
+except URLButtonInvalidError as e:
+    usercall.logger.warning(f'botão de URL inválido: {e.reason}')
+    await usercall.send(msg.to_message())  # o Router manda o link como texto
+```
+
+| Campo | Vira, na Voll | Limite |
+|-------|---------------|--------|
+| `header` | cabeçalho de texto | até 60 caracteres |
+| `body` | corpo (obrigatório) | 1 a 1024 caracteres |
+| `footer` | rodapé | até 60 caracteres |
+| `label` | texto do botão | 1 a 20 caracteres |
+| `url` | link do botão | `http://` ou `https://` com host, sem limite de tamanho; parâmetros já codificados (`urllib.parse.quote`) |
+| `file` | cabeçalho de mídia | imagem, vídeo ou documento; com ele, `header` fica vazio |
+
+- Só vira botão na Voll WhatsApp Enterprise com a conta habilitada. Nos outros casos o link chega como texto `*Label*: url`.
+- Exige o chatbot-router com o envio `cta_url` (HML `1.88.0`; versão de PRD a confirmar na subida do Router). Com Router anterior, URL com mais de 30 caracteres faz o envio falhar na Voll.
+- `Message` com mais de 1 botão, ou com botão de URL e postback juntos, nunca vira `cta_url`.
+- `send_url_button` valida antes de enviar. Se a mensagem for inválida, levanta `URLButtonInvalidError` (atributo `reason`) e não envia. O texto do erro nunca leva a URL nem o conteúdo da mensagem. Para mandar assim mesmo, use `usercall.send(msg.to_message())`, sem validação (sem arquivo, ou com arquivo local por `name`).
+- Códigos de motivo, na ordem em que são conferidos: `url_invalid`, `label_empty`, `label_too_long`, `body_empty`, `body_too_long`, `file_without_id`, `header_with_file`, `file_type_unsupported`, `header_too_long`, `footer_too_long`.
+- O agente de IA (`chatgraph.agent`) não gera botão de URL.
 
 ### `TextMessage` — dataclass
 ```python

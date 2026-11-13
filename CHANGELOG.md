@@ -4,6 +4,17 @@ Todas as mudanças relevantes do `chatgraph` ficam neste arquivo. O formato segu
 
 Histórico anterior a esta seção: `PROGRESS.md` e `git log`.
 
+## [1.6.0] — 2026-11-13
+
+### Adicionado
+- `URLButtonMessage` e `UserCall.send_url_button`: mensagem com 1 botão que abre um link, com as regras do `cta_url` da Voll (WhatsApp Enterprise) validadas antes do envio. Mensagem inválida levanta `URLButtonInvalidError` (atributo `reason`) e não é enviada. Aceita imagem, vídeo ou documento como cabeçalho.
+- `ButtonType`, `URLButtonMessage`, `URLButtonInvalidError` e `URL_BUTTON_MAX_HEADER/BODY/FOOTER/LABEL` exportados em `chatgraph`.
+
+### Notas de migração
+- Exige o chatbot-router com o envio `cta_url` para o botão interativo (HML `1.88.0`; versão de PRD a confirmar na subida do Router). Com Router anterior, URL com mais de 30 caracteres faz o envio falhar na Voll.
+- Fora da Voll WhatsApp Enterprise, ou com a conta sem habilitação, o link chega como texto `*Label*: url`.
+- `usercall.send(Message(..., buttons=[Button(type=ButtonType.URL, ...)]))` não muda e continua sem validação.
+
 ## [1.5.0] — 2026-10-10
 
 ### Adicionado

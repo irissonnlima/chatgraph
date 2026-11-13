@@ -1,6 +1,6 @@
 # Progresso do Projeto ChatGraph
 
-**Última atualização:** 2026-10-01
+**Última atualização:** 2026-11-13
 
 ## 1. Visão Geral do Projeto
 
@@ -46,6 +46,12 @@ tests/
 
 ## 4. Linha do Tempo
 
+### 2026-11
+
+| Data | Commit | Descrição |
+|------|--------|-----------|
+| 2026-11-13 | - | **Botão de URL (`1.6.0`)**: `URLButtonMessage` + `UserCall.send_url_button`, mesmas regras e códigos de motivo do `chatgraph-go` e do Router; `ButtonType` exportado; 66 testes unitários. |
+
 ### 2026-10
 
 | Data | Commit | Descrição |
@@ -84,7 +90,7 @@ tests/
 | **CLI** | ✅ | Comandos básicos (campaigns, delete-ustate) |
 | **Agentes de IA** | ✅ | Módulo `chatgraph/agent/` (protocolo single-agent do Go): Agent + tools locais, OpenRouterClient, schema normalizer, executor com proteções (inclui re-prompt corretivo de ação inválida), histórico com pareamento assistant/tool, `end_actions`/`validate_config`, `generate_content` desacoplado do turno de chat. Extra `chatgraph[agent]`. Futuro: two-agent, MCP, memória, guardrails |
 | **Transporte stream (WebSocket)** | ⚠️ | Implementado em `chatgraph/stream/` na branch `feat/menu-stream` (release planejada `1.5.0`); falta validar na stack do router (E5) |
-| **Testes Unitários** | ✅ | 738 testes passando (agent + histórico + log publisher + UserState + stream), rodando com `LOG_RABBIT_QUEUE=` |
+| **Testes Unitários** | ✅ | 836 testes passando (agent + histórico + log publisher + UserState + stream + botão de URL), rodando com `LOG_RABBIT_QUEUE=` |
 | **Testes de Integração** | ⚠️ | Requer variáveis de ambiente configuradas |
 | **Documentação** | ⚠️ | README completo + SKILL.md §14 (agentes); falta docs/ detalhada |
 
@@ -195,6 +201,9 @@ poetry run ruff check . && ruff format .
 | Baixa | `MessageConsumer.load_dotenv` lista só a última variável faltante (dict indexado pelo valor; várias `None` colidem e sobra `['ROUTER_TOKEN']`); inverter para `{nome_env: valor}` como no `StreamConsumer` | messages/ | ❌ |
 | Baixa | `make_deliver` do `tests/unit/stream_fake_router.py` não põe `menu` dentro do `user_state` (o router põe); contra o fake o eco do exemplo sai com menu `None` | tests/unit | ❌ |
 | Média | Validação do modo stream na stack do router (profile `sdk-python`, E5) e release `1.5.0` | examples/stream + router | ❌ |
+| Alta | Botão de URL (`1.6.0`): publicar no PyPI antes do Router com `cta_url` em PRD, e trocar "versão de PRD a confirmar" (CHANGELOG, docstring de `send_url_button`, SKILL.md §7, README) pela versão de PRD quando o Router subir. A `1.88.0` é só a imagem de HML | chatgraph/types + docs | ⚠️ |
+| Baixa | Botão de URL: o `urlsplit` aceita URLs que o `url.Parse` do Go recusa, e o Router manda texto sem o bot receber `URLButtonInvalidError`: `%` sem 2 dígitos hexa no path ou no fragmento, porta não numérica, espaço no userinfo, caractere inválido no host | chatgraph/models/url_button.py | ⚠️ |
+| Baixa | Botão de URL: o fallback documentado `usercall.send(msg.to_message())` falha com `ValueError` quando `file` é um `File` só com `id`, porque o `send()` recarrega pelo `name` | chatgraph/types/usercall.py | ❌ |
 
 ## 10. Notas e Observações
 
